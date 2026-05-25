@@ -22,8 +22,7 @@ import com.vela.ui.theme.VelaTheme
 
 @Composable
 fun HomeScreen(
-    assets: List<AssetUiModel>,
-    date: String,
+    uiState: HomeUiState,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -31,8 +30,8 @@ fun HomeScreen(
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        HomeHeader(date = date)
-        AssetList(assets = assets)
+        HomeHeader(date = uiState.date)
+        AssetList(assets = uiState.assets)
     }
 }
 
@@ -82,8 +81,10 @@ private fun AssetList(
 private fun HomeScreenPreview() {
     VelaTheme {
         HomeScreen(
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            date = "Monday, 25 May"
+            uiState = HomeUiState(
+                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+                date = "Monday, 25 May"
+            )
         )
     }
 }
