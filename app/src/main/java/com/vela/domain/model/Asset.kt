@@ -1,4 +1,4 @@
-package com.vela.model
+package com.vela.domain.model
 
 data class Asset(
     val id: String,

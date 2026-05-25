@@ -1,6 +1,6 @@
 package com.vela.ui.common.components.mapper
 
-import com.vela.model.Asset
+import com.vela.domain.model.Asset
 import com.vela.ui.theme.sparklineBearColor
 import com.vela.ui.theme.sparklineBullColor
 import org.junit.Assert.assertEquals

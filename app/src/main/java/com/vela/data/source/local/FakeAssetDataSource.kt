@@ -1,6 +1,6 @@
-package com.vela.data
+package com.vela.data.source.local
 
-import com.vela.model.Asset
+import com.vela.domain.model.Asset
 
 object FakeAssetDataSource {
 
