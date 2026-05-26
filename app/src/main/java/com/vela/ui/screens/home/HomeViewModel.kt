@@ -1,27 +1,47 @@
 package com.vela.ui.screens.home
 
 import androidx.lifecycle.ViewModel
-import com.vela.data.source.local.fake.FakeAssetDataSource
+import androidx.lifecycle.viewModelScope
+import com.vela.data.repository.AssetRepositoryImpl
+import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.ui.common.components.mapper.toUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class HomeViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    private val repository = AssetRepositoryImpl()
+    private val getTopAssets = GetTopAssetsUseCase(repository)
+
+    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val date = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMM"))
+
     init {
-        _uiState.update {
-            HomeUiState(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-                date = LocalDate.now()
-                    .format(DateTimeFormatter.ofPattern("EEEE, d MMM"))
-            )
+        loadAssets()
+    }
+
+    fun retry() = loadAssets()
+
+    private fun loadAssets() {
+        viewModelScope.launch {
+            _uiState.value = HomeUiState.Loading
+            try {
+                val assets = getTopAssets()
+                _uiState.value = HomeUiState.Success(
+                    assets = assets.map { it.toUiModel() },
+                    date = date
+                )
+            } catch (e: Exception) {
+                _uiState.value = HomeUiState.Error(
+                    message = e.message ?: "Something went wrong"
+                )
+            }
         }
     }
 }

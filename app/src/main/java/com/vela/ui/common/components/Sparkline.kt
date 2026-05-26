@@ -42,7 +42,7 @@ fun Sparkline(
 @Preview(showBackground = true)
 @Composable
 private fun SparklinePreview(
-    prices: List<Double> = FakeAssetDataSource.assets[1].sparkline,
+    prices: List<Double> = FakeAssetDataSource.assets[0].sparkline!!,
     color: Color = sparklineBearColor
 ) {
     VelaTheme {

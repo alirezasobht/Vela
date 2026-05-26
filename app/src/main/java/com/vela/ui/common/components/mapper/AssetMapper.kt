@@ -8,12 +8,12 @@ import com.vela.ui.theme.sparklineBullColor
 fun Asset.toUiModel(): AssetUiModel = AssetUiModel(
     id = id,
     name = name,
-    image = image,
-    price = formatPrice(currentPrice),
-    priceChange = formatChange(priceChangePercent24h),
-    symbolAndRank = "#${marketCapRank} · ${symbol.uppercase()}",
-    color = if (priceChangePercent24h >= 0) sparklineBullColor else sparklineBearColor,
-    sparkline = sparkline
+    image = image ?: "",
+    price = formatPrice(currentPrice ?: 0.0),
+    priceChange = formatChange(priceChangePercent24h ?: 0.0),
+    color = if ((priceChangePercent24h ?: 0.0) >= 0) sparklineBullColor else sparklineBearColor,
+    symbolAndRank = if (marketCapRank != null) "#$marketCapRank · ${symbol.uppercase()}" else symbol.uppercase(),
+    sparkline = sparkline ?: emptyList()
 )
 
 private fun formatPrice(price: Double): String = when {

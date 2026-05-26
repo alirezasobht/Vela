@@ -18,7 +18,7 @@ fun VelaApp() {
 
     Scaffold {
         Surface(modifier = Modifier.fillMaxSize()) {
-            HomeScreen(uiState = uiState)
+            HomeScreen(uiState = uiState, onRetry = homeViewModel::retry)
         }
     }
 }

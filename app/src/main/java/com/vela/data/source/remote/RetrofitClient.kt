@@ -11,7 +11,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 object RetrofitClient {
 
     private const val BASE_URL = "https://api.coingecko.com/api/v3/"
-    private const val API_KEY = "YOUR_API_KEY_HERE"
+    private const val API_KEY = "CG-eU4VnP3eypq4QueGjMdCbvnv"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

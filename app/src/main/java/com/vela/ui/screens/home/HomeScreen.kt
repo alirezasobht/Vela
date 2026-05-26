@@ -1,15 +1,22 @@
 package com.vela.ui.screens.home
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,15 +30,43 @@ import com.vela.ui.theme.VelaTheme
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-    ) {
-        HomeHeader(date = uiState.date)
-        AssetList(assets = uiState.assets)
+    when (uiState) {
+        is HomeUiState.Loading -> {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is HomeUiState.Error -> {
+            Column(
+                modifier = modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = uiState.message,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onRetry) {
+                    Text("Try Again")
+                }
+            }
+        }
+
+        is HomeUiState.Success -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+            ) {
+                HomeHeader(date = uiState.date)
+                AssetList(assets = uiState.assets)
+            }
+        }
     }
 }
 
@@ -78,13 +113,33 @@ private fun AssetList(
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeScreenPreview() {
+private fun HomeScreenSuccessPreview() = HomeScreenPreview(
+    HomeUiState.Success(
+        assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+        date = "Monday, 12 Feb"
+    )
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenErrorPreview() = HomeScreenPreview(
+    uiState = HomeUiState.Error(
+        message = "Something went wrong"
+    )
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenLoadingPreview() = HomeScreenPreview(
+    uiState = HomeUiState.Loading
+)
+
+@Composable
+private fun HomeScreenPreview(uiState: HomeUiState) {
     VelaTheme {
         HomeScreen(
-            uiState = HomeUiState(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-                date = "Monday, 25 May"
-            )
+            uiState = uiState,
+            onRetry = {}
         )
     }
 }

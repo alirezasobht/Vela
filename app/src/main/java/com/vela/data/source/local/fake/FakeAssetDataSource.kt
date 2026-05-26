@@ -20,10 +20,10 @@ object FakeAssetDataSource {
             symbol = "eth",
             name = "Ethereum",
             image = "",
-            currentPrice = 3180.0,
-            priceChangePercent24h = -1.1,
-            marketCapRank = 2,
-            sparkline = listOf(3300.0, 3250.0, 3200.0, 3220.0, 3190.0, 3200.0, 3180.0)
+            currentPrice = null,
+            priceChangePercent24h = null,
+            marketCapRank = null,
+            sparkline = null
         ),
         Asset(
             id = "tether",
