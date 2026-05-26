@@ -3,6 +3,9 @@ package com.vela.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.data.repository.AssetRepositoryImpl
+import com.vela.data.source.remote.RetrofitClient
+import com.vela.domain.model.AppException
+import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.ui.common.components.mapper.toUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,32 +17,38 @@ import java.time.format.DateTimeFormatter
 
 class HomeViewModel : ViewModel() {
 
-    private val repository = AssetRepositoryImpl()
+    private val repository = AssetRepositoryImpl(RetrofitClient.api)
     private val getTopAssets = GetTopAssetsUseCase(repository)
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val date = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMM"))
+    private val date = LocalDate.now()
+        .format(DateTimeFormatter.ofPattern("EEEE, d MMM"))
 
     init {
         loadAssets()
     }
 
-    fun retry() = loadAssets()
+    fun retry() {
+        loadAssets()
+    }
 
     private fun loadAssets() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
-            try {
-                val assets = getTopAssets()
-                _uiState.value = HomeUiState.Success(
-                    assets = assets.map { it.toUiModel() },
+            when (val result = getTopAssets()) {
+                is DataResult.Success -> _uiState.value = HomeUiState.Success(
+                    assets = result.data.map { it.toUiModel() },
                     date = date
                 )
-            } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(
-                    message = e.message ?: "Something went wrong"
+
+                is DataResult.Error -> _uiState.value = HomeUiState.Error(
+                    message = when (result.exception) {
+                        is AppException.NoInternet -> "No internet connection"
+                        is AppException.ServerError -> "Server error, please try again"
+                        is AppException.Unknown -> result.exception.message
+                    } ?: "Something went wrong"
                 )
             }
         }
