@@ -190,4 +190,70 @@ class AssetMapperKtTest {
         assertEquals("", uiModel.id)
         assertEquals("", uiModel.name)
     }
+
+    @Test
+    fun `Null handling for image property`() {
+        val uiModel = anAsset().copy(image = null).toUiModel()
+        assertEquals("", uiModel.image)
+    }
+
+    @Test
+    fun `Null handling for currentPrice property`() {
+        val uiModel = anAsset().copy(currentPrice = null).toUiModel()
+        assertEquals("$0.0000", uiModel.price)
+    }
+
+    @Test
+    fun `Null handling for priceChangePercent24h property`() {
+        val uiModel = anAsset().copy(priceChangePercent24h = null).toUiModel()
+        assertEquals("+0.00%", uiModel.priceChange)
+    }
+
+    @Test
+    fun `Color mapping when priceChangePercent24h is null`() {
+        val uiModel = anAsset().copy(priceChangePercent24h = null).toUiModel()
+        assertEquals(sparklineBullColor, uiModel.color)
+    }
+
+    @Test
+    fun `Null handling for marketCapRank property`() {
+        val uiModel = anAsset().copy(marketCapRank = null).toUiModel()
+        assertEquals("BTC", uiModel.symbolAndRank)
+    }
+
+    @Test
+    fun `Null handling for sparkline list`() {
+        val uiModel = anAsset().copy(sparkline = null).toUiModel()
+        assertEquals(emptyList<Double>(), uiModel.sparkline)
+    }
+
+    @Test
+    fun `Price formatting for values between 0 1 and 1 0 with rounding`() {
+        val uiModel = anAsset(currentPrice = 0.99999).toUiModel()
+        assertEquals("$0.99999", uiModel.price)
+    }
+
+    @Test
+    fun `Negative price handling`() {
+        val uiModel = anAsset(currentPrice = -0.5).toUiModel()
+        assertEquals("$-0.5000", uiModel.price)
+    }
+
+    @Test
+    fun `Symbol with special characters or numbers`() {
+        val uiModel = anAsset(symbol = "1inch!&").toUiModel()
+        assertEquals("#1 · 1INCH!&", uiModel.symbolAndRank)
+    }
+
+    @Test
+    fun `Large marketCapRank handling`() {
+        val uiModel = anAsset(marketCapRank = 9999).toUiModel()
+        assertEquals("#9999 · BTC", uiModel.symbolAndRank)
+    }
+
+    @Test
+    fun `Price formatting for values just below 1000`() {
+        val uiModel = anAsset(currentPrice = 999.99).toUiModel()
+        assertEquals("$999.99", uiModel.price)
+    }
 }
