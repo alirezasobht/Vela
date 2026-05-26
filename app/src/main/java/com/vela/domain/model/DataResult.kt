@@ -2,5 +2,5 @@ package com.vela.domain.model
 
 sealed class DataResult<out T> {
     data class Success<out T>(val data: T) : DataResult<T>()
-    data class Error(val exception: AppException) : DataResult<Nothing>()
+    data class Error(val exception: AppError) : DataResult<Nothing>()
 }

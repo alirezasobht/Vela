@@ -9,5 +9,5 @@ class GetTopAssetsUseCase @Inject constructor(
     private val repository: AssetRepository
 ) {
     suspend operator fun invoke(limit: Int = 50): DataResult<List<Asset>> =
-        repository.getTopAssets(limit)
+        if (limit <= 0) DataResult.Success(emptyList()) else repository.getTopAssets(limit)
 }

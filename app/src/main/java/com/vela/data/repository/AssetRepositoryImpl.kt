@@ -2,7 +2,7 @@ package com.vela.data.repository
 
 import com.vela.data.source.remote.api.CoinGeckoApi
 import com.vela.data.source.remote.mapper.toDomain
-import com.vela.domain.model.AppException
+import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
 import com.vela.domain.repository.AssetRepository
@@ -17,9 +17,9 @@ class AssetRepositoryImpl(
             val assets = api.getMarkets(limit = limit).map { it.toDomain() }
             DataResult.Success(assets)
         } catch (e: IOException) {
-            DataResult.Error(AppException.NoInternet)
+            DataResult.Error(AppError.NoInternet)
         } catch (e: Exception) {
-            DataResult.Error(AppException.Unknown(e.message ?: "Something went wrong"))
+            DataResult.Error(AppError.Unknown(e.message ?: "Something went wrong"))
         }
     }
 }
