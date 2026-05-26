@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.vela.data.source.local.FakeAssetDataSource
+import com.vela.data.source.local.fake.FakeAssetDataSource
 import com.vela.ui.theme.VelaTheme
 import com.vela.ui.theme.sparklineBearColor
 

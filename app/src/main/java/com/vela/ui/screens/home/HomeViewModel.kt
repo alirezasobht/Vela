@@ -1,7 +1,7 @@
 package com.vela.ui.screens.home
 
 import androidx.lifecycle.ViewModel
-import com.vela.data.source.local.FakeAssetDataSource
+import com.vela.data.source.local.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
