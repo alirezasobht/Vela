@@ -10,7 +10,7 @@ interface CoinGeckoApi {
     suspend fun getMarkets(
         @Query("vs_currency") currency: String = "usd",
         @Query("order") order: String = "market_cap_desc",
-        @Query("per_page") limit: Int = 50,
+        @Query("per_page") limit: Int,
         @Query("page") page: Int = 1,
         @Query("sparkline") sparkline: Boolean = true,
         @Query("price_change_percentage") priceChangePercentage: String = "24h"

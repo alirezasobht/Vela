@@ -16,6 +16,7 @@ import com.vela.ui.screens.home.HomeViewModel
 fun VelaApp() {
     val homeViewModel: HomeViewModel = hiltViewModel()
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by homeViewModel.pullRefreshing.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         Surface(
@@ -23,7 +24,14 @@ fun VelaApp() {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            HomeScreen(uiState = uiState, onRetry = homeViewModel::retry)
+            HomeScreen(
+                uiState = uiState,
+                isRefreshing = isRefreshing,
+                onRetry = homeViewModel::retry,
+                onPullToRefresh = homeViewModel::pullToRefresh,
+                selectedLimit = homeViewModel.selectedLimit,
+                onLimitChanged = homeViewModel::onLimitChanged
+            )
         }
     }
 }

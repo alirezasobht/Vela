@@ -1,4 +1,4 @@
-package com.vela.data.source.local.fake
+package com.vela.data.source.fake
 
 import com.vela.domain.model.Asset
 

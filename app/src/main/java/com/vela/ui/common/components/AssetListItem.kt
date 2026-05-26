@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.vela.data.source.local.fake.FakeAssetDataSource
+import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.theme.VelaTheme
