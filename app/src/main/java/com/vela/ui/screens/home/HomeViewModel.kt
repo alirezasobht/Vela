@@ -2,7 +2,6 @@ package com.vela.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
@@ -41,13 +40,7 @@ class HomeViewModel @Inject constructor(
                     assets = result.data.map { it.toUiModel() },
                     date = formatDate(getToday())
                 )
-                is DataResult.Error -> _uiState.value = HomeUiState.Error(
-                    message = when (result.exception) {
-                        is AppError.NoInternet -> "No internet connection"
-                        is AppError.ServerError -> "Server error, please try again"
-                        is AppError.Unknown -> result.exception.message
-                    }
-                )
+                is DataResult.Error -> _uiState.value = HomeUiState.Error(result.appError)
             }
         }
     }

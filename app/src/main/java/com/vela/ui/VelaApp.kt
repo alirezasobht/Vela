@@ -1,6 +1,7 @@
 package com.vela.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -16,8 +17,12 @@ fun VelaApp() {
     val homeViewModel: HomeViewModel = hiltViewModel()
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold {
-        Surface(modifier = Modifier.fillMaxSize()) {
+    Scaffold { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             HomeScreen(uiState = uiState, onRetry = homeViewModel::retry)
         }
     }

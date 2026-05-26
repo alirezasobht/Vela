@@ -96,7 +96,7 @@ class GetTopAssetsUseCaseTest {
         val result = useCase()
 
         assertTrue(result is DataResult.Error)
-        assertSame(AppError.NoInternet, (result as DataResult.Error).exception)
+        assertSame(AppError.NoInternet, (result as DataResult.Error).appError)
     }
 
     @Test
@@ -107,7 +107,7 @@ class GetTopAssetsUseCaseTest {
         val result = useCase()
 
         assertTrue(result is DataResult.Error)
-        assertTrue((result as DataResult.Error).exception is AppError.Unknown)
+        assertTrue((result as DataResult.Error).appError is AppError.Unknown)
     }
 
     @Test

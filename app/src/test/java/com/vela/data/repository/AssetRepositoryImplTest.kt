@@ -62,7 +62,7 @@ class AssetRepositoryImplTest {
         val result = repository.getTopAssets()
 
         assertTrue(result is DataResult.Error)
-        assertEquals(AppError.NoInternet, (result as DataResult.Error).exception)
+        assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
     }
 
     @Test
@@ -72,7 +72,7 @@ class AssetRepositoryImplTest {
         val result = repository.getTopAssets()
 
         assertTrue(result is DataResult.Error)
-        val exception = (result as DataResult.Error).exception
+        val exception = (result as DataResult.Error).appError
         assertTrue(exception is AppError.Unknown)
         assertEquals("Server crashed", (exception as AppError.Unknown).message)
     }
@@ -84,7 +84,7 @@ class AssetRepositoryImplTest {
         val result = repository.getTopAssets()
 
         assertTrue(result is DataResult.Error)
-        val exception = (result as DataResult.Error).exception
+        val exception = (result as DataResult.Error).appError
         assertTrue(exception is AppError.Unknown)
         assertEquals("Something went wrong", (exception as AppError.Unknown).message)
     }

@@ -98,7 +98,7 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is HomeUiState.Error)
-        assertEquals("No internet connection", (state as HomeUiState.Error).message)
+        assertEquals(AppError.NoInternet, (state as HomeUiState.Error).appError)
     }
 
     @Test
@@ -110,7 +110,7 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is HomeUiState.Error)
-        assertEquals("Server error, please try again", (state as HomeUiState.Error).message)
+        assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
     }
 
     @Test
@@ -123,7 +123,8 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is HomeUiState.Error)
-        assertEquals(errorMessage, (state as HomeUiState.Error).message)
+        assertTrue((state as HomeUiState.Error).appError is AppError.Unknown)
+        assertEquals(errorMessage, (state.appError as AppError.Unknown).message)
     }
 
     @Test
@@ -136,7 +137,8 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is HomeUiState.Error)
-        assertEquals("", (state as HomeUiState.Error).message)
+        assertTrue((state as HomeUiState.Error).appError is AppError.Unknown)
+        assertEquals("", (state.appError as AppError.Unknown).message)
     }
 
     @Test

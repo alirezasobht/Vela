@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -20,10 +19,13 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.vela.R
 import com.vela.data.source.local.fake.FakeAssetDataSource
+import com.vela.domain.model.AppError
 import com.vela.ui.common.components.AssetListItem
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
@@ -44,18 +46,23 @@ fun HomeScreen(
         }
 
         is HomeUiState.Error -> {
+            val message = when (uiState.appError) {
+                is AppError.NoInternet -> stringResource(R.string.no_internet_connection)
+                is AppError.ServerError -> stringResource(R.string.server_error_please_try_again)
+                is AppError.Unknown -> stringResource(R.string.error_unknown)
+            }
             Column(
                 modifier = modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = uiState.message,
+                    text = message,
                     color = MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onRetry) {
-                    Text("Try Again")
+                    Text(stringResource(R.string.try_again))
                 }
             }
         }
@@ -67,9 +74,7 @@ fun HomeScreen(
                 modifier = modifier.fillMaxSize()
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     HomeHeader(date = uiState.date)
                     AssetList(assets = uiState.assets)
@@ -93,7 +98,7 @@ private fun HomeHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Markets",
+            text = stringResource(R.string.markets),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -132,9 +137,7 @@ private fun HomeScreenSuccessPreview() = HomeScreenPreview(
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenErrorPreview() = HomeScreenPreview(
-    uiState = HomeUiState.Error(
-        message = "Something went wrong"
-    )
+    uiState = HomeUiState.Error(AppError.NoInternet)
 )
 
 @Preview(showBackground = true)
