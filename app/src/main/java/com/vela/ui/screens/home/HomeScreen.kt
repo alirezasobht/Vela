@@ -140,11 +140,13 @@ private fun AssetList(
             key = { it.id }
         ) { asset ->
             AssetListItem(asset = asset)
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant,
-                thickness = 0.5.dp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            if (asset != assets.last()) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
     }
 }
