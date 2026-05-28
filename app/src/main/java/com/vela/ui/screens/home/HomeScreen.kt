@@ -84,9 +84,9 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    uiState.refreshError?.let { error -> RefreshErrorBanner(error = error) }
+                    uiState.nonBlockingError?.let { error -> RefreshErrorBanner(error = error) }
                     HomeHeader(
-                        date = uiState.date,
+                        date = uiState.formattedDate,
                         selectedLimit = selectedLimit,
                         onLimitChanged = onLimitChanged
                     )
@@ -203,7 +203,7 @@ private fun RefreshErrorBanner(
 private fun HomeScreenSuccessPreview() = HomeScreenPreview(
     HomeUiState.Success(
         assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-        date = "Monday, 12 Feb"
+        formattedDate = "Monday, 12 Feb"
     )
 )
 
