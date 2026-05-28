@@ -1,5 +1,8 @@
 package com.vela.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -84,7 +91,7 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    uiState.nonBlockingError?.let { error -> RefreshErrorBanner(error = error) }
+                    NonBlockingErrorBanner(error = uiState.nonBlockingError)
                     HomeHeader(
                         date = uiState.formattedDate,
                         selectedLimit = selectedLimit,
@@ -173,28 +180,39 @@ private fun LimitChips(
 }
 
 @Composable
-private fun RefreshErrorBanner(
-    error: AppError,
+fun NonBlockingErrorBanner(
+    error: AppError?,
     modifier: Modifier = Modifier
 ) {
-    val message = when (error) {
-        is AppError.NoInternet -> stringResource(R.string.no_internet_connection)
-        is AppError.ServerError -> stringResource(R.string.server_error_please_try_again)
-        is AppError.Unknown -> stringResource(R.string.error_unknown)
-    }
+    var lastError by remember { mutableStateOf(error) }
+    if (error != null) lastError = error
 
-    Box(
+    AnimatedVisibility(
+        visible = error != null,
+        enter = expandVertically(),
+        exit = shrinkVertically(),
         modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.error)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.onError,
-            style = MaterialTheme.typography.labelMedium
-        )
+        lastError?.let { activeError ->
+            val message = when (activeError) {
+                is AppError.NoInternet -> stringResource(R.string.no_internet_connection)
+                is AppError.ServerError -> stringResource(R.string.server_error_please_try_again)
+                is AppError.Unknown -> stringResource(R.string.error_unknown)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.error)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.onError,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
     }
 }
 
@@ -235,9 +253,9 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
 
 @Preview(showBackground = true)
 @Composable
-private fun RefreshErrorBannerPreview() {
+private fun NonBlockingErrorBannerPreview() {
     VelaTheme {
-        RefreshErrorBanner(error = AppError.NoInternet)
+        NonBlockingErrorBanner(error = AppError.NoInternet)
     }
 }
 
