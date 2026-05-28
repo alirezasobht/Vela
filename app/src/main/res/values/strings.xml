@@ -5,4 +5,10 @@
     <string name="try_again">Try Again</string>
     <string name="markets">Markets</string>
     <string name="error_unknown">Something went wrong</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_markets">Markets</string>
+    <string name="nav_watchlist">Watchlist</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_alerts">Alerts</string>
 </resources>

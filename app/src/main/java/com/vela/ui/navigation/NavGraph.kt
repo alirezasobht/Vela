@@ -1,0 +1,37 @@
+package com.vela.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.vela.ui.common.components.PlaceholderScreen
+import com.vela.ui.screens.home.HomeScreen
+
+@Composable
+fun VelaNavGraph(
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Home.route,
+        modifier = modifier
+    ) {
+        composable(Screen.Home.route) {
+            HomeScreen()
+        }
+        composable(Screen.Markets.route) {
+            PlaceholderScreen(title = "Markets")
+        }
+        composable(Screen.Watchlist.route) {
+            PlaceholderScreen(title = "Watchlist")
+        }
+        composable(Screen.Search.route) {
+            PlaceholderScreen(title = "Search")
+        }
+        composable(Screen.Alerts.route) {
+            PlaceholderScreen(title = "Alerts")
+        }
+    }
+}
