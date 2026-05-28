@@ -95,4 +95,52 @@ class CoinDtoMapperKtTest {
         val asset = aCoinDto(sparkline = SparklineDto(price = prices)).toDomain()
         assertEquals(prices, asset.sparkline)
     }
+
+    @Test
+    fun `toEntity basic field mapping`() {
+        val dto = aCoinDto()
+        val entity = dto.toEntity()
+
+        assertEquals(dto.id, entity.id)
+        assertEquals(dto.symbol, entity.symbol)
+        assertEquals(dto.name, entity.name)
+        assertEquals(dto.image, entity.image)
+        assertEquals(dto.currentPrice, entity.currentPrice)
+        assertEquals(dto.priceChangePercent24h, entity.priceChangePercent24h)
+        assertEquals(dto.marketCapRank, entity.marketCapRank)
+    }
+
+    @Test
+    fun `toEntity sparkline null maps to null`() {
+        val entity = aCoinDto().copy(sparkline = null).toEntity()
+        assertNull(entity.sparkline)
+    }
+
+    @Test
+    fun `toEntity sparkline serialized as CSV string`() {
+        val entity = aCoinDto(sparkline = SparklineDto(listOf(1.0, 2.0, 3.0))).toEntity()
+        assertEquals("1.0,2.0,3.0", entity.sparkline)
+    }
+
+    @Test
+    fun `toEntity sparkline takes last 14 values`() {
+        val prices = (1..20).map { it.toDouble() }
+        val entity = aCoinDto(sparkline = SparklineDto(prices)).toEntity()
+        val expected = (7..20).map { it.toDouble() }.joinToString(",")
+        assertEquals(expected, entity.sparkline)
+    }
+
+    @Test
+    fun `toEntity sparkline with fewer than 14 values keeps all`() {
+        val prices = listOf(1.0, 2.0, 3.0)
+        val entity = aCoinDto(sparkline = SparklineDto(prices)).toEntity()
+        assertEquals("1.0,2.0,3.0", entity.sparkline)
+    }
+
+    @Test
+    fun `toEntity sparkline with exactly 14 values keeps all`() {
+        val prices = (1..14).map { it.toDouble() }
+        val entity = aCoinDto(sparkline = SparklineDto(prices)).toEntity()
+        assertEquals(prices.joinToString(","), entity.sparkline)
+    }
 }

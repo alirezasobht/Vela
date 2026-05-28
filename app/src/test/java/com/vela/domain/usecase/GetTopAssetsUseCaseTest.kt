@@ -4,120 +4,135 @@ import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
 import com.vela.domain.repository.AssetRepository
-import io.mockk.coEvery
-import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@Suppress("UnusedFlow")
 class GetTopAssetsUseCaseTest {
 
     private val repository: AssetRepository = mockk()
     private val useCase = GetTopAssetsUseCase(repository)
 
     private fun anAsset(id: String = "bitcoin") = Asset(
-        id = id,
-        symbol = "btc",
-        name = "Bitcoin",
-        image = null,
-        currentPrice = 67420.0,
-        priceChangePercent24h = 2.4,
-        marketCapRank = 1,
+        id = id, symbol = "btc", name = "Bitcoin",
+        image = null, currentPrice = 67420.0,
+        priceChangePercent24h = 2.4, marketCapRank = 1,
         sparkline = listOf(1.0, 2.0, 3.0)
     )
 
     @Test
-    fun `successful asset retrieval`() = runTest {
-        val assets = listOf(anAsset())
-        coEvery { repository.getTopAssets(any()) } returns DataResult.Success(assets)
-
-        val result = useCase()
-
-        assertTrue(result is DataResult.Success)
-        assertEquals(assets, (result as DataResult.Success).data)
-    }
-
-    @Test
-    fun `default limit parameter usage`() = runTest {
-        coEvery { repository.getTopAssets(50) } returns DataResult.Success(emptyList())
+    fun `invoke with default limit value`() = runTest {
+        every { repository.getTopAssets(50) } returns flowOf(DataResult.Success(emptyList()))
 
         useCase()
 
-        coVerify { repository.getTopAssets(50) }
+        verify { repository.getTopAssets(50) }
     }
 
     @Test
-    fun `zero limit boundary check`() = runTest {
+    fun `invoke with custom positive limit`() = runTest {
+        every { repository.getTopAssets(25) } returns flowOf(DataResult.Success(emptyList()))
 
-        val result = useCase(limit = 0)
+        useCase(25)
 
-        assertTrue(result is DataResult.Success)
-        assertTrue((result as DataResult.Success).data.isEmpty())
-        coVerify(exactly = 0) { repository.getTopAssets(any()) }
+        verify { repository.getTopAssets(25) }
     }
 
     @Test
-    fun `negative limit handling`() = runTest {
+    fun `invoke with zero limit boundary`() = runTest {
+        every { repository.getTopAssets(0) } returns flowOf(DataResult.Success(emptyList()))
 
-        val result = useCase(limit = -1)
+        useCase(0)
 
-        assertTrue(result is DataResult.Success)
-        assertTrue((result as DataResult.Success).data.isEmpty())
-        coVerify(exactly = 0) { repository.getTopAssets(any()) }
+        verify { repository.getTopAssets(0) }
     }
 
     @Test
-    fun `maximum integer limit check`() = runTest {
-        coEvery { repository.getTopAssets(Int.MAX_VALUE) } returns DataResult.Success(emptyList())
+    fun `invoke with negative limit value`() = runTest {
+        every { repository.getTopAssets(-1) } returns flowOf(DataResult.Success(emptyList()))
 
-        useCase(limit = Int.MAX_VALUE)
+        useCase(-1)
 
-        coVerify { repository.getTopAssets(Int.MAX_VALUE) }
+        verify { repository.getTopAssets(-1) }
     }
 
     @Test
-    fun `repository empty state handling`() = runTest {
-        coEvery { repository.getTopAssets(any()) } returns DataResult.Success(emptyList())
+    fun `invoke with maximum integer limit`() = runTest {
+        every { repository.getTopAssets(Int.MAX_VALUE) } returns flowOf(DataResult.Success(emptyList()))
 
-        val result = useCase()
+        useCase(Int.MAX_VALUE)
 
-        assertTrue(result is DataResult.Success)
-        assertTrue((result as DataResult.Success).data.isEmpty())
+        verify { repository.getTopAssets(Int.MAX_VALUE) }
     }
 
     @Test
-    fun `repository error propagation`() = runTest {
-        val error = DataResult.Error(AppError.NoInternet)
-        coEvery { repository.getTopAssets(any()) } returns error
+    fun `successful repository emission with data`() = runTest {
+        val assets = listOf(anAsset())
+        every { repository.getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
 
-        val result = useCase()
+        val results = useCase().toList()
 
-        assertTrue(result is DataResult.Error)
-        assertSame(AppError.NoInternet, (result as DataResult.Error).appError)
+        assertEquals(1, results.size)
+        assertTrue(results[0] is DataResult.Success)
+        assertEquals(assets, (results[0] as DataResult.Success).data)
     }
 
     @Test
-    fun `repository exception safety`() = runTest {
-        val error = DataResult.Error(AppError.Unknown("Unexpected error"))
-        coEvery { repository.getTopAssets(any()) } returns error
+    fun `successful repository emission with empty list`() = runTest {
+        every { repository.getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
 
-        val result = useCase()
+        val results = useCase().toList()
 
-        assertTrue(result is DataResult.Error)
-        assertTrue((result as DataResult.Error).appError is AppError.Unknown)
+        assertEquals(1, results.size)
+        assertTrue(results[0] is DataResult.Success)
+        assertTrue((results[0] as DataResult.Success).data.isEmpty())
     }
 
     @Test
-    fun `large data set mapping performance`() = runTest {
-        val largeList = (1..1000).map { anAsset(id = "asset_$it") }
-        coEvery { repository.getTopAssets(1000) } returns DataResult.Success(largeList)
+    fun `repository emission with failure result`() = runTest {
+        every { repository.getTopAssets(any()) } returns flowOf(DataResult.Error(AppError.NoInternet))
 
-        val result = useCase(limit = 1000)
+        val results = useCase().toList()
 
-        assertTrue(result is DataResult.Success)
-        assertEquals(1000, (result as DataResult.Success).data.size)
+        assertEquals(1, results.size)
+        assertTrue(results[0] is DataResult.Error)
+        assertEquals(AppError.NoInternet, (results[0] as DataResult.Error).appError)
+    }
+
+    @Test
+    fun `repository throws immediate exception`() = runTest {
+        every { repository.getTopAssets(any()) } throws RuntimeException("Unexpected")
+
+        var exception: RuntimeException? = null
+        try {
+            useCase().toList()
+        } catch (e: RuntimeException) {
+            exception = e
+        }
+
+        assertEquals("Unexpected", exception?.message)
+    }
+
+    @Test
+    fun `flow emission sequence integrity`() = runTest {
+        val firstBatch = listOf(anAsset("bitcoin"))
+        val secondBatch = listOf(anAsset("bitcoin"), anAsset("ethereum"))
+        every { repository.getTopAssets(any()) } returns flowOf(
+            DataResult.Success(firstBatch),
+            DataResult.Success(secondBatch)
+        )
+
+        val results = useCase().toList()
+
+        assertEquals(2, results.size)
+        assertEquals(1, (results[0] as DataResult.Success).data.size)
+        assertEquals(2, (results[1] as DataResult.Success).data.size)
     }
 }
