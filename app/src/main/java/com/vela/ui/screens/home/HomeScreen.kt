@@ -44,15 +44,36 @@ import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.theme.VelaTheme
 
+@Composable
+fun HomeRoute(
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val pullRefreshing by viewModel.pullRefreshing.collectAsStateWithLifecycle()
+
+    HomeScreen(
+        modifier = modifier,
+        uiState = uiState,
+        pullRefreshing = pullRefreshing,
+        selectedLimit = viewModel.selectedLimit,
+        onLimitChanged = viewModel::onLimitChanged,
+        onRetry = viewModel::retry,
+        onPullToRefresh = viewModel::pullToRefresh
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = hiltViewModel()
+    uiState: HomeUiState,
+    pullRefreshing: Boolean,
+    selectedLimit: Int,
+    onLimitChanged: (Int) -> Unit,
+    onRetry: () -> Unit,
+    onPullToRefresh: () -> Unit
 ) {
-
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pullRefreshing by viewModel.pullRefreshing.collectAsStateWithLifecycle()
 
     when (uiState) {
         is HomeUiState.Loading -> {
@@ -77,7 +98,7 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = viewModel::retry) {
+                Button(onClick = onRetry) {
                     Text(stringResource(R.string.try_again))
                 }
             }
@@ -86,7 +107,7 @@ fun HomeScreen(
         is HomeUiState.Success -> {
             PullToRefreshBox(
                 isRefreshing = pullRefreshing,
-                onRefresh = viewModel::pullToRefresh,
+                onRefresh = onPullToRefresh,
                 modifier = modifier.fillMaxSize()
             ) {
                 Column(
@@ -96,8 +117,8 @@ fun HomeScreen(
                         NonBlockingErrorBanner(error = uiState.nonBlockingError)
                         HomeHeader(
                             date = uiState.formattedDate,
-                            selectedLimit = viewModel.selectedLimit,
-                            onLimitChanged = viewModel::onLimitChanged
+                            selectedLimit = selectedLimit,
+                            onLimitChanged = onLimitChanged
                         )
                         AssetList(assets = uiState.assets)
                     }
@@ -139,6 +160,7 @@ private fun HomeHeader(
         }
     }
 }
+
 @Composable
 private fun AssetList(
     assets: List<AssetUiModel>,
@@ -243,7 +265,14 @@ private fun HomeScreenLoadingPreview() = HomeScreenPreview(
 @Composable
 private fun HomeScreenPreview(uiState: HomeUiState) {
     VelaTheme {
-        HomeScreen()
+        HomeScreen(
+            uiState = uiState,
+            pullRefreshing = false,
+            selectedLimit = 25,
+            onLimitChanged = {},
+            onRetry = {},
+            onPullToRefresh = {}
+        )
     }
 }
 

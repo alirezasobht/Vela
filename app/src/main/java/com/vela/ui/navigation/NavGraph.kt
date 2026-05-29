@@ -6,7 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.vela.ui.common.components.PlaceholderScreen
-import com.vela.ui.screens.home.HomeScreen
+import com.vela.ui.screens.home.HomeRoute
 
 @Composable
 fun VelaNavGraph(
@@ -19,7 +19,7 @@ fun VelaNavGraph(
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeRoute()
         }
         composable(Screen.Markets.route) {
             PlaceholderScreen(title = "Markets")
