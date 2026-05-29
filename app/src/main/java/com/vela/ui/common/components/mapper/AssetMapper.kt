@@ -9,8 +9,8 @@ fun Asset.toUiModel(): AssetUiModel = AssetUiModel(
     id = id,
     name = name,
     image = image ?: "",
-    price = formatPrice(currentPrice ?: 0.0),
-    priceChange = formatChange(priceChangePercent24h ?: 0.0),
+    price = currentPrice?.let { formatPrice(it) } ?: "",
+    priceChange = priceChangePercent24h?.let { formatChange(it) } ?: "",
     color = if ((priceChangePercent24h ?: 0.0) >= 0) sparklineBullColor else sparklineBearColor,
     symbolAndRank = if (marketCapRank != null) "#$marketCapRank · ${symbol.uppercase()}" else symbol.uppercase(),
     sparkline = sparkline ?: emptyList()

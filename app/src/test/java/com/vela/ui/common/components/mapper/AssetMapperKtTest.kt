@@ -200,13 +200,13 @@ class AssetMapperKtTest {
     @Test
     fun `Null handling for currentPrice property`() {
         val uiModel = anAsset().copy(currentPrice = null).toUiModel()
-        assertEquals("$0.0000", uiModel.price)
+        assertEquals("", uiModel.price)
     }
 
     @Test
     fun `Null handling for priceChangePercent24h property`() {
         val uiModel = anAsset().copy(priceChangePercent24h = null).toUiModel()
-        assertEquals("+0.00%", uiModel.priceChange)
+        assertEquals("", uiModel.priceChange)
     }
 
     @Test
