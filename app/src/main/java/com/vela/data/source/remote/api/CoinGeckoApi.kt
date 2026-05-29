@@ -1,6 +1,7 @@
 package com.vela.data.source.remote.api
 
 import com.vela.data.source.remote.model.CoinDto
+import com.vela.data.source.remote.model.SearchResponseDto
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -15,4 +16,17 @@ interface CoinGeckoApi {
         @Query("sparkline") sparkline: Boolean = true,
         @Query("price_change_percentage") priceChangePercentage: String = "24h"
     ): List<CoinDto>
+
+    @GET("coins/markets")
+    suspend fun getMarketsByIds(
+        @Query("vs_currency") currency: String = "usd",
+        @Query("ids") ids: String,
+        @Query("sparkline") sparkline: Boolean = true,
+        @Query("price_change_percentage") priceChangePercentage: String = "24h"
+    ): List<CoinDto>
+
+    @GET("search")
+    suspend fun search(
+        @Query("query") query: String
+    ): SearchResponseDto
 }
