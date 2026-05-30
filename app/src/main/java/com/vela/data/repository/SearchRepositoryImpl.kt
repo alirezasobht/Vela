@@ -1,7 +1,6 @@
 package com.vela.data.repository
 
 import com.vela.data.source.remote.api.CoinGeckoApi
-import com.vela.data.source.remote.api.toDomain
 import com.vela.data.source.remote.mapper.toDomain
 import com.vela.data.source.remote.util.safeApiCall
 import com.vela.domain.model.Asset

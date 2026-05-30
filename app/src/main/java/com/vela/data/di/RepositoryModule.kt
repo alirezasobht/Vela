@@ -1,8 +1,10 @@
 package com.vela.data.di
 
 import com.vela.data.repository.AssetRepositoryImpl
+import com.vela.data.repository.MarketsRepositoryImpl
 import com.vela.data.repository.SearchRepositoryImpl
 import com.vela.domain.repository.AssetRepository
+import com.vela.domain.repository.MarketsRepository
 import com.vela.domain.repository.SearchRepository
 import dagger.Binds
 import dagger.Module
@@ -21,4 +23,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSearchRepository(impl: SearchRepositoryImpl): SearchRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMarketsRepository(impl: MarketsRepositoryImpl): MarketsRepository
 }
