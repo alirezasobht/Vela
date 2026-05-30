@@ -4,6 +4,7 @@ import com.vela.data.source.local.model.AssetEntity
 import com.vela.data.source.remote.model.CategoryDto
 import com.vela.data.source.remote.model.CoinDto
 import com.vela.data.source.remote.model.SearchCoinDto
+import com.vela.data.source.remote.model.SimplePriceDto
 import com.vela.domain.model.Asset
 import com.vela.domain.model.MarketCategory
 
@@ -44,3 +45,17 @@ fun CategoryDto.toDomain(): MarketCategory = MarketCategory(
     id = id,
     displayName = name
 )
+
+fun Map<String, SimplePriceDto>.toDomain(): List<Asset> =
+    map { (id, dto) ->
+        Asset(
+            id = id,
+            symbol = "",
+            name = "",
+            image = null,
+            currentPrice = dto.usd,
+            priceChangePercent24h = dto.usdChange,
+            marketCapRank = null,
+            sparkline = null
+        )
+    }

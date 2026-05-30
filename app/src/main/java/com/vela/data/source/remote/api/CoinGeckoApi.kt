@@ -3,6 +3,7 @@ package com.vela.data.source.remote.api
 import com.vela.data.source.remote.model.CategoryDto
 import com.vela.data.source.remote.model.CoinDto
 import com.vela.data.source.remote.model.SearchResponseDto
+import com.vela.data.source.remote.model.SimplePriceDto
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -36,4 +37,11 @@ interface CoinGeckoApi {
     suspend fun getCategories(
         @Query("order") order: String = "market_cap_desc"
     ): List<CategoryDto>
+
+    @GET("simple/price")
+    suspend fun getSimplePrices(
+        @Query("ids") ids: String,
+        @Query("vs_currencies") currencies: String = "usd",
+        @Query("include_24hr_change") include24hChange: Boolean = true
+    ): Map<String, SimplePriceDto>
 }
