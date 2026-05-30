@@ -17,4 +17,10 @@
     <string name="clear_search">Clear search</string>
     <string name="search_empty_hint">Start typing to search</string>
     <string name="search_no_results">No results for "%s"</string>
+
+    <string name="explore">Explore</string>
+    <string name="category">Category</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_market_cap">Market Cap</string>
+    <string name="sort_volume">Volume</string>
 </resources>

@@ -4,19 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +23,7 @@ import com.vela.ui.common.components.AssetLazyList
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
+import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.theme.VelaTheme
 
@@ -92,47 +88,19 @@ private fun SuccessState(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             NonBlockingErrorBanner(error = uiState.nonBlockingError)
-            HomeHeader(
-                date = uiState.formattedDate,
-                selectedLimit = selectedLimit,
-                onLimitChanged = onLimitChanged
+            ScreenHeader(
+                title = stringResource(R.string.markets),
+                subtitle = uiState.formattedDate,
+                controlsRow1 = {
+                    LimitChips(
+                        selectedLimit = selectedLimit,
+                        onLimitChanged = onLimitChanged
+                    )
+                }
             )
             AssetLazyList(
                 assets = uiState.assets,
                 modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeHeader(
-    date: String,
-    selectedLimit: Int,
-    onLimitChanged: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        Text(
-            text = date,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.markets),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            LimitChips(
-                selectedLimit = selectedLimit,
-                onLimitChanged = onLimitChanged
             )
         }
     }
@@ -178,7 +146,7 @@ private fun HomeScreenSuccessPreview() = HomeScreenPreview(
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeScreenSuccessWithErrorPreviewPreview() = HomeScreenPreview(
+private fun HomeScreenSuccessWithErrorPreview() = HomeScreenPreview(
     HomeUiState.Success(
         assets = FakeAssetDataSource.assets.map { it.toUiModel() },
         nonBlockingError = AppError.NoInternet,
@@ -189,7 +157,7 @@ private fun HomeScreenSuccessWithErrorPreviewPreview() = HomeScreenPreview(
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenErrorPreview() = HomeScreenPreview(
-    uiState = HomeUiState.Error(AppError.NoInternet)
+    HomeUiState.Error(AppError.NoInternet)
 )
 
 @Composable
@@ -210,6 +178,6 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
 @Composable
 private fun LimitChipsPreview() {
     VelaTheme {
-        LimitChips(50, {})
+        LimitChips(selectedLimit = 50, onLimitChanged = {})
     }
 }
