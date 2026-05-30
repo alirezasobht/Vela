@@ -1,5 +1,6 @@
 package com.vela.data.source.remote.api
 
+import com.vela.data.source.remote.model.CategoryDto
 import com.vela.data.source.remote.model.CoinDto
 import com.vela.data.source.remote.model.SearchResponseDto
 import retrofit2.http.GET
@@ -14,7 +15,8 @@ interface CoinGeckoApi {
         @Query("per_page") limit: Int,
         @Query("page") page: Int = 1,
         @Query("sparkline") sparkline: Boolean = true,
-        @Query("price_change_percentage") priceChangePercentage: String = "24h"
+        @Query("price_change_percentage") priceChangePercentage: String = "24h",
+        @Query("category") category: String? = null
     ): List<CoinDto>
 
     @GET("coins/markets")
@@ -29,4 +31,9 @@ interface CoinGeckoApi {
     suspend fun search(
         @Query("query") query: String
     ): SearchResponseDto
+
+    @GET("coins/categories")
+    suspend fun getCategories(
+        @Query("order") order: String = "market_cap_desc"
+    ): List<CategoryDto>
 }
