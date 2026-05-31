@@ -12,11 +12,15 @@ import androidx.compose.ui.unit.dp
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun AssetLazyList(
     assets: List<AssetUiModel>,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -24,7 +28,7 @@ fun AssetLazyList(
             items = assets,
             key = { _, asset -> asset.id }
         ) { index, asset ->
-            AssetListItem(asset = asset)
+            AssetListItem(asset = asset, observePrice = observePrice)
             if (index < assets.lastIndex) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -40,7 +44,8 @@ fun AssetLazyList(
 private fun AssetLazyListPreview() {
     VelaTheme {
         AssetLazyList(
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() }
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            observePrice = { flowOf(null) }
         )
     }
 }

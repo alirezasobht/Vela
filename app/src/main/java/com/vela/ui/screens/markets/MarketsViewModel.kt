@@ -5,7 +5,6 @@ package com.vela.ui.screens.markets
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
@@ -18,6 +17,8 @@ import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
+import com.vela.domain.usecase.ObservePricesUseCase
+import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -35,8 +37,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
-    private val getCategories: GetMarketCategoriesUseCase
-) : ViewModel() {
+    private val getCategories: GetMarketCategoriesUseCase,
+    observePricesUseCase: ObservePricesUseCase
+) : PriceAwareViewModel(observePricesUseCase) {
 
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
@@ -45,6 +48,7 @@ class MarketsViewModel @Inject constructor(
     val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
     private val filterState = MutableStateFlow(Pair(MarketCategory.ALL, MarketSort.MARKET_CAP))
+    private val _loadedIds = MutableStateFlow<List<String>>(emptyList())
 
     var selectedCategory by mutableStateOf(MarketCategory.ALL)
         private set
@@ -52,25 +56,38 @@ class MarketsViewModel @Inject constructor(
     var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
         private set
 
+    override val assetIdsFlow: Flow<List<String>> = _loadedIds
+
     val pagingFlow: Flow<PagingData<AssetUiModel>> = filterState
         .flatMapLatest { (category, sort) ->
             getMarkets(category, sort).map { pagingData ->
-                pagingData.map { it.toUiModel() }
+                pagingData.map { asset ->
+                    _loadedIds.update { current -> (current + asset.id).distinct() }
+                    asset.toUiModel()
+                }
             }
         }
         .cachedIn(viewModelScope)
 
     init {
         fetchCategories()
+        startPriceErrorObserver()
+    }
+
+    override fun onPriceError(error: AppError?) {
+        val current = _uiState.value as? MarketsUiState.Success ?: return
+        _uiState.value = current.copy(nonBlockingError = error)
     }
 
     fun onCategorySelected(category: MarketCategory) {
         selectedCategory = category
+        _loadedIds.value = emptyList()
         filterState.value = Pair(category, selectedSort)
     }
 
     fun onSortSelected(sort: MarketSort) {
         selectedSort = sort
+        _loadedIds.value = emptyList()
         filterState.value = Pair(selectedCategory, sort)
     }
 
@@ -86,12 +103,10 @@ class MarketsViewModel @Inject constructor(
                 isLoadingMore = true,
                 nonBlockingError = (current as? MarketsUiState.Success)?.nonBlockingError
             )
-
             append is LoadState.Error -> MarketsUiState.Success(
                 isLoadingMore = false,
                 nonBlockingError = append.error.toAppError()
             )
-
             else -> MarketsUiState.Success(
                 isLoadingMore = false,
                 nonBlockingError = (current as? MarketsUiState.Success)?.nonBlockingError

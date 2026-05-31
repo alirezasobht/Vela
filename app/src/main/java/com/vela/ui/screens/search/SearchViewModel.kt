@@ -6,45 +6,48 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vela.domain.model.Asset
+import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetSearchPricesUseCase
+import com.vela.domain.usecase.ObservePricesUseCase
 import com.vela.domain.usecase.SearchAssetsUseCase
+import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
-import com.vela.ui.common.components.model.AssetUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchAssets: SearchAssetsUseCase,
-    private val getSearchPrices: GetSearchPricesUseCase
-) : ViewModel() {
+    observePricesUseCase: ObservePricesUseCase
+) : PriceAwareViewModel(observePricesUseCase) {
 
     var query by mutableStateOf("")
         private set
 
-    private val _isScreenVisible = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Empty)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private val pricesLoadedOnce = MutableStateFlow(false)
     private val searchScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
+
+    override val priceScope: CoroutineScope get() = searchScope
+    override val assetIdsFlow: Flow<List<String>> = _uiState
+        .map { state ->
+            (state as? SearchUiState.Results)?.assets?.map { it.id } ?: emptyList()
+        }
 
     init {
         viewModelScope.launch {
@@ -56,10 +59,12 @@ class SearchViewModel @Inject constructor(
                     else startSearch(q)
                 }
         }
+        startPriceErrorObserver()
     }
 
-    fun onScreenVisible(visible: Boolean) {
-        _isScreenVisible.value = visible
+    override fun onPriceError(error: AppError?) {
+        val current = _uiState.value as? SearchUiState.Results ?: return
+        _uiState.value = current.copy(nonBlockingError = error)
     }
 
     fun onQueryChange(newQuery: String) {
@@ -73,13 +78,11 @@ class SearchViewModel @Inject constructor(
 
     private fun resetSearch() {
         searchScope.coroutineContext.cancelChildren()
-        pricesLoadedOnce.value = false
         _uiState.value = SearchUiState.Empty
     }
 
     private fun startSearch(q: String) {
         searchScope.coroutineContext.cancelChildren()
-        pricesLoadedOnce.value = false
         _uiState.value = SearchUiState.Loading
         searchScope.launch {
             when (val result = searchAssets(q)) {
@@ -91,54 +94,12 @@ class SearchViewModel @Inject constructor(
                         _uiState.value = SearchUiState.Results(
                             assets = assets.map { it.toUiModel() }
                         )
-                        launch { startPricePolling(assets) }
                     }
                 }
-
                 is DataResult.Error -> {
                     _uiState.value = SearchUiState.Error(result.appError)
                 }
             }
-        }
-    }
-
-    private suspend fun startPricePolling(assets: List<Asset>) {
-        val ids = assets.map { it.id }
-        while (true) {
-            fetchPrices(ids)
-            delay(5_000)
-            // wait until visible before next fetch
-            _isScreenVisible.first { it }
-        }
-    }
-
-
-    private suspend fun fetchPrices(ids: List<String>) {
-        val current = _uiState.value as? SearchUiState.Results ?: return
-        when (val result = getSearchPrices(ids)) {
-            is DataResult.Success -> {
-                pricesLoadedOnce.value = true
-                _uiState.value = current.copy(
-                    assets = mergeWithPrices(current.assets, result.data),
-                    nonBlockingError = null
-                )
-            }
-
-            is DataResult.Error -> {
-                if (pricesLoadedOnce.value) {
-                    _uiState.value = current.copy(nonBlockingError = result.appError)
-                }
-            }
-        }
-    }
-
-    private fun mergeWithPrices(
-        current: List<AssetUiModel>,
-        priceAssets: List<Asset>
-    ): List<AssetUiModel> {
-        val priceMap = priceAssets.associateBy { it.id }
-        return current.map { uiModel ->
-            priceMap[uiModel.id]?.toUiModel() ?: uiModel
         }
     }
 
