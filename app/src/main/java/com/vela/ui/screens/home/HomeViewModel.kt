@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -34,6 +35,7 @@ class HomeViewModel @Inject constructor(
 
     private val refreshDelayTime: Long = savedStateHandle["delay"] ?: 5000L
 
+    private val _isScreenVisible = MutableStateFlow(false)
     private val _pullRefreshing = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     private val refreshMutex = Mutex()
@@ -46,6 +48,10 @@ class HomeViewModel @Inject constructor(
 
     init {
         startFresh(selectedLimit)
+    }
+
+    fun onScreenVisible(visible: Boolean) {
+        _isScreenVisible.value = visible
     }
 
     fun onLimitChanged(limit: Int) {
@@ -106,6 +112,7 @@ class HomeViewModel @Inject constructor(
     private suspend fun startAutoRefresh(limit: Int) {
         while (true) {
             delay(refreshDelayTime)
+            _isScreenVisible.first { it }
             doRefresh(limit)
         }
     }

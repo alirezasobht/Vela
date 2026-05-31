@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,6 +39,7 @@ class SearchViewModel @Inject constructor(
     var query by mutableStateOf("")
         private set
 
+    private val _isScreenVisible = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Empty)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
@@ -54,6 +56,10 @@ class SearchViewModel @Inject constructor(
                     else startSearch(q)
                 }
         }
+    }
+
+    fun onScreenVisible(visible: Boolean) {
+        _isScreenVisible.value = visible
     }
 
     fun onQueryChange(newQuery: String) {
@@ -101,8 +107,11 @@ class SearchViewModel @Inject constructor(
         while (true) {
             fetchPrices(ids)
             delay(5_000)
+            // wait until visible before next fetch
+            _isScreenVisible.first { it }
         }
     }
+
 
     private suspend fun fetchPrices(ids: List<String>) {
         val current = _uiState.value as? SearchUiState.Results ?: return
