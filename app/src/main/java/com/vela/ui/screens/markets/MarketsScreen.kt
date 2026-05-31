@@ -212,7 +212,7 @@ private fun PagedAssetList(
     LazyColumn(modifier = modifier.fillMaxSize()) {
         items(
             count = pagingItems.itemCount,
-            key = { index -> pagingItems[index]?.id ?: index }
+            key = { index -> index }
         ) { index ->
             pagingItems[index]?.let { asset ->
                 AssetListItem(asset = asset)

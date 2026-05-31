@@ -29,6 +29,8 @@ class MarketsRepositoryImpl @Inject constructor(
         Pager(
             config = PagingConfig(
                 pageSize = 20,
+                initialLoadSize = 20,
+                prefetchDistance = 3,
                 enablePlaceholders = false
             ),
             pagingSourceFactory = { MarketsPagingSource(api, category, sort) }
