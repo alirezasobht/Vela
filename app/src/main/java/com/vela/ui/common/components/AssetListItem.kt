@@ -24,11 +24,15 @@ import coil.compose.AsyncImage
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun AssetListItem(
     asset: AssetUiModel,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -71,18 +75,13 @@ fun AssetListItem(
         )
 
         // Price + change
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = asset.price,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = asset.priceChange,
-                style = MaterialTheme.typography.bodySmall,
-                color = asset.color
-            )
-        }
+        PriceCell(
+            id = asset.id,
+            initialPrice = asset.price,
+            initialPriceChange = asset.priceChange,
+            initialColor = asset.color,
+            observePrice = observePrice
+        )
     }
 }
 
@@ -90,6 +89,9 @@ fun AssetListItem(
 @Composable
 private fun AssetListItemPreview() {
     VelaTheme {
-        AssetListItem(asset = FakeAssetDataSource.assets.first().toUiModel())
+        AssetListItem(
+            asset = FakeAssetDataSource.assets.first().toUiModel(),
+            observePrice = { flowOf(null) }
+        )
     }
 }

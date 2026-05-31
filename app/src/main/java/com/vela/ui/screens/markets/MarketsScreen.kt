@@ -55,7 +55,9 @@ import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @Composable
@@ -81,6 +83,7 @@ fun MarketsRoute(
         onCategorySelected = viewModel::onCategorySelected,
         onSortSelected = viewModel::onSortSelected,
         onRetry = { pagingItems.retry() },
+        observePrice = viewModel::observePrice,
         modifier = modifier
     )
 }
@@ -93,6 +96,7 @@ fun MarketsScreen(
     sorts: List<MarketSort>,
     selectedSort: MarketSort,
     pagingItems: LazyPagingItems<AssetUiModel>,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     onCategorySelected: (MarketCategory) -> Unit,
     onSortSelected: (MarketSort) -> Unit,
     onRetry: () -> Unit,
@@ -115,6 +119,7 @@ fun MarketsScreen(
             sorts = sorts,
             onCategorySelected = onCategorySelected,
             onSortSelected = onSortSelected,
+            observePrice = observePrice,
             modifier = modifier
         )
     }
@@ -131,6 +136,7 @@ private fun SuccessState(
     sorts: List<MarketSort>,
     onCategorySelected: (MarketCategory) -> Unit,
     onSortSelected: (MarketSort) -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     var showCategorySheet by remember { mutableStateOf(false) }
@@ -165,7 +171,8 @@ private fun SuccessState(
         )
         PagedAssetList(
             pagingItems = pagingItems,
-            isLoadingMore = uiState.isLoadingMore
+            isLoadingMore = uiState.isLoadingMore,
+            observePrice = observePrice
         )
     }
 
@@ -206,6 +213,7 @@ private fun SuccessState(
 private fun PagedAssetList(
     pagingItems: LazyPagingItems<AssetUiModel>,
     isLoadingMore: Boolean,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -214,7 +222,7 @@ private fun PagedAssetList(
             key = { index -> index }
         ) { index ->
             pagingItems[index]?.let { asset ->
-                AssetListItem(asset = asset)
+                AssetListItem(asset = asset, observePrice = observePrice)
                 if (index < pagingItems.itemCount - 1) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -349,7 +357,8 @@ private fun MarketsScreenPreview(
             sorts = MarketSort.entries,
             onCategorySelected = {},
             onSortSelected = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }

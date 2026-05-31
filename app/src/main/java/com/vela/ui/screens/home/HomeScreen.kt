@@ -29,7 +29,10 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun HomeRoute(
@@ -60,7 +63,8 @@ fun HomeRoute(
         selectedLimit = viewModel.selectedLimit,
         onLimitChanged = viewModel::onLimitChanged,
         onRetry = viewModel::retry,
-        onPullToRefresh = viewModel::pullToRefresh
+        onPullToRefresh = viewModel::pullToRefresh,
+        observePrice = viewModel::observePrice
     )
 }
 
@@ -73,7 +77,8 @@ fun HomeScreen(
     selectedLimit: Int,
     onLimitChanged: (Int) -> Unit,
     onRetry: () -> Unit,
-    onPullToRefresh: () -> Unit
+    onPullToRefresh: () -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>
 ) {
     when (uiState) {
         is HomeUiState.Loading -> FullScreenLoader(modifier = modifier)
@@ -84,6 +89,7 @@ fun HomeScreen(
             selectedLimit = selectedLimit,
             onLimitChanged = onLimitChanged,
             onPullToRefresh = onPullToRefresh,
+            observePrice = observePrice,
             modifier = modifier
         )
     }
@@ -97,6 +103,7 @@ private fun SuccessState(
     selectedLimit: Int,
     onLimitChanged: (Int) -> Unit,
     onPullToRefresh: () -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -104,7 +111,7 @@ private fun SuccessState(
         onRefresh = onPullToRefresh,
         modifier = modifier.fillMaxSize()
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = modifier.fillMaxSize()) {
             NonBlockingErrorBanner(error = uiState.nonBlockingError)
             ScreenHeader(
                 title = stringResource(R.string.markets),
@@ -118,6 +125,7 @@ private fun SuccessState(
             )
             AssetLazyList(
                 assets = uiState.assets,
+                observePrice = observePrice,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -187,7 +195,8 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
             selectedLimit = 25,
             onLimitChanged = {},
             onRetry = {},
-            onPullToRefresh = {}
+            onPullToRefresh = {},
+            observePrice = { flowOf(null) }
         )
     }
 }

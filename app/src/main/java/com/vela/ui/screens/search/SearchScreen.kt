@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,9 +26,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
@@ -39,27 +35,16 @@ import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun SearchRoute(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> viewModel.onScreenVisible(true)
-                Lifecycle.Event.ON_PAUSE -> viewModel.onScreenVisible(false)
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     SearchScreen(
@@ -67,6 +52,7 @@ fun SearchRoute(
         query = viewModel.query,
         onQueryChange = viewModel::onQueryChange,
         onRetry = viewModel::retry,
+        observePrice = viewModel::observePrice,
         modifier = modifier
     )
 }
@@ -77,6 +63,7 @@ fun SearchScreen(
     query: String,
     onQueryChange: (String) -> Unit,
     onRetry: () -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -95,7 +82,7 @@ fun SearchScreen(
         when (uiState) {
             is SearchUiState.Empty -> EmptyState()
             is SearchUiState.Loading -> FullScreenLoader()
-            is SearchUiState.Results -> ResultsState(uiState = uiState)
+            is SearchUiState.Results -> ResultsState(uiState = uiState, observePrice = observePrice)
             is SearchUiState.NoResults -> NoResultsState(query = query)
             is SearchUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = onRetry)
         }
@@ -161,12 +148,14 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 @Composable
 private fun ResultsState(
     uiState: SearchUiState.Results,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
         AssetLazyList(
             assets = uiState.assets,
+            observePrice = observePrice,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -199,7 +188,8 @@ private fun SearchScreenEmptyPreview() {
             uiState = SearchUiState.Empty,
             query = "",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
@@ -212,7 +202,8 @@ private fun SearchScreenLoadingPreview() {
             uiState = SearchUiState.Loading,
             query = "bitcoin",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
@@ -227,7 +218,8 @@ private fun SearchScreenResultsPreview() {
             ),
             query = "bitcoin",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
@@ -243,7 +235,8 @@ private fun SearchScreenResultsWithErrorPreview() {
             ),
             query = "bitcoin",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
@@ -256,7 +249,8 @@ private fun SearchScreenNoResultsPreview() {
             uiState = SearchUiState.NoResults,
             query = "xyz123",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
@@ -269,7 +263,8 @@ private fun SearchScreenErrorPreview() {
             uiState = SearchUiState.Error(AppError.NoInternet),
             query = "bitcoin",
             onQueryChange = {},
-            onRetry = {}
+            onRetry = {},
+            observePrice = { flowOf(null) }
         )
     }
 }
