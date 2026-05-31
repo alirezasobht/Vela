@@ -2,6 +2,7 @@ package com.vela.ui.screens.markets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -25,48 +28,123 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeCategoryDataSource
+import com.vela.domain.model.AppError
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
-import com.vela.ui.common.components.AssetLazyList
+import com.vela.ui.common.components.AssetListItem
+import com.vela.ui.common.components.FullScreenError
+import com.vela.ui.common.components.FullScreenLoader
+import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.theme.VelaTheme
+import kotlinx.coroutines.flow.flowOf
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MarketsRoute(
+    modifier: Modifier = Modifier,
+    viewModel: MarketsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val pagingItems = viewModel.pagingFlow.collectAsLazyPagingItems()
+
+    LaunchedEffect(pagingItems.loadState) {
+        viewModel.onLoadStateChanged(pagingItems.loadState)
+    }
+
+    MarketsScreen(
+        uiState = uiState,
+        categories = categories,
+        pagingItems = pagingItems,
+        selectedCategory = viewModel.selectedCategory,
+        selectedSort = viewModel.selectedSort,
+        sorts = MarketSort.entries,
+        onCategorySelected = viewModel::onCategorySelected,
+        onSortSelected = viewModel::onSortSelected,
+        onRetry = { pagingItems.retry() },
+        modifier = modifier
+    )
+}
+
 @Composable
 fun MarketsScreen(
+    uiState: MarketsUiState,
     categories: List<MarketCategory>,
     selectedCategory: MarketCategory,
     sorts: List<MarketSort>,
     selectedSort: MarketSort,
-    assets: List<AssetUiModel>,
+    pagingItems: LazyPagingItems<AssetUiModel>,
+    onCategorySelected: (MarketCategory) -> Unit,
+    onSortSelected: (MarketSort) -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when (uiState) {
+        is MarketsUiState.Loading -> FullScreenLoader(modifier = modifier)
+        is MarketsUiState.Error -> FullScreenError(
+            appError = uiState.appError,
+            onRetry = onRetry,
+            modifier = modifier
+        )
+
+        is MarketsUiState.Success -> SuccessState(
+            uiState = uiState,
+            categories = categories,
+            pagingItems = pagingItems,
+            selectedCategory = selectedCategory,
+            selectedSort = selectedSort,
+            sorts = sorts,
+            onCategorySelected = onCategorySelected,
+            onSortSelected = onSortSelected,
+            modifier = modifier
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SuccessState(
+    uiState: MarketsUiState.Success,
+    categories: List<MarketCategory>,
+    pagingItems: LazyPagingItems<AssetUiModel>,
+    selectedCategory: MarketCategory,
+    selectedSort: MarketSort,
+    sorts: List<MarketSort>,
     onCategorySelected: (MarketCategory) -> Unit,
     onSortSelected: (MarketSort) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showCategorySheet by rememberSaveable { mutableStateOf(false) }
-    var showSortSheet by rememberSaveable { mutableStateOf(false) }
+    var showCategorySheet by remember { mutableStateOf(false) }
+    var showSortSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
     ) {
+        NonBlockingErrorBanner(error = uiState.nonBlockingError)
         ScreenHeader(
-            title = stringResource(R.string.explore),
+            title = stringResource(R.string.markets),
             controlsRow2 = {
                 InputChip(
                     selected = false,
@@ -86,10 +164,9 @@ fun MarketsScreen(
                 )
             }
         )
-
-        AssetLazyList(
-            assets = assets,
-            modifier = Modifier.fillMaxSize()
+        PagedAssetList(
+            pagingItems = pagingItems,
+            isLoadingMore = uiState.isLoadingMore
         )
     }
 
@@ -122,6 +199,43 @@ fun MarketsScreen(
                     showSortSheet = false
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun PagedAssetList(
+    pagingItems: LazyPagingItems<AssetUiModel>,
+    isLoadingMore: Boolean,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
+        items(
+            count = pagingItems.itemCount,
+            key = { index -> pagingItems[index]?.id ?: index }
+        ) { index ->
+            pagingItems[index]?.let { asset ->
+                AssetListItem(asset = asset)
+                if (index < pagingItems.itemCount - 1) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                }
+            }
+        }
+
+        if (isLoadingMore) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            }
         }
     }
 }
@@ -219,37 +333,52 @@ private fun MarketSort.toDisplayName(): String = when (this) {
 
 // ---- Previews ----
 
-@Preview(showBackground = true)
 @Composable
-private fun MarketsScreenPreview() {
+private fun MarketsScreenPreview(
+    uiState: MarketsUiState,
+    categories: List<MarketCategory> = FakeCategoryDataSource.categories
+) {
     VelaTheme {
         MarketsScreen(
-            categories = FakeCategoryDataSource.categories,
+            uiState = uiState,
+            categories = categories,
+            pagingItems = flowOf(
+                PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() })
+            ).collectAsLazyPagingItems(),
             selectedCategory = MarketCategory.ALL,
-            sorts = MarketSort.entries,
             selectedSort = MarketSort.MARKET_CAP,
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            sorts = MarketSort.entries,
             onCategorySelected = {},
-            onSortSelected = {}
+            onSortSelected = {},
+            onRetry = {}
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun MarketsScreenCategorySelectedPreview() {
-    VelaTheme {
-        MarketsScreen(
-            categories = FakeCategoryDataSource.categories,
-            selectedCategory = FakeCategoryDataSource.categories[1],
-            sorts = MarketSort.entries,
-            selectedSort = MarketSort.VOLUME,
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            onCategorySelected = {},
-            onSortSelected = {}
-        )
-    }
-}
+private fun MarketsScreenLoadingPreview() =
+    MarketsScreenPreview(MarketsUiState.Loading)
+
+@Preview(showBackground = true)
+@Composable
+private fun MarketsScreenErrorPreview() =
+    MarketsScreenPreview(MarketsUiState.Error(AppError.NoInternet))
+
+@Preview(showBackground = true)
+@Composable
+private fun MarketsScreenSuccessPreview() =
+    MarketsScreenPreview(MarketsUiState.Success())
+
+@Preview(showBackground = true)
+@Composable
+private fun MarketsScreenSuccessLoadingMorePreview() =
+    MarketsScreenPreview(MarketsUiState.Success(isLoadingMore = true))
+
+@Preview(showBackground = true)
+@Composable
+private fun MarketsScreenSuccessWithNonBlockingErrorPreview() =
+    MarketsScreenPreview(MarketsUiState.Success(nonBlockingError = AppError.NoInternet))
 
 @Preview(showBackground = true)
 @Composable
@@ -259,42 +388,6 @@ private fun CategoryBottomSheetPreview() {
             categories = FakeCategoryDataSource.categories,
             selectedCategory = MarketCategory.ALL,
             onCategorySelected = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SortBottomSheetPreview() {
-    VelaTheme {
-        SortBottomSheet(
-            sorts = MarketSort.entries,
-            selectedSort = MarketSort.MARKET_CAP,
-            onSortSelected = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun BottomSheetItemSelectedPreview() {
-    VelaTheme {
-        BottomSheetItem(
-            label = "Layer 1",
-            selected = true,
-            onClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun BottomSheetItemUnselectedPreview() {
-    VelaTheme {
-        BottomSheetItem(
-            label = "DeFi",
-            selected = false,
-            onClick = {}
         )
     }
 }

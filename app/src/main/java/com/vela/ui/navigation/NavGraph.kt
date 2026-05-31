@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.vela.ui.common.components.PlaceholderScreen
 import com.vela.ui.screens.home.HomeRoute
+import com.vela.ui.screens.markets.MarketsRoute
 import com.vela.ui.screens.search.SearchRoute
 
 @Composable
@@ -23,7 +24,7 @@ fun VelaNavGraph(
             HomeRoute()
         }
         composable(Screen.Markets.route) {
-            PlaceholderScreen(title = "Markets")
+            MarketsRoute()
         }
         composable(Screen.Watchlist.route) {
             PlaceholderScreen(title = "Watchlist")
