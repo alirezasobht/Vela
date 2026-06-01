@@ -35,9 +35,4 @@ class MarketsRepositoryImpl @Inject constructor(
             ),
             pagingSourceFactory = { MarketsPagingSource(api, category, sort) }
         ).flow
-
-    override suspend fun getPrices(ids: List<String>): DataResult<List<Asset>> =
-        safeApiCall {
-            api.getSimplePrices(ids = ids.joinToString(",")).toDomain()
-        }
 }

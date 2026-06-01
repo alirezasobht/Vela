@@ -21,6 +21,7 @@ import com.vela.domain.usecase.ObservePricesUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
+import com.vela.data.source.remote.util.toAppError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +32,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -118,14 +118,8 @@ class MarketsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = getCategories()) {
                 is DataResult.Success -> _categories.value = result.data
-                is DataResult.Error -> { /* silent — keep [ALL] */
-                }
+                is DataResult.Error -> { /* silent — keep [ALL] */ }
             }
         }
-    }
-
-    private fun Throwable.toAppError(): AppError = when (this) {
-        is IOException -> AppError.NoInternet
-        else -> AppError.Unknown(message ?: "Something went wrong")
     }
 }
