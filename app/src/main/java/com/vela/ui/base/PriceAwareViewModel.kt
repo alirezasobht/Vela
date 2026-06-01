@@ -1,52 +1,73 @@
 package com.vela.ui.base
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.SimplePrice
-import com.vela.domain.usecase.ObservePricesUseCase
+import com.vela.domain.usecase.GetPricesUseCase
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 abstract class PriceAwareViewModel(
-    observePricesUseCase: ObservePricesUseCase
+    private val getPrices: GetPricesUseCase,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    protected abstract val assetIdsFlow: Flow<List<String>>
+    private val refreshDelayTime: Long = savedStateHandle["delay"] ?: 5000L
 
-    protected open val priceScope: CoroutineScope get() = viewModelScope
+    private val _isScreenVisible = MutableStateFlow(false)
+    private val _prices = MutableStateFlow<Map<String, SimplePrice?>>(emptyMap())
 
-    protected val priceResult: StateFlow<DataResult<Map<String, SimplePrice>>> by lazy {
-        observePricesUseCase(assetIdsFlow)
-            .stateIn(
-                scope = priceScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = DataResult.Success(emptyMap())
-            )
+    private val priceScope: CoroutineScope get() = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
+
+    init {
+        startPricePolling()
+    }
+
+    fun onScreenVisible(visible: Boolean) {
+        _isScreenVisible.value = visible
     }
 
     fun observePrice(id: String): Flow<SimplePriceUiModel?> =
-        priceResult
-            .map { result -> (result as? DataResult.Success)?.data?.get(id)?.toUiModel() }
+        _prices
+            .map { it[id]?.toUiModel() }
             .distinctUntilChanged()
 
+    override fun onCleared() {
+        priceScope.cancel()
+        super.onCleared()
+    }
+
+    protected abstract fun getIdsForPricing(): List<String>
     protected abstract fun onPriceError(error: AppError?)
 
-    protected fun startPriceErrorObserver() {
-        viewModelScope.launch {
-            priceResult.collect { result ->
-                when (result) {
-                    is DataResult.Success -> onPriceError(null)
-                    is DataResult.Error -> onPriceError(result.appError)
+    private fun startPricePolling() {
+        priceScope.launch {
+            while (true) {
+                delay(refreshDelayTime)
+                _isScreenVisible.first { it }
+                val ids = getIdsForPricing()
+                if (ids.isNotEmpty()) {
+                    when (val result = getPrices(ids)) {
+                        is DataResult.Success -> {
+                            _prices.value = result.data
+                            onPriceError(null)
+                        }
+
+                        is DataResult.Error -> onPriceError(result.appError)
+                    }
                 }
             }
         }

@@ -5,23 +5,24 @@ package com.vela.ui.screens.markets
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.vela.data.source.remote.util.toAppError
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
-import com.vela.domain.usecase.ObservePricesUseCase
+import com.vela.domain.usecase.GetPricesUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
-import com.vela.data.source.remote.util.toAppError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -38,8 +39,9 @@ import javax.inject.Inject
 class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
-    observePricesUseCase: ObservePricesUseCase
-) : PriceAwareViewModel(observePricesUseCase) {
+    getPrices: GetPricesUseCase,
+    savedStateHandle: SavedStateHandle
+) : PriceAwareViewModel(getPrices, savedStateHandle) {
 
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
@@ -56,7 +58,7 @@ class MarketsViewModel @Inject constructor(
     var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
         private set
 
-    override val assetIdsFlow: Flow<List<String>> = _loadedIds
+    override fun getIdsForPricing(): List<String> = _loadedIds.value
 
     val pagingFlow: Flow<PagingData<AssetUiModel>> = filterState
         .flatMapLatest { (category, sort) ->
@@ -71,7 +73,6 @@ class MarketsViewModel @Inject constructor(
 
     init {
         fetchCategories()
-        startPriceErrorObserver()
     }
 
     override fun onPriceError(error: AppError?) {

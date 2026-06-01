@@ -5,28 +5,22 @@ package com.vela.ui.screens.home
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.GetPricesUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
-import com.vela.domain.usecase.ObservePricesUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,13 +33,10 @@ class HomeViewModel @Inject constructor(
     private val getTopAssets: GetTopAssetsUseCase,
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
-    savedStateHandle: SavedStateHandle,
-    observePricesUseCase: ObservePricesUseCase
-) : PriceAwareViewModel(observePricesUseCase) {
+    getPrices: GetPricesUseCase,
+    savedStateHandle: SavedStateHandle
+) : PriceAwareViewModel(getPrices, savedStateHandle) {
 
-    private val refreshDelayTime: Long = savedStateHandle["delay"] ?: 5000L
-
-    private val _isScreenVisible = MutableStateFlow(false)
     private val _pullRefreshing = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     private val refreshMutex = Mutex()
@@ -56,25 +47,16 @@ class HomeViewModel @Inject constructor(
     var selectedLimit: Int by mutableStateOf(50)
         private set
 
-    override val assetIdsFlow: Flow<List<String>> = snapshotFlow { selectedLimit }
-        .flatMapLatest { limit ->
-            getTopAssets(limit).map { result ->
-                (result as? DataResult.Success)?.data?.map { it.id } ?: emptyList()
-            }
-        }
+    override fun getIdsForPricing(): List<String> =
+        (_uiState.value as? HomeUiState.Success)?.assets?.map { it.id } ?: emptyList()
 
     init {
         startFresh(selectedLimit)
-        startPriceErrorObserver()
     }
 
     override fun onPriceError(error: AppError?) {
         val current = _uiState.value as? HomeUiState.Success ?: return
         _uiState.value = current.copy(nonBlockingError = error)
-    }
-
-    fun onScreenVisible(visible: Boolean) {
-        _isScreenVisible.value = visible
     }
 
     fun onLimitChanged(limit: Int) {
@@ -99,7 +81,6 @@ class HomeViewModel @Inject constructor(
             // if success start observing and refresh loop
             if (success) {
                 launch { observeAssets(limit) }
-                launch { startAutoRefresh(limit) }
             }
         }
     }
@@ -130,14 +111,6 @@ class HomeViewModel @Inject constructor(
         }
         if (isPullRefresh) _pullRefreshing.value = false
         return success
-    }
-
-    private suspend fun startAutoRefresh(limit: Int) {
-        while (true) {
-            delay(refreshDelayTime)
-            _isScreenVisible.first { it }
-            doRefresh(limit)
-        }
     }
 
     private suspend fun observeAssets(limit: Int) {
