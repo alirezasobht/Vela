@@ -25,6 +25,7 @@ import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,9 +44,12 @@ class MarketsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
 
+
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
 
+    private var getCategoriesJob: Job? = null
+    private var _categoriesLoaded = MutableStateFlow<Boolean>(false)
     private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
     val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
@@ -73,6 +77,13 @@ class MarketsViewModel @Inject constructor(
 
     init {
         fetchCategories()
+    }
+
+    fun retry() {
+        getCategoriesJob?.cancel()
+        if (!_categoriesLoaded.value) {
+            fetchCategories()
+        }
     }
 
     override fun onPriceError(error: AppError?) {
@@ -118,11 +129,16 @@ class MarketsViewModel @Inject constructor(
     }
 
     private fun fetchCategories() {
-        viewModelScope.launch {
+        getCategoriesJob = viewModelScope.launch {
             when (val result = getCategories()) {
-                is DataResult.Success -> _categories.value = result.data
+                is DataResult.Success -> loadCategories(result.data)
                 is DataResult.Error -> { /* silent — keep [ALL] */ }
             }
         }
+    }
+
+    private fun loadCategories(categories: List<MarketCategory>) {
+        _categoriesLoaded.value = true
+        _categories.value = categories
     }
 }

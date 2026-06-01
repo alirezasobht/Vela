@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.vela.ui.screens.markets
 
 import androidx.compose.foundation.clickable
@@ -88,7 +90,7 @@ fun MarketsRoute(
     val marketAction = MarketActions(
         onCategorySelected = viewModel::onCategorySelected,
         onSortSelected = viewModel::onSortSelected,
-        onRetry = { pagingItems.retry() },
+        onRetry = { pagingItems.retry(); viewModel.retry() },
         observePrice = viewModel::observePrice
     )
 
@@ -116,39 +118,7 @@ fun MarketsScreen(
     marketAction: MarketActions,
     modifier: Modifier = Modifier
 ) {
-    when (uiState) {
-        is MarketsUiState.Loading -> FullScreenLoader(modifier = modifier)
-        is MarketsUiState.Error -> FullScreenError(
-            appError = uiState.appError,
-            onRetry = marketAction.onRetry,
-            modifier = modifier
-        )
 
-        is MarketsUiState.Success -> SuccessState(
-            uiState = uiState,
-            categories = categories,
-            pagingItems = pagingItems,
-            selectedCategory = selectedCategory,
-            selectedSort = selectedSort,
-            sorts = sorts,
-            marketAction = marketAction,
-            modifier = modifier
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SuccessState(
-    uiState: MarketsUiState.Success,
-    categories: List<MarketCategory>,
-    pagingItems: LazyPagingItems<AssetUiModel>,
-    selectedCategory: MarketCategory,
-    selectedSort: MarketSort,
-    sorts: List<MarketSort>,
-    marketAction: MarketActions,
-    modifier: Modifier = Modifier
-) {
     var showCategorySheet by remember { mutableStateOf(false) }
     var showSortSheet by remember { mutableStateOf(false) }
 
@@ -157,7 +127,9 @@ private fun SuccessState(
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        NonBlockingErrorBanner(error = uiState.nonBlockingError)
+
+        NonBlockingErrorBanner(error = (uiState as? MarketsUiState.Success)?.nonBlockingError)
+
         ScreenHeader(
             title = stringResource(R.string.markets),
             controlsRow2 = {
@@ -179,43 +151,84 @@ private fun SuccessState(
                 )
             }
         )
-        PagedAssetList(
+
+        when (uiState) {
+            is MarketsUiState.Loading -> FullScreenLoader(modifier = modifier)
+            is MarketsUiState.Error -> FullScreenError(
+                appError = uiState.appError,
+                onRetry = marketAction.onRetry,
+                modifier = modifier
+            )
+
+            is MarketsUiState.Success -> SuccessState(
+                uiState = uiState,
+                categories = categories,
+                pagingItems = pagingItems,
+                selectedCategory = selectedCategory,
+                selectedSort = selectedSort,
+                sorts = sorts,
+                marketAction = marketAction,
+                modifier = modifier
+            )
+        }
+
+        if (showCategorySheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showCategorySheet = false },
+                sheetState = rememberModalBottomSheetState()
+            ) {
+                CategoryBottomSheet(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = {
+                        marketAction.onCategorySelected(it)
+                        showCategorySheet = false
+                    }
+                )
+            }
+        }
+
+        if (showSortSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSortSheet = false },
+                sheetState = rememberModalBottomSheetState()
+            ) {
+                SortBottomSheet(
+                    sorts = sorts,
+                    selectedSort = selectedSort,
+                    onSortSelected = {
+                        marketAction.onSortSelected(it)
+                        showSortSheet = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuccessState(
+    uiState: MarketsUiState.Success,
+    categories: List<MarketCategory>,
+    pagingItems: LazyPagingItems<AssetUiModel>,
+    selectedCategory: MarketCategory,
+    selectedSort: MarketSort,
+    sorts: List<MarketSort>,
+    marketAction: MarketActions,
+    modifier: Modifier = Modifier
+) {
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+
+    PagedAssetList(
             pagingItems = pagingItems,
             isLoadingMore = uiState.isLoadingMore,
             observePrice = marketAction.observePrice
         )
-    }
-
-    if (showCategorySheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCategorySheet = false },
-            sheetState = rememberModalBottomSheetState()
-        ) {
-            CategoryBottomSheet(
-                categories = categories,
-                selectedCategory = selectedCategory,
-                onCategorySelected = {
-                    marketAction.onCategorySelected(it)
-                    showCategorySheet = false
-                }
-            )
-        }
-    }
-
-    if (showSortSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSortSheet = false },
-            sheetState = rememberModalBottomSheetState()
-        ) {
-            SortBottomSheet(
-                sorts = sorts,
-                selectedSort = selectedSort,
-                onSortSelected = {
-                    marketAction.onSortSelected(it)
-                    showSortSheet = false
-                }
-            )
-        }
     }
 }
 
