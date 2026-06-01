@@ -106,25 +106,20 @@ class MarketsViewModel @Inject constructor(
     }
 
     fun onLoadStateChanged(loadState: CombinedLoadStates) {
-        val current = _uiState.value
         val refresh = loadState.refresh
         val append = loadState.append
+        val currentSuccess = _uiState.value as? MarketsUiState.Success
 
-        _uiState.value = when {
-            refresh is LoadState.Loading -> MarketsUiState.Loading
-            refresh is LoadState.Error -> MarketsUiState.Error(refresh.error.toAppError())
-            append is LoadState.Loading -> MarketsUiState.Success(
-                isLoadingMore = true,
-                nonBlockingError = (current as? MarketsUiState.Success)?.nonBlockingError
-            )
-            append is LoadState.Error -> MarketsUiState.Success(
-                isLoadingMore = false,
-                nonBlockingError = append.error.toAppError()
-            )
-            else -> MarketsUiState.Success(
-                isLoadingMore = false,
-                nonBlockingError = (current as? MarketsUiState.Success)?.nonBlockingError
-            )
+        _uiState.value = when (refresh) {
+            is LoadState.Loading -> MarketsUiState.Loading
+            is LoadState.Error -> MarketsUiState.Error(refresh.error.toAppError())
+            else -> {
+                MarketsUiState.Success(
+                    isLoadingMore = append is LoadState.Loading,
+                    nonBlockingError = (append as? LoadState.Error)?.error?.toAppError()
+                        ?: currentSuccess?.nonBlockingError
+                )
+            }
         }
     }
 
@@ -132,7 +127,8 @@ class MarketsViewModel @Inject constructor(
         getCategoriesJob = viewModelScope.launch {
             when (val result = getCategories()) {
                 is DataResult.Success -> loadCategories(result.data)
-                is DataResult.Error -> { /* silent — keep [ALL] */ }
+                is DataResult.Error -> { /* silent — keep [ALL] */
+                }
             }
         }
     }
