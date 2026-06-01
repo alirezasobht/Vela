@@ -5,6 +5,7 @@ package com.vela.ui.screens.markets
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.CombinedLoadStates
@@ -53,7 +54,6 @@ class MarketsViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
     val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
-    private val filterState = MutableStateFlow(Pair(MarketCategory.ALL, MarketSort.MARKET_CAP))
     private val _loadedIds = MutableStateFlow<List<String>>(emptyList())
 
     var selectedCategory by mutableStateOf(MarketCategory.ALL)
@@ -64,7 +64,9 @@ class MarketsViewModel @Inject constructor(
 
     override fun getIdsForPricing(): List<String> = _loadedIds.value
 
-    val pagingFlow: Flow<PagingData<AssetUiModel>> = filterState
+    val pagingFlow: Flow<PagingData<AssetUiModel>> = snapshotFlow {
+        Pair(selectedCategory, selectedSort)
+    }
         .flatMapLatest { (category, sort) ->
             getMarkets(category, sort).map { pagingData ->
                 pagingData.map { asset ->
@@ -95,14 +97,12 @@ class MarketsViewModel @Inject constructor(
         if (selectedCategory == category) return
         selectedCategory = category
         _loadedIds.value = emptyList()
-        filterState.value = Pair(category, selectedSort)
     }
 
     fun onSortSelected(sort: MarketSort) {
         if (selectedSort == sort) return
         selectedSort = sort
         _loadedIds.value = emptyList()
-        filterState.value = Pair(selectedCategory, sort)
     }
 
     fun onLoadStateChanged(loadState: CombinedLoadStates) {
