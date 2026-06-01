@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeCategoryDataSource
@@ -61,6 +62,13 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+data class MarketActions(
+    val onCategorySelected: (MarketCategory) -> Unit,
+    val onSortSelected: (MarketSort) -> Unit,
+    val onRetry: () -> Unit,
+    val observePrice: (String) -> Flow<SimplePriceUiModel?>
+)
+
 @Composable
 fun MarketsRoute(
     modifier: Modifier = Modifier,
@@ -77,6 +85,13 @@ fun MarketsRoute(
         viewModel.onLoadStateChanged(pagingItems.loadState)
     }
 
+    val marketAction = MarketActions(
+        onCategorySelected = viewModel::onCategorySelected,
+        onSortSelected = viewModel::onSortSelected,
+        onRetry = { pagingItems.retry() },
+        observePrice = viewModel::observePrice
+    )
+
     MarketsScreen(
         uiState = uiState,
         categories = categories,
@@ -84,13 +99,11 @@ fun MarketsRoute(
         selectedCategory = viewModel.selectedCategory,
         selectedSort = viewModel.selectedSort,
         sorts = MarketSort.entries,
-        onCategorySelected = viewModel::onCategorySelected,
-        onSortSelected = viewModel::onSortSelected,
-        onRetry = { pagingItems.retry() },
-        observePrice = viewModel::observePrice,
+        marketAction = marketAction,
         modifier = modifier
     )
 }
+
 
 @Composable
 fun MarketsScreen(
@@ -100,17 +113,14 @@ fun MarketsScreen(
     sorts: List<MarketSort>,
     selectedSort: MarketSort,
     pagingItems: LazyPagingItems<AssetUiModel>,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    onCategorySelected: (MarketCategory) -> Unit,
-    onSortSelected: (MarketSort) -> Unit,
-    onRetry: () -> Unit,
+    marketAction: MarketActions,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
         is MarketsUiState.Loading -> FullScreenLoader(modifier = modifier)
         is MarketsUiState.Error -> FullScreenError(
             appError = uiState.appError,
-            onRetry = onRetry,
+            onRetry = marketAction.onRetry,
             modifier = modifier
         )
 
@@ -121,9 +131,7 @@ fun MarketsScreen(
             selectedCategory = selectedCategory,
             selectedSort = selectedSort,
             sorts = sorts,
-            onCategorySelected = onCategorySelected,
-            onSortSelected = onSortSelected,
-            observePrice = observePrice,
+            marketAction = marketAction,
             modifier = modifier
         )
     }
@@ -138,9 +146,7 @@ private fun SuccessState(
     selectedCategory: MarketCategory,
     selectedSort: MarketSort,
     sorts: List<MarketSort>,
-    onCategorySelected: (MarketCategory) -> Unit,
-    onSortSelected: (MarketSort) -> Unit,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    marketAction: MarketActions,
     modifier: Modifier = Modifier
 ) {
     var showCategorySheet by remember { mutableStateOf(false) }
@@ -176,7 +182,7 @@ private fun SuccessState(
         PagedAssetList(
             pagingItems = pagingItems,
             isLoadingMore = uiState.isLoadingMore,
-            observePrice = observePrice
+            observePrice = marketAction.observePrice
         )
     }
 
@@ -189,7 +195,7 @@ private fun SuccessState(
                 categories = categories,
                 selectedCategory = selectedCategory,
                 onCategorySelected = {
-                    onCategorySelected(it)
+                    marketAction.onCategorySelected(it)
                     showCategorySheet = false
                 }
             )
@@ -205,7 +211,7 @@ private fun SuccessState(
                 sorts = sorts,
                 selectedSort = selectedSort,
                 onSortSelected = {
-                    onSortSelected(it)
+                    marketAction.onSortSelected(it)
                     showSortSheet = false
                 }
             )
@@ -223,7 +229,7 @@ private fun PagedAssetList(
     LazyColumn(modifier = modifier.fillMaxSize()) {
         items(
             count = pagingItems.itemCount,
-            key = { index -> index }
+            key = pagingItems.itemKey { it.id }
         ) { index ->
             pagingItems[index]?.let { asset ->
                 AssetListItem(asset = asset, observePrice = observePrice)
@@ -359,10 +365,12 @@ private fun MarketsScreenPreview(
             selectedCategory = MarketCategory.ALL,
             selectedSort = MarketSort.MARKET_CAP,
             sorts = MarketSort.entries,
-            onCategorySelected = {},
-            onSortSelected = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+            marketAction = MarketActions(
+                onCategorySelected = {},
+                onSortSelected = {},
+                onRetry = {},
+                observePrice = { flowOf(null) }
+            )
         )
     }
 }

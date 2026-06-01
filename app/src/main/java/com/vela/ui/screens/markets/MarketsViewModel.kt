@@ -81,12 +81,14 @@ class MarketsViewModel @Inject constructor(
     }
 
     fun onCategorySelected(category: MarketCategory) {
+        if (selectedCategory == category) return
         selectedCategory = category
         _loadedIds.value = emptyList()
         filterState.value = Pair(category, selectedSort)
     }
 
     fun onSortSelected(sort: MarketSort) {
+        if (selectedSort == sort) return
         selectedSort = sort
         _loadedIds.value = emptyList()
         filterState.value = Pair(selectedCategory, sort)
