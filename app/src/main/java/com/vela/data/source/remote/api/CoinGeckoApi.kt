@@ -58,6 +58,8 @@ interface CoinGeckoApi {
     suspend fun getSimplePrices(
         @Query("ids") ids: String,
         @Query("vs_currencies") currencies: String = "usd",
-        @Query("include_24hr_change") include24hChange: Boolean = true
+        @Query("include_24hr_change") include24hChange: Boolean = true,
+        @Query("include_market_cap") includeMarketCap: Boolean = true,
+        @Query("include_24h_vol") includeVolume: Boolean = true
     ): Map<String, SimplePriceDto>
 }

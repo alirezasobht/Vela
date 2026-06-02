@@ -52,7 +52,9 @@ fun CategoryDto.toDomain(): MarketCategory = MarketCategory(
 
 fun SimplePriceDto.toDomain(): SimplePrice = SimplePrice(
     price = usd,
-    priceChange = usdChange
+    priceChange = usdChange,
+    marketCap = usdMarketCap,
+    totalVolume = usdVolume
 )
 
 fun CoinDetailDto.toDomain(): CoinDetail = CoinDetail(

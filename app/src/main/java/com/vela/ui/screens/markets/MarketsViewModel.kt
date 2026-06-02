@@ -20,7 +20,7 @@ import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
-import com.vela.domain.usecase.GetPricesUseCase
+import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
@@ -41,7 +41,7 @@ import javax.inject.Inject
 class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
-    getPrices: GetPricesUseCase,
+    getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
 

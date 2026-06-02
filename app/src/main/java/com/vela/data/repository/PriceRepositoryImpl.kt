@@ -12,10 +12,15 @@ class PriceRepositoryImpl @Inject constructor(
     private val api: CoinGeckoApi
 ) : PriceRepository {
 
-    override suspend fun getPrices(ids: List<String>): DataResult<Map<String, SimplePrice>> =
+    override suspend fun getPrices(
+        ids: List<String>,
+        includeMarketData: Boolean
+    ): DataResult<Map<String, SimplePrice>> =
         safeApiCall {
-            api.getSimplePrices(ids = ids.joinToString(",")).mapValues { (_, dto) ->
-                dto.toDomain()
-            }
+            api.getSimplePrices(
+                ids = ids.joinToString(","),
+                includeMarketCap = includeMarketData,
+                includeVolume = includeMarketData
+            ).mapValues { it.value.toDomain() }
         }
 }

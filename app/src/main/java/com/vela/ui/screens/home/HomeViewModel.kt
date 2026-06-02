@@ -9,7 +9,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesUseCase
+import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
     private val getTopAssets: GetTopAssetsUseCase,
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
-    getPrices: GetPricesUseCase,
+    getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
 

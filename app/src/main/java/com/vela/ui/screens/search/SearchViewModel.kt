@@ -10,7 +10,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesUseCase
+import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.SearchAssetsUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
@@ -28,7 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchAssets: SearchAssetsUseCase,
-    getPrices: GetPricesUseCase,
+    getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
 
