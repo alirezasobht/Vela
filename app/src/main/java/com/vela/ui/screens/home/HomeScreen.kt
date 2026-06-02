@@ -31,10 +31,19 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+private data class HomeActions(
+    val onLimitChanged: (Int) -> Unit,
+    val onRetry: () -> Unit,
+    val onPullToRefresh: () -> Unit,
+    val observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    val navigateToDetail: (String) -> Unit
+)
+
 @Composable
 fun HomeRoute(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    navigateToDetail: (String) -> Unit
 ) {
 
     ScreenVisibilityObserver(viewModel::onScreenVisible)
@@ -42,40 +51,40 @@ fun HomeRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pullRefreshing by viewModel.pullRefreshing.collectAsStateWithLifecycle()
 
+    val homeActions = HomeActions(
+        onLimitChanged = viewModel::onLimitChanged,
+        onRetry = viewModel::retry,
+        onPullToRefresh = viewModel::pullToRefresh,
+        observePrice = viewModel::observePrice,
+        navigateToDetail = navigateToDetail
+    )
+
     HomeScreen(
         modifier = modifier,
         uiState = uiState,
         pullRefreshing = pullRefreshing,
         selectedLimit = viewModel.selectedLimit,
-        onLimitChanged = viewModel::onLimitChanged,
-        onRetry = viewModel::retry,
-        onPullToRefresh = viewModel::pullToRefresh,
-        observePrice = viewModel::observePrice
+        homeActions = homeActions
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
+private fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     pullRefreshing: Boolean,
     selectedLimit: Int,
-    onLimitChanged: (Int) -> Unit,
-    onRetry: () -> Unit,
-    onPullToRefresh: () -> Unit,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>
+    homeActions: HomeActions
 ) {
     when (uiState) {
         is HomeUiState.Loading -> FullScreenLoader(modifier = modifier)
-        is HomeUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = onRetry, modifier = modifier)
+        is HomeUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = homeActions.onRetry, modifier = modifier)
         is HomeUiState.Success -> SuccessState(
             uiState = uiState,
             pullRefreshing = pullRefreshing,
             selectedLimit = selectedLimit,
-            onLimitChanged = onLimitChanged,
-            onPullToRefresh = onPullToRefresh,
-            observePrice = observePrice,
+            homeActions = homeActions,
             modifier = modifier
         )
     }
@@ -87,14 +96,12 @@ private fun SuccessState(
     uiState: HomeUiState.Success,
     pullRefreshing: Boolean,
     selectedLimit: Int,
-    onLimitChanged: (Int) -> Unit,
-    onPullToRefresh: () -> Unit,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    homeActions: HomeActions,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
         isRefreshing = pullRefreshing,
-        onRefresh = onPullToRefresh,
+        onRefresh = homeActions.onPullToRefresh,
         modifier = modifier.fillMaxSize()
     ) {
         Column(modifier = modifier.fillMaxSize()) {
@@ -105,13 +112,14 @@ private fun SuccessState(
                 controlsRow1 = {
                     LimitChips(
                         selectedLimit = selectedLimit,
-                        onLimitChanged = onLimitChanged
+                        onLimitChanged = homeActions.onLimitChanged
                     )
                 }
             )
             AssetLazyList(
                 assets = uiState.assets,
-                observePrice = observePrice,
+                observePrice = homeActions.observePrice,
+                onItemClick = homeActions.navigateToDetail,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -140,6 +148,24 @@ private fun LimitChips(
 }
 
 // ---- Previews ----
+
+@Composable
+private fun HomeScreenPreview(uiState: HomeUiState) {
+    VelaTheme {
+        HomeScreen(
+            uiState = uiState,
+            pullRefreshing = false,
+            selectedLimit = 25,
+            homeActions = HomeActions(
+                onLimitChanged = {},
+                onRetry = {},
+                onPullToRefresh = {},
+                observePrice = { flowOf(null) },
+                navigateToDetail = {}
+            )
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -171,21 +197,6 @@ private fun HomeScreenSuccessWithErrorPreview() = HomeScreenPreview(
 private fun HomeScreenErrorPreview() = HomeScreenPreview(
     HomeUiState.Error(AppError.NoInternet)
 )
-
-@Composable
-private fun HomeScreenPreview(uiState: HomeUiState) {
-    VelaTheme {
-        HomeScreen(
-            uiState = uiState,
-            pullRefreshing = false,
-            selectedLimit = 25,
-            onLimitChanged = {},
-            onRetry = {},
-            onPullToRefresh = {},
-            observePrice = { flowOf(null) }
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

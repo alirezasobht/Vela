@@ -21,14 +21,15 @@ import kotlinx.coroutines.flow.flowOf
 fun AssetLazyList(
     assets: List<AssetUiModel>,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    modifier: Modifier = Modifier
+    onItemClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         itemsIndexed(
             items = assets,
             key = { _, asset -> asset.id }
         ) { index, asset ->
-            AssetListItem(asset = asset, observePrice = observePrice)
+            AssetListItem(asset = asset, observePrice = observePrice, onClick = onItemClick)
             if (index < assets.lastIndex) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -45,7 +46,8 @@ private fun AssetLazyListPreview() {
     VelaTheme {
         AssetLazyList(
             assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            observePrice = { flowOf(null) }
+            observePrice = { flowOf(null) },
+            onItemClick = {}
         )
     }
 }

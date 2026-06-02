@@ -1,5 +1,6 @@
 package com.vela.ui.common.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,14 +34,16 @@ import kotlinx.coroutines.flow.flowOf
 fun AssetListItem(
     asset: AssetUiModel,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    onClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clickable { onClick(asset.id) },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Logo
         AsyncImage(
@@ -91,7 +94,8 @@ private fun AssetListItemPreview() {
     VelaTheme {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
-            observePrice = { flowOf(null) }
+            observePrice = { flowOf(null) },
+            onClick = {}
         )
     }
 }

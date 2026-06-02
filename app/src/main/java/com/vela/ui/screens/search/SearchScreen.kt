@@ -50,35 +50,46 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+private data class SearchActions(
+    val onQueryChange: (String) -> Unit,
+    val onClearQuery: () -> Unit,
+    val onRetry: () -> Unit,
+    val observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    val navigateToDetail: (String) -> Unit
+)
+
 @Composable
 fun SearchRoute(
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel = hiltViewModel()
+    viewModel: SearchViewModel = hiltViewModel(),
+    navigateToDetail: (String) -> Unit
 ) {
 
     ScreenVisibilityObserver(viewModel::onScreenVisible)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    SearchScreen(
-        uiState = uiState,
-        query = viewModel.query,
+    val searchActions = SearchActions(
         onQueryChange = viewModel::onQueryChange,
         onClearQuery = viewModel::onClearQuery,
         onRetry = viewModel::retry,
         observePrice = viewModel::observePrice,
+        navigateToDetail = navigateToDetail
+    )
+
+    SearchScreen(
+        uiState = uiState,
+        query = viewModel.query,
+        searchActions = searchActions,
         modifier = modifier
     )
 }
 
 @Composable
-fun SearchScreen(
+private fun SearchScreen(
     uiState: SearchUiState,
     query: String,
-    onQueryChange: (String) -> Unit,
-    onClearQuery: () -> Unit,
-    onRetry: () -> Unit,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    searchActions: SearchActions,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -88,8 +99,8 @@ fun SearchScreen(
     ) {
         SearchBar(
             query = query,
-            onQueryChange = onQueryChange,
-            onClearQuery = onClearQuery,
+            onQueryChange = searchActions.onQueryChange,
+            onClearQuery = searchActions.onClearQuery,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -98,9 +109,9 @@ fun SearchScreen(
         when (uiState) {
             is SearchUiState.Empty -> EmptyState()
             is SearchUiState.Loading -> FullScreenLoader()
-            is SearchUiState.Results -> ResultsState(uiState = uiState, observePrice = observePrice)
+            is SearchUiState.Results -> ResultsState(uiState = uiState, searchActions = searchActions)
             is SearchUiState.NoResults -> NoResultsState(query = query)
-            is SearchUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = onRetry)
+            is SearchUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = searchActions.onRetry)
         }
     }
 }
@@ -180,7 +191,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 @Composable
 private fun ResultsState(
     uiState: SearchUiState.Results,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    searchActions: SearchActions,
     modifier: Modifier = Modifier
 ) {
     // hide the keyboard if scroll
@@ -200,7 +211,8 @@ private fun ResultsState(
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
         AssetLazyList(
             assets = uiState.assets,
-            observePrice = observePrice,
+            observePrice = searchActions.observePrice,
+            onItemClick = searchActions.navigateToDetail,
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection) // Attach the spy here
@@ -230,21 +242,19 @@ private fun NoResultsState(
 @Composable
 private fun SearchScreenPreview(
     uiState: SearchUiState,
-    query: String = "",
-    onQueryChange: (String) -> Unit = {},
-    onClearQuery: () -> Unit = {},
-    onRetry: () -> Unit = {},
-    observePrice: (String) -> Flow<SimplePriceUiModel?> = { flowOf(null) }
+    query: String = ""
 ) {
     VelaTheme {
         SearchScreen(
             uiState = uiState,
             query = query,
-            onQueryChange = onQueryChange,
-            onClearQuery = onClearQuery,
-            onRetry = onRetry,
-            observePrice = observePrice,
-            modifier = Modifier
+            searchActions = SearchActions(
+                onQueryChange = {},
+                onClearQuery = {},
+                onRetry = {},
+                observePrice = { flowOf(null) },
+                navigateToDetail = {}
+            )
         )
     }
 }
