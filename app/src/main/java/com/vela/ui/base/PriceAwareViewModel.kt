@@ -30,7 +30,7 @@ abstract class PriceAwareViewModel(
     private val _isScreenVisible = MutableStateFlow(false)
     private val _prices = MutableStateFlow<Map<String, SimplePrice?>>(emptyMap())
 
-    private val priceScope: CoroutineScope get() = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
+    private val priceScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
 
     init {
         startPricePolling()
