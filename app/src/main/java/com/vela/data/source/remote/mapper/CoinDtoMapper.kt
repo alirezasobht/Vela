@@ -17,7 +17,7 @@ fun CoinDto.toDomain(): Asset = Asset(
     currentPrice = currentPrice,
     priceChangePercent24h = priceChangePercent24h,
     marketCapRank = marketCapRank,
-    sparkline = sparkline?.price
+    sparkline = sparkline?.price?.takeLast(14)
 )
 
 fun CoinDto.toEntity(): AssetEntity = AssetEntity(
