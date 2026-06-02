@@ -15,11 +15,8 @@ import com.vela.domain.usecase.SearchAssetsUseCase
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +38,7 @@ class SearchViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Empty)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private val searchScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
+    private var searchJob: Job? = null
 
     override fun getIdsForPricing(): List<String> =
         (_uiState.value as? SearchUiState.Results)?.assets?.map { it.id } ?: emptyList()
@@ -65,7 +62,11 @@ class SearchViewModel @Inject constructor(
 
     fun onQueryChange(newQuery: String) {
         query = newQuery
-        if (newQuery.isBlank()) resetSearch()
+    }
+
+    fun onClearQuery() {
+        resetSearch()
+        onQueryChange("")
     }
 
     fun retry() {
@@ -73,21 +74,21 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun resetSearch() {
-        searchScope.coroutineContext.cancelChildren()
+        searchJob?.cancel()
         _uiState.value = SearchUiState.Empty
     }
 
     private fun startSearch(q: String) {
-        searchScope.coroutineContext.cancelChildren()
+        searchJob?.cancel()
         _uiState.value = SearchUiState.Loading
-        searchScope.launch {
+        searchJob = viewModelScope.launch {
             when (val result = searchAssets(q)) {
                 is DataResult.Success -> {
                     val assets = result.data
-                    if (assets.isEmpty()) {
-                        _uiState.value = SearchUiState.NoResults
+                    _uiState.value = if (assets.isEmpty()) {
+                        SearchUiState.NoResults
                     } else {
-                        _uiState.value = SearchUiState.Results(
+                        SearchUiState.Results(
                             assets = assets.map { it.toUiModel() }
                         )
                     }
@@ -97,10 +98,5 @@ class SearchViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        searchScope.cancel()
     }
 }

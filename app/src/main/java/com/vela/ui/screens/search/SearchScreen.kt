@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -17,10 +17,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,6 +64,7 @@ fun SearchRoute(
         uiState = uiState,
         query = viewModel.query,
         onQueryChange = viewModel::onQueryChange,
+        onClearQuery = viewModel::onClearQuery,
         onRetry = viewModel::retry,
         observePrice = viewModel::observePrice,
         modifier = modifier
@@ -66,6 +76,7 @@ fun SearchScreen(
     uiState: SearchUiState,
     query: String,
     onQueryChange: (String) -> Unit,
+    onClearQuery: () -> Unit,
     onRetry: () -> Unit,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
@@ -73,11 +84,12 @@ fun SearchScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding()
+
     ) {
         SearchBar(
             query = query,
             onQueryChange = onQueryChange,
+            onClearQuery = onClearQuery,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -97,12 +109,20 @@ fun SearchScreen(
 private fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    onClearQuery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier,
+        modifier = modifier.focusRequester(focusRequester),
         placeholder = {
             Text(
                 text = stringResource(R.string.search_placeholder),
@@ -117,7 +137,7 @@ private fun SearchBar(
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+                IconButton(onClick = { onClearQuery() }) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.clear_search)
@@ -127,10 +147,18 @@ private fun SearchBar(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(
+            onSearch = {
+                keyboardController?.hide()
+            }
+        ),
         shape = MaterialTheme.shapes.extraLarge,
         colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent
         )
     )
 }
@@ -155,12 +183,27 @@ private fun ResultsState(
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
+    // hide the keyboard if scroll
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && (available.y < -5 || available.y > 5)) {
+                    keyboardController?.hide()
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
         AssetLazyList(
             assets = uiState.assets,
             observePrice = observePrice,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection) // Attach the spy here
         )
     }
 }
@@ -184,16 +227,34 @@ private fun NoResultsState(
 
 // ---- Previews ----
 
+@Composable
+private fun SearchScreenPreview(
+    uiState: SearchUiState,
+    query: String = "",
+    onQueryChange: (String) -> Unit = {},
+    onClearQuery: () -> Unit = {},
+    onRetry: () -> Unit = {},
+    observePrice: (String) -> Flow<SimplePriceUiModel?> = { flowOf(null) }
+) {
+    VelaTheme {
+        SearchScreen(
+            uiState = uiState,
+            query = query,
+            onQueryChange = onQueryChange,
+            onClearQuery = onClearQuery,
+            onRetry = onRetry,
+            observePrice = observePrice,
+            modifier = Modifier
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenEmptyPreview() {
     VelaTheme {
-        SearchScreen(
-            uiState = SearchUiState.Empty,
-            query = "",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+        SearchScreenPreview(
+            uiState = SearchUiState.Empty
         )
     }
 }
@@ -202,12 +263,8 @@ private fun SearchScreenEmptyPreview() {
 @Composable
 private fun SearchScreenLoadingPreview() {
     VelaTheme {
-        SearchScreen(
-            uiState = SearchUiState.Loading,
-            query = "bitcoin",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+        SearchScreenPreview(
+            uiState = SearchUiState.Loading
         )
     }
 }
@@ -216,14 +273,11 @@ private fun SearchScreenLoadingPreview() {
 @Composable
 private fun SearchScreenResultsPreview() {
     VelaTheme {
-        SearchScreen(
+        SearchScreenPreview(
             uiState = SearchUiState.Results(
                 assets = FakeAssetDataSource.assets.map { it.toUiModel() }
             ),
-            query = "bitcoin",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+            query = "bitcoin"
         )
     }
 }
@@ -232,15 +286,12 @@ private fun SearchScreenResultsPreview() {
 @Composable
 private fun SearchScreenResultsWithErrorPreview() {
     VelaTheme {
-        SearchScreen(
+        SearchScreenPreview(
             uiState = SearchUiState.Results(
                 assets = FakeAssetDataSource.assets.map { it.toUiModel() },
                 nonBlockingError = AppError.NoInternet
             ),
-            query = "bitcoin",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+            query = "bitcoin"
         )
     }
 }
@@ -249,12 +300,9 @@ private fun SearchScreenResultsWithErrorPreview() {
 @Composable
 private fun SearchScreenNoResultsPreview() {
     VelaTheme {
-        SearchScreen(
+        SearchScreenPreview(
             uiState = SearchUiState.NoResults,
-            query = "xyz123",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+            query = "xyz123"
         )
     }
 }
@@ -263,12 +311,9 @@ private fun SearchScreenNoResultsPreview() {
 @Composable
 private fun SearchScreenErrorPreview() {
     VelaTheme {
-        SearchScreen(
+        SearchScreenPreview(
             uiState = SearchUiState.Error(AppError.NoInternet),
-            query = "bitcoin",
-            onQueryChange = {},
-            onRetry = {},
-            observePrice = { flowOf(null) }
+            query = "bitcoin"
         )
     }
 }
