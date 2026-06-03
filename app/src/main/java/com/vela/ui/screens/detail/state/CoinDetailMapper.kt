@@ -1,5 +1,6 @@
 package com.vela.ui.screens.detail.state
 
+import com.vela.domain.model.Asset
 import com.vela.domain.model.CoinDetail
 import com.vela.ui.common.components.mapper.formatChange
 import com.vela.ui.common.components.mapper.formatLargeNumber
@@ -24,4 +25,20 @@ fun CoinDetail.toUiModel(): CoinDetailUiModel = CoinDetailUiModel(
     circulatingSupply = circulatingSupply?.let { formatSupply(it, symbol.uppercase()) } ?: "—",
     ath = ath?.let { formatPrice(it) } ?: "—",
     atl = atl?.let { formatPrice(it) } ?: "—"
+)
+
+fun Asset.toCoinDetailUiModel(): CoinDetailUiModel = CoinDetailUiModel(
+    id = id,
+    name = name,
+    symbol = symbol.uppercase(),
+    image = image,
+    currentPrice = "",
+    priceChange24h = "",
+    priceChangePercent24h = "",
+    isPositive = true,
+    marketCap = "",
+    totalVolume = "",
+    circulatingSupply = "",
+    ath = "",
+    atl = ""
 )

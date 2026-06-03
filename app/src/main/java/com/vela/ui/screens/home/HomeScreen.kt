@@ -36,7 +36,7 @@ private data class HomeActions(
     val onRetry: () -> Unit,
     val onPullToRefresh: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val navigateToDetail: (String) -> Unit
+    val onAssetClick: (String) -> Unit
 )
 
 @Composable
@@ -56,7 +56,7 @@ fun HomeRoute(
         onRetry = viewModel::retry,
         onPullToRefresh = viewModel::pullToRefresh,
         observePrice = viewModel::observePrice,
-        navigateToDetail = navigateToDetail
+        onAssetClick = navigateToDetail
     )
 
     HomeScreen(
@@ -119,7 +119,7 @@ private fun SuccessState(
             AssetLazyList(
                 assets = uiState.assets,
                 observePrice = homeActions.observePrice,
-                onItemClick = homeActions.navigateToDetail,
+                onItemClick = homeActions.onAssetClick,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -161,7 +161,7 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
                 onRetry = {},
                 onPullToRefresh = {},
                 observePrice = { flowOf(null) },
-                navigateToDetail = {}
+                onAssetClick = {}
             )
         )
     }

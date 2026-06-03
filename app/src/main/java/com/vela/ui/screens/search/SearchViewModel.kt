@@ -12,6 +12,7 @@ import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.SearchAssetsUseCase
+import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchAssets: SearchAssetsUseCase,
+    private val assetHolder: AssetHolder,
     getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
@@ -85,6 +87,7 @@ class SearchViewModel @Inject constructor(
             when (val result = searchAssets(q)) {
                 is DataResult.Success -> {
                     val assets = result.data
+                    assetHolder.put(assets)
                     _uiState.value = if (assets.isEmpty()) {
                         SearchUiState.NoResults
                     } else {

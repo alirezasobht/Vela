@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vela.R
+import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.domain.model.AppError
 import com.vela.domain.model.TimeRange
@@ -48,6 +49,7 @@ import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
+import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import com.vela.ui.theme.VelaTheme
 import com.vela.ui.theme.sparklineBearColor
@@ -63,6 +65,7 @@ private data class DetailActions(
 
 @Composable
 fun DetailRoute(
+    coinId: String,
     onBack: () -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
@@ -78,6 +81,7 @@ fun DetailRoute(
 
     DetailScreen(
         uiState = uiState,
+        initialAsset = viewModel.initialHeader,
         detailActions = detailActions
     )
 }
@@ -85,22 +89,33 @@ fun DetailRoute(
 @Composable
 private fun DetailScreen(
     uiState: DetailUiState,
+    initialAsset: CoinDetailUiModel?,
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
-    when (uiState) {
-        is DetailUiState.Loading -> FullScreenLoader(modifier = modifier)
-        is DetailUiState.Error -> FullScreenError(
-            appError = uiState.appError,
-            onRetry = detailActions.onRetry,
-            modifier = modifier,
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+    ) {
+        HeaderSection(
+            name = initialAsset?.name ?: (uiState as? DetailUiState.Success)?.detail?.name ?: "",
+            symbol = initialAsset?.symbol ?: (uiState as? DetailUiState.Success)?.detail?.symbol ?: "",
+            image = initialAsset?.image ?: (uiState as? DetailUiState.Success)?.detail?.image ?: "",
+            onBack = detailActions.onBack
         )
 
-        is DetailUiState.Success -> SuccessState(
-            uiState = uiState,
-            detailActions = detailActions,
-            modifier = modifier
-        )
+        when (uiState) {
+            is DetailUiState.Loading -> FullScreenLoader()
+            is DetailUiState.Error -> FullScreenError(
+                appError = uiState.appError,
+                onRetry = detailActions.onRetry
+            )
+
+            is DetailUiState.Success -> SuccessState(
+                uiState = uiState,
+                detailActions = detailActions
+            )
+        }
     }
 }
 
@@ -124,47 +139,38 @@ private fun SuccessState(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
     ) {
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Header
-            HeaderSection(detail = detail, onBack = detailActions.onBack)
+        PriceSection(
+            price = price,
+            priceChange24h = detail.priceChange24h,
+            priceChangePercent = priceChangePercent,
+            priceColor = priceColor,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
-            // Price
-            PriceSection(
-                price = price,
-                priceChange24h = detail.priceChange24h,
-                priceChangePercent = priceChangePercent,
-                priceColor = priceColor,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        TimeRangeChips(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
 
-            // Time range chips (placeholder)
-            TimeRangeChips(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-
-            // Stats
-            StatsSection(
-                marketCap = marketCap,
-                totalVolume = totalVolume,
-                circulatingSupply = detail.circulatingSupply,
-                ath = detail.ath,
-                atl = detail.atl,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
+        StatsSection(
+            marketCap = marketCap,
+            totalVolume = totalVolume,
+            circulatingSupply = detail.circulatingSupply,
+            ath = detail.ath,
+            atl = detail.atl,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 
 @Composable
 private fun HeaderSection(
-    detail: CoinDetailUiModel,
+    name: String,
+    symbol: String,
+    image: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -183,8 +189,8 @@ private fun HeaderSection(
         }
 
         AsyncImage(
-            model = detail.image,
-            contentDescription = detail.name,
+            model = image,
+            contentDescription = name,
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape),
@@ -194,12 +200,12 @@ private fun HeaderSection(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = detail.name,
+                text = name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = detail.symbol,
+                text = symbol,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -311,6 +317,7 @@ private fun DetailScreenPreview(uiState: DetailUiState) {
     VelaTheme {
         DetailScreen(
             uiState = uiState,
+            initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
             detailActions = DetailActions(
                 onBack = {},
                 onRetry = {},
@@ -322,37 +329,25 @@ private fun DetailScreenPreview(uiState: DetailUiState) {
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenLoadingPreview() {
-    VelaTheme {
-        DetailScreenPreview(uiState = DetailUiState.Loading)
-    }
-}
+private fun DetailScreenLoadingPreview() =
+    DetailScreenPreview(uiState = DetailUiState.Loading)
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenErrorPreview() {
-    VelaTheme {
-        DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
-    }
-}
+private fun DetailScreenErrorPreview() =
+    DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenSuccessPreview() {
-    VelaTheme {
-        DetailScreenPreview(uiState = DetailUiState.Success(detail = FakeDetailDataSource.detail.toUiModel()))
-    }
-}
+private fun DetailScreenSuccessPreview() =
+    DetailScreenPreview(uiState = DetailUiState.Success(detail = FakeDetailDataSource.detail.toUiModel()))
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenSuccessWithErrorPreview() {
-    VelaTheme {
-        DetailScreenPreview(
-            uiState = DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                nonBlockingError = AppError.NoInternet
-            )
+private fun DetailScreenSuccessWithErrorPreview() =
+    DetailScreenPreview(
+        uiState = DetailUiState.Success(
+            detail = FakeDetailDataSource.detail.toUiModel(),
+            nonBlockingError = AppError.NoInternet
         )
-    }
-}
+    )

@@ -55,7 +55,7 @@ private data class SearchActions(
     val onClearQuery: () -> Unit,
     val onRetry: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val navigateToDetail: (String) -> Unit
+    val onAssetClick: (String) -> Unit
 )
 
 @Composable
@@ -74,7 +74,7 @@ fun SearchRoute(
         onClearQuery = viewModel::onClearQuery,
         onRetry = viewModel::retry,
         observePrice = viewModel::observePrice,
-        navigateToDetail = navigateToDetail
+        onAssetClick = navigateToDetail
     )
 
     SearchScreen(
@@ -212,7 +212,7 @@ private fun ResultsState(
         AssetLazyList(
             assets = uiState.assets,
             observePrice = searchActions.observePrice,
-            onItemClick = searchActions.navigateToDetail,
+            onItemClick = searchActions.onAssetClick,
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection) // Attach the spy here
@@ -253,7 +253,7 @@ private fun SearchScreenPreview(
                 onClearQuery = {},
                 onRetry = {},
                 observePrice = { flowOf(null) },
-                navigateToDetail = {}
+                onAssetClick = {}
             )
         )
     }

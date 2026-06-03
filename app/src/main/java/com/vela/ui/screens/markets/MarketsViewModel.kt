@@ -21,6 +21,7 @@ import com.vela.domain.model.MarketSort
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
@@ -41,10 +42,10 @@ import javax.inject.Inject
 class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
+    private val assetHolder: AssetHolder,
     getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
-
 
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
@@ -71,6 +72,7 @@ class MarketsViewModel @Inject constructor(
             getMarkets(category, sort).map { pagingData ->
                 pagingData.map { asset ->
                     _loadedIds.update { current -> (current + asset.id).distinct() }
+                    assetHolder.put(asset)
                     asset.toUiModel()
                 }
             }

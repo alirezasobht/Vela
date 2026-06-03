@@ -3,7 +3,7 @@
 package com.vela.ui.screens.home
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -13,6 +13,7 @@ import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
+import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,7 @@ class HomeViewModel @Inject constructor(
     private val getTopAssets: GetTopAssetsUseCase,
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
+    private val assetHolder: AssetHolder,
     getPrices: GetPricesOnlyUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getPrices, savedStateHandle) {
@@ -44,7 +46,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     val pullRefreshing: StateFlow<Boolean> = _pullRefreshing.asStateFlow()
 
-    var selectedLimit: Int by mutableStateOf(50)
+    var selectedLimit: Int by mutableIntStateOf(50)
         private set
 
     override fun getIdsForPricing(): List<String> =
@@ -117,6 +119,7 @@ class HomeViewModel @Inject constructor(
         getTopAssets(limit).collect { result ->
             when (result) {
                 is DataResult.Success -> {
+                    assetHolder.put(result.data)
                     val current = _uiState.value
                     _uiState.value = HomeUiState.Success(
                         assets = result.data.map { it.toUiModel() },

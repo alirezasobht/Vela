@@ -2,13 +2,17 @@ package com.vela.ui.screens.detail
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
+import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.navigation.DetailDestination
+import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
+import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +24,13 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val getCoinDetail: GetCoinDetailUseCase,
+    private val assetHolder: AssetHolder,
     getFullPrices: GetPricesAndMarketDataUseCase,
     savedStateHandle: SavedStateHandle
 ) : PriceAwareViewModel(getFullPrices, savedStateHandle) {
 
-    private val coinId: String = checkNotNull(savedStateHandle[DetailDestination.ARG_COIN_ID])
+    val initialHeader: CoinDetailUiModel?
+    private val coinId: String
 
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -37,6 +43,10 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
+        savedStateHandle.toRoute<DetailDestination>().let { dest ->
+            coinId = dest.coinId
+            initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
+        }
         loadDetail()
     }
 

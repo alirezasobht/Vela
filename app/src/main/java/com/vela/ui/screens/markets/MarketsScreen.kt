@@ -69,7 +69,7 @@ private data class MarketActions(
     val onSortSelected: (MarketSort) -> Unit,
     val onRetry: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val navigateToDetail: (String) -> Unit
+    val onAssetClick: (String) -> Unit
 )
 
 @Composable
@@ -94,7 +94,7 @@ fun MarketsRoute(
         onSortSelected = viewModel::onSortSelected,
         onRetry = { pagingItems.retry(); viewModel.retry() },
         observePrice = viewModel::observePrice,
-        navigateToDetail = navigateToDetail
+        onAssetClick = navigateToDetail
     )
 
     MarketsScreen(
@@ -223,7 +223,7 @@ private fun SuccessState(
             pagingItems = pagingItems,
             isLoadingMore = uiState.isLoadingMore,
         observePrice = marketAction.observePrice,
-        onItemClick = marketAction.navigateToDetail
+        onItemClick = marketAction.onAssetClick
         )
     }
 }
@@ -380,7 +380,7 @@ private fun MarketsScreenPreview(
                 onSortSelected = {},
                 onRetry = {},
                 observePrice = { flowOf(null) },
-                navigateToDetail = {}
+                onAssetClick = {}
             )
         )
     }

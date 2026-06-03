@@ -3,11 +3,9 @@ package com.vela.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-import com.vela.ui.common.components.PlaceholderScreen
+import androidx.navigation.toRoute
 import com.vela.ui.screens.detail.DetailRoute
 import com.vela.ui.screens.home.HomeRoute
 import com.vela.ui.screens.markets.MarketsRoute
@@ -23,42 +21,33 @@ fun VelaNavGraph(
         startDestination = Screen.Home.route,
         modifier = modifier
     ) {
+
         composable(Screen.Home.route) {
             HomeRoute(
-                navigateToDetail = { coinId: String ->
-                    navController.navigate(DetailDestination.createRoute(coinId))
+                navigateToDetail = { coinId ->
+                    navController.navigate(DetailDestination(coinId))
                 }
             )
         }
         composable(Screen.Markets.route) {
             MarketsRoute(
-                navigateToDetail = { coinId: String ->
-                    navController.navigate(DetailDestination.createRoute(coinId))
+                navigateToDetail = { coinId ->
+                    navController.navigate(DetailDestination(coinId))
                 }
             )
-        }
-        composable(Screen.Watchlist.route) {
-            PlaceholderScreen(title = "Watchlist")
         }
         composable(Screen.Search.route) {
             SearchRoute(
-                navigateToDetail = { coinId: String ->
-                    navController.navigate(DetailDestination.createRoute(coinId))
+                navigateToDetail = { coinId ->
+                    navController.navigate(DetailDestination(coinId))
                 }
             )
         }
-        composable(Screen.Alerts.route) {
-            PlaceholderScreen(title = "Alerts")
-        }
-        composable(
-            route = DetailDestination.ROUTE,
-            arguments = listOf(
-                navArgument(DetailDestination.ARG_COIN_ID) { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val coinId = backStackEntry.arguments?.getString(DetailDestination.ARG_COIN_ID)
-                ?: return@composable
+
+        composable<DetailDestination> { backStackEntry ->
+            val dest: DetailDestination = backStackEntry.toRoute()
             DetailRoute(
+                coinId = dest.coinId,
                 onBack = { navController.popBackStack() }
             )
         }
