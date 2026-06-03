@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">Vela</string>
-    <string name="markets">Markets</string>
+    <string name="title_markets">Markets</string>
 
     <string name="error_no_internet">No internet connection</string>
     <string name="error_server">Server error, please try again</string>
     <string name="error_unknown">Something went wrong</string>
-    <string name="try_again">Try Again</string>
+    <string name="action_retry">Try Again</string>
 
     <string name="nav_home">Home</string>
     <string name="nav_markets">Markets</string>
@@ -13,14 +13,14 @@
     <string name="nav_search">Search</string>
     <string name="nav_alerts">Alerts</string>
 
-    <string name="search_placeholder">Search coins…</string>
-    <string name="clear_search">Clear search</string>
-    <string name="search_empty_hint">Start typing to search</string>
-    <string name="search_no_results">No results for "%s"</string>
+    <string name="hint_search">Search coins…</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="label_search_empty">Start typing to search</string>
+    <string name="label_no_results">No results for "%s"</string>
 
-    <string name="explore">Explore</string>
-    <string name="category">Category</string>
-    <string name="sort_by">Sort by</string>
-    <string name="sort_market_cap">Market Cap</string>
-    <string name="sort_volume">Volume</string>
+    <string name="label_explore">Explore</string>
+    <string name="title_category">Category</string>
+    <string name="title_sort_by">Sort by</string>
+    <string name="label_sort_market_cap">Market Cap</string>
+    <string name="label_sort_volume">Volume</string>
 </resources>

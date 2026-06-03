@@ -134,7 +134,7 @@ private fun MarketsScreen(
         NonBlockingErrorBanner(error = (uiState as? MarketsUiState.Success)?.nonBlockingError)
 
         ScreenHeader(
-            title = stringResource(R.string.markets),
+            title = stringResource(R.string.title_markets),
             controlsRow2 = {
                 InputChip(
                     selected = false,
@@ -160,7 +160,7 @@ private fun MarketsScreen(
             is MarketsUiState.Error -> FullScreenError(
                 appError = uiState.appError,
                 onRetry = marketAction.onRetry,
-                modifier = modifier
+                modifier = modifier,
             )
 
             is MarketsUiState.Success -> SuccessState(
@@ -276,7 +276,7 @@ private fun CategoryBottomSheet(
 ) {
     Column(modifier = modifier.padding(horizontal = 16.dp)) {
         Text(
-            text = stringResource(R.string.category),
+            text = stringResource(R.string.title_category),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -302,7 +302,7 @@ private fun SortBottomSheet(
 ) {
     Column(modifier = modifier.padding(horizontal = 16.dp)) {
         Text(
-            text = stringResource(R.string.sort_by),
+            text = stringResource(R.string.title_sort_by),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -354,8 +354,8 @@ private fun BottomSheetItem(
 
 @Composable
 private fun MarketSort.toDisplayName(): String = when (this) {
-    MarketSort.MARKET_CAP -> stringResource(R.string.sort_market_cap)
-    MarketSort.VOLUME -> stringResource(R.string.sort_volume)
+    MarketSort.MARKET_CAP -> stringResource(R.string.label_sort_market_cap)
+    MarketSort.VOLUME -> stringResource(R.string.label_sort_volume)
 }
 
 // ---- Previews ----

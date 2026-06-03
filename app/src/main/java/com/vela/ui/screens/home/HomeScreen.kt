@@ -107,7 +107,7 @@ private fun SuccessState(
         Column(modifier = modifier.fillMaxSize()) {
             NonBlockingErrorBanner(error = uiState.nonBlockingError)
             ScreenHeader(
-                title = stringResource(R.string.markets),
+                title = stringResource(R.string.title_markets),
                 subtitle = uiState.formattedDate,
                 controlsRow1 = {
                     LimitChips(

@@ -136,7 +136,7 @@ private fun SearchBar(
         modifier = modifier.focusRequester(focusRequester),
         placeholder = {
             Text(
-                text = stringResource(R.string.search_placeholder),
+                text = stringResource(R.string.hint_search),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
@@ -151,7 +151,7 @@ private fun SearchBar(
                 IconButton(onClick = { onClearQuery() }) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.clear_search)
+                        contentDescription = stringResource(R.string.cd_clear_search)
                     )
                 }
             }
@@ -181,7 +181,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.search_empty_hint),
+            text = stringResource(R.string.label_search_empty),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -230,7 +230,7 @@ private fun NoResultsState(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.search_no_results, query),
+            text = stringResource(R.string.label_no_results, query),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
