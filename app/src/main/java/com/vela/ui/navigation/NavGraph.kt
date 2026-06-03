@@ -59,7 +59,6 @@ fun VelaNavGraph(
             val coinId = backStackEntry.arguments?.getString(DetailDestination.ARG_COIN_ID)
                 ?: return@composable
             DetailRoute(
-                coinId = coinId,
                 onBack = { navController.popBackStack() }
             )
         }

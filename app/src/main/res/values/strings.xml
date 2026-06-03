@@ -23,4 +23,12 @@
     <string name="title_sort_by">Sort by</string>
     <string name="label_sort_market_cap">Market Cap</string>
     <string name="label_sort_volume">Volume</string>
+
+    <string name="cd_back">Back</string>
+    <string name="cd_watchlist">Watchlist</string>
+    <string name="label_market_cap">Market Cap</string>
+    <string name="label_24h_volume">24h Volume</string>
+    <string name="label_circulating_supply">Circulating Supply</string>
+    <string name="label_ath">All Time High</string>
+    <string name="label_atl">All Time Low</string>
 </resources>

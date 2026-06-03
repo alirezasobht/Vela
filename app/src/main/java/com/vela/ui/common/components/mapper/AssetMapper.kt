@@ -21,10 +21,12 @@ fun Asset.toUiModel(): AssetUiModel = AssetUiModel(
 fun SimplePrice.toUiModel(): SimplePriceUiModel = SimplePriceUiModel(
     price = price?.let { formatPrice(it) } ?: "",
     priceChange = priceChange?.let { formatChange(it) } ?: "",
-    isPositive = (priceChange ?: 0.0) >= 0.0
+    isPositive = (priceChange ?: 0.0) >= 0.0,
+    marketCap = marketCap?.let { formatLargeNumber(it) },
+    totalVolume = totalVolume?.let { formatLargeNumber(it) }
 )
 
-private fun formatPrice(price: Double): String = when {
+internal fun formatPrice(price: Double): String = when {
     price >= 1000 -> "$${"%,.0f".format(price)}"
     price >= 1 -> "$%.2f".format(price)
     else -> {
@@ -37,7 +39,21 @@ private fun formatPrice(price: Double): String = when {
     }
 }
 
-private fun formatChange(change: Double): String {
+internal fun formatChange(change: Double): String {
     val sign = if (change >= 0) "+" else ""
     return "$sign${"%.2f".format(change)}%"
+}
+
+internal fun formatLargeNumber(value: Double): String = when {
+    value >= 1_000_000_000_000 -> "${"%.2f".format(value / 1_000_000_000_000)}T"
+    value >= 1_000_000_000 -> "${"%.2f".format(value / 1_000_000_000)}B"
+    value >= 1_000_000 -> "${"%.2f".format(value / 1_000_000)}M"
+    else -> "%.0f".format(value)
+}
+
+internal fun formatSupply(value: Double, symbol: String): String = when {
+    value >= 1_000_000_000 -> "${"%.2f".format(value / 1_000_000_000)}B $symbol"
+    value >= 1_000_000 -> "${"%.2f".format(value / 1_000_000)}M $symbol"
+    value >= 1_000 -> "${"%.2f".format(value / 1_000)}K $symbol"
+    else -> "%.0f $symbol".format(value)
 }
