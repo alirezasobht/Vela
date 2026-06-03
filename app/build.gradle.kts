@@ -62,6 +62,9 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.paging.runtime)
     implementation(libs.paging.compose)
+    implementation(libs.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.vico.compose.m3)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

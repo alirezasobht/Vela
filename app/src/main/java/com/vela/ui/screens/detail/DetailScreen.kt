@@ -1,10 +1,12 @@
 package com.vela.ui.screens.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -22,10 +25,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,10 +39,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.domain.model.AppError
+import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
@@ -60,6 +68,7 @@ import kotlinx.coroutines.flow.flowOf
 private data class DetailActions(
     val onBack: () -> Unit,
     val onRetry: () -> Unit,
+    val onRangeSelected: (TimeRange) -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>
 )
 
@@ -76,12 +85,14 @@ fun DetailRoute(
     val detailActions = DetailActions(
         onBack = onBack,
         onRetry = viewModel::retry,
+        onRangeSelected = viewModel::onRangeSelected,
         observePrice = viewModel::observePrice
     )
 
     DetailScreen(
         uiState = uiState,
         initialAsset = viewModel.initialHeader,
+        selectedRange = viewModel.selectedRange,
         detailActions = detailActions
     )
 }
@@ -90,6 +101,7 @@ fun DetailRoute(
 private fun DetailScreen(
     uiState: DetailUiState,
     initialAsset: CoinDetailUiModel?,
+    selectedRange: TimeRange,
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
@@ -110,9 +122,9 @@ private fun DetailScreen(
                 appError = uiState.appError,
                 onRetry = detailActions.onRetry
             )
-
             is DetailUiState.Success -> SuccessState(
                 uiState = uiState,
+                selectedRange = selectedRange,
                 detailActions = detailActions
             )
         }
@@ -122,6 +134,7 @@ private fun DetailScreen(
 @Composable
 private fun SuccessState(
     uiState: DetailUiState.Success,
+    selectedRange: TimeRange,
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
@@ -152,7 +165,18 @@ private fun SuccessState(
         )
 
         TimeRangeChips(
+            selectedRange = selectedRange,
+            onRangeSelected = detailActions.onRangeSelected,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        OhlcChartSection(
+            ohlcPoints = uiState.ohlcPoints,
+            isLoading = uiState.isChartLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(horizontal = 16.dp)
         )
 
         StatsSection(
@@ -243,19 +267,57 @@ private fun PriceSection(
 }
 
 @Composable
-private fun TimeRangeChips(modifier: Modifier = Modifier) {
-    var selected by remember { mutableStateOf(TimeRange.ONE_DAY) }
-
+private fun TimeRangeChips(
+    selectedRange: TimeRange,
+    onRangeSelected: (TimeRange) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TimeRange.entries.forEach { range ->
             FilterChip(
-                selected = selected == range,
-                onClick = { selected = range },
+                selected = selectedRange == range,
+                onClick = { onRangeSelected(range) },
                 label = { Text(range.label) }
             )
+        }
+    }
+}
+
+@Composable
+private fun OhlcChartSection(
+    ohlcPoints: List<OhlcPoint>,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        when {
+            isLoading -> CircularProgressIndicator(
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.Center)
+            )
+            ohlcPoints.isNotEmpty() -> {
+                val modelProducer = remember { CartesianChartModelProducer() }
+
+                LaunchedEffect(ohlcPoints) {
+                    modelProducer.runTransaction {
+                        lineSeries {
+                            series(ohlcPoints.map { it.close })
+                        }
+                    }
+                }
+
+                CartesianChartHost(
+                    chart = rememberCartesianChart(
+                        rememberLineCartesianLayer()
+                    ),
+                    modelProducer = modelProducer,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
@@ -318,9 +380,11 @@ private fun DetailScreenPreview(uiState: DetailUiState) {
         DetailScreen(
             uiState = uiState,
             initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
+            selectedRange = TimeRange.ONE_DAY,
             detailActions = DetailActions(
                 onBack = {},
                 onRetry = {},
+                onRangeSelected = {},
                 observePrice = { flowOf(null) }
             )
         )
