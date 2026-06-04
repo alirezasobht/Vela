@@ -15,6 +15,7 @@ import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
 import com.vela.ui.navigation.DetailDestination
+import com.vela.ui.screens.detail.mapper.toCandleStickModel
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
@@ -87,7 +88,7 @@ class DetailViewModel @Inject constructor(
                 is DataResult.Success -> {
                     val success = _uiState.value as? DetailUiState.Success ?: return@launch
                     _uiState.value = success.copy(
-                        ohlcPoints = result.data,
+                        candlestickModelPartial = result.data.toCandleStickModel(),
                         isChartLoading = false
                     )
                 }

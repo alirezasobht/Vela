@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.vico.compose.m3)
+    implementation(libs.kotlinDateTime)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

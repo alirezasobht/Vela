@@ -25,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,22 +38,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.data.CandlestickCartesianLayerModel
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
+import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.AppError
-import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
+import com.vela.ui.common.components.charts.candle.CandleStickChart
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
+import com.vela.ui.screens.detail.mapper.toCandleStickModel
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
@@ -122,6 +119,7 @@ private fun DetailScreen(
                 appError = uiState.appError,
                 onRetry = detailActions.onRetry
             )
+
             is DetailUiState.Success -> SuccessState(
                 uiState = uiState,
                 selectedRange = selectedRange,
@@ -171,11 +169,11 @@ private fun SuccessState(
         )
 
         OhlcChartSection(
-            ohlcPoints = uiState.ohlcPoints,
+            candlestickModelPartial = uiState.candlestickModelPartial,
             isLoading = uiState.isChartLoading,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(216.dp)
                 .padding(horizontal = 16.dp)
         )
 
@@ -288,7 +286,7 @@ private fun TimeRangeChips(
 
 @Composable
 private fun OhlcChartSection(
-    ohlcPoints: List<OhlcPoint>,
+    candlestickModelPartial: CandlestickCartesianLayerModel.Partial?,
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -299,23 +297,12 @@ private fun OhlcChartSection(
                     .size(24.dp)
                     .align(Alignment.Center)
             )
-            ohlcPoints.isNotEmpty() -> {
-                val modelProducer = remember { CartesianChartModelProducer() }
 
-                LaunchedEffect(ohlcPoints) {
-                    modelProducer.runTransaction {
-                        lineSeries {
-                            series(ohlcPoints.map { it.close })
-                        }
-                    }
-                }
-
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberLineCartesianLayer()
-                    ),
-                    modelProducer = modelProducer,
-                    modifier = Modifier.fillMaxSize()
+            candlestickModelPartial != null -> {
+                CandleStickChart(
+                    model = candlestickModelPartial,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalItemsCount = 4
                 )
             }
         }
@@ -404,14 +391,22 @@ private fun DetailScreenErrorPreview() =
 @Preview(showBackground = true)
 @Composable
 private fun DetailScreenSuccessPreview() =
-    DetailScreenPreview(uiState = DetailUiState.Success(detail = FakeDetailDataSource.detail.toUiModel()))
-
-@Preview(showBackground = true)
-@Composable
-private fun DetailScreenSuccessWithErrorPreview() =
     DetailScreenPreview(
         uiState = DetailUiState.Success(
             detail = FakeDetailDataSource.detail.toUiModel(),
+            isChartLoading = false,
+            candlestickModelPartial = FakeOhlcDataSource.bitcoinOhlc.toCandleStickModel()
+        )
+    )
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
+    DetailScreenPreview(
+        uiState = DetailUiState.Success(
+            detail = FakeDetailDataSource.detail.toUiModel(),
+            isChartLoading = false,
+            candlestickModelPartial = FakeOhlcDataSource.bitcoinOhlc.toCandleStickModel(),
             nonBlockingError = AppError.NoInternet
         )
     )
