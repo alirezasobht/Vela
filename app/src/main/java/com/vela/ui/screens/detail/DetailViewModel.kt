@@ -20,6 +20,7 @@ import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +42,7 @@ class DetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
+    private var ohlcJob: Job? = null
     var selectedRange by mutableStateOf(TimeRange.ONE_DAY)
         private set
 
@@ -82,7 +84,8 @@ class DetailViewModel @Inject constructor(
     private fun loadOhlc(range: TimeRange) {
         val current = _uiState.value as? DetailUiState.Success ?: return
         _uiState.value = current.copy(isChartLoading = true)
-        viewModelScope.launch {
+        ohlcJob?.cancel()
+        ohlcJob = viewModelScope.launch {
             when (val result = getOhlc(coinId, range)) {
                 is DataResult.Success -> {
                     val success = _uiState.value as? DetailUiState.Success ?: return@launch

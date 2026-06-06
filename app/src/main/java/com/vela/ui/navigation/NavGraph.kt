@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.vela.ui.common.components.PlaceholderScreen
 import com.vela.ui.screens.detail.DetailRoute
 import com.vela.ui.screens.home.HomeRoute
 import com.vela.ui.screens.markets.MarketsRoute
@@ -36,6 +37,9 @@ fun VelaNavGraph(
                 }
             )
         }
+        composable(Screen.Watchlist.route) {
+            PlaceholderScreen(title = "Watchlist")
+        }
         composable(Screen.Search.route) {
             SearchRoute(
                 navigateToDetail = { coinId ->
@@ -43,7 +47,9 @@ fun VelaNavGraph(
                 }
             )
         }
-
+        composable(Screen.Alerts.route) {
+            PlaceholderScreen(title = "Alerts")
+        }
         composable<DetailDestination> { backStackEntry ->
             val dest: DetailDestination = backStackEntry.toRoute()
             DetailRoute(
