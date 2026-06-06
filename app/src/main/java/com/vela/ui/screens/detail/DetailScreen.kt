@@ -51,6 +51,7 @@ import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.charts.candle.CandleStickChart
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
+import com.vela.ui.screens.detail.mapper.timestamps
 import com.vela.ui.screens.detail.mapper.toCandleStickModel
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
@@ -171,6 +172,7 @@ private fun SuccessState(
         OhlcChartSection(
             ohlcPoints = uiState.ohlcPoints,
             isLoading = uiState.isChartLoading,
+            timeRange = selectedRange,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(216.dp)
@@ -288,6 +290,7 @@ private fun TimeRangeChips(
 private fun OhlcChartSection(
     ohlcPoints: List<OhlcPoint>,
     isLoading: Boolean,
+    timeRange: TimeRange,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -300,6 +303,8 @@ private fun OhlcChartSection(
             ohlcPoints.isNotEmpty() -> {
                 CandleStickChart(
                     model = ohlcPoints.toCandleStickModel(),
+                    timestamps = ohlcPoints.timestamps(),
+                    timeRange = timeRange,
                     modifier = Modifier.fillMaxSize(),
                     verticalItemsCount = 4
                 )

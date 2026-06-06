@@ -36,8 +36,12 @@ import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.OhlcPoint
+import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.charts.RangeProvider
 import com.vela.ui.common.components.charts.StartAxisValueFormatter
+import com.vela.ui.common.components.charts.bottomAxisValueFormatter
+import com.vela.ui.screens.detail.mapper.TimestampsKey
+import com.vela.ui.screens.detail.mapper.timestamps
 import com.vela.ui.screens.detail.mapper.toCandleStickModel
 import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.runBlocking
@@ -47,6 +51,8 @@ private val MarkerValueFormatter = DefaultCartesianMarker.ValueFormatter.default
 @Composable
 fun CandleStickChart(
     model: CandlestickCartesianLayerModel.Partial,
+    timestamps: List<Long>,
+    timeRange: TimeRange,
     modifier: Modifier = Modifier,
     verticalItemsCount: Int = 4,
 ) {
@@ -58,6 +64,7 @@ fun CandleStickChart(
         runBlocking {
             modelProducer.runTransaction {
                 add(model)
+                extras { it[TimestampsKey] = timestamps }
             }
         }
     }
@@ -65,6 +72,7 @@ fun CandleStickChart(
     LaunchedEffect(model) {
         modelProducer.runTransaction {
             add(model)
+            extras { it[TimestampsKey] = timestamps }
         }
     }
 
@@ -78,8 +86,7 @@ fun CandleStickChart(
                 ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 guideline = null,
-                // TODO: replace with real date/time labels from OhlcPoint.timestamp
-                valueFormatter = { _, _, _ -> "." }
+                valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
             ),
             marker = rememberOhlcChartMarker(valueFormatter = MarkerValueFormatter, showIndicator = false),
         ),
@@ -145,10 +152,12 @@ private fun rememberOhlcChartMarker(
 // ------ Previews -------
 
 @Composable
-private fun ChartPreview(ohlcPoints: List<OhlcPoint>) {
+private fun ChartPreview(ohlcPoints: List<OhlcPoint>, timeRange: TimeRange = TimeRange.ONE_DAY) {
     VelaTheme {
         CandleStickChart(
             model = ohlcPoints.toCandleStickModel(),
+            timestamps = ohlcPoints.timestamps(),
+            timeRange = timeRange,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(216.dp)
@@ -159,12 +168,20 @@ private fun ChartPreview(ohlcPoints: List<OhlcPoint>) {
 
 @Preview
 @Composable
-private fun BitcoinChartPreview() = ChartPreview(FakeOhlcDataSource.bitcoinOhlc)
+private fun BitcoinChartPreview() = ChartPreview(FakeOhlcDataSource.bitcoinOhlc, TimeRange.ONE_DAY)
 
 @Preview
 @Composable
-private fun UsdcChartPreview() = ChartPreview(FakeOhlcDataSource.usdcOhlc)
+private fun EthereumChartPreview() = ChartPreview(FakeOhlcDataSource.ethereumOhlc, TimeRange.SEVEN_DAYS)
 
 @Preview
 @Composable
-private fun EthChartPreview() = ChartPreview(FakeOhlcDataSource.ethOhlc)
+private fun SolanaChartPreview() = ChartPreview(FakeOhlcDataSource.solanaOhlc, TimeRange.ONE_MONTH)
+
+@Preview
+@Composable
+private fun UsdcChartPreview() = ChartPreview(FakeOhlcDataSource.usdcOhlc, TimeRange.ONE_YEAR)
+
+@Preview
+@Composable
+private fun AvaxChartPreview() = ChartPreview(FakeOhlcDataSource.avaxOhlc, TimeRange.ONE_YEAR)
