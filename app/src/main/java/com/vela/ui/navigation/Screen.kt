@@ -9,15 +9,40 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.vela.R
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-sealed class Screen(
-    val route: String,
+sealed interface Screen {
+    @Serializable
+    data object Dashboard : Screen
+
+    @Serializable
+    data class CoinDetail(val coinId: String) : Screen
+}
+
+@Serializable
+sealed class DashboardTab(
     @StringRes val labelRes: Int,
-    val icon: ImageVector
+    @Transient val icon: ImageVector = Icons.Default.Home
 ) {
-    data object Home : Screen("home", R.string.nav_home, Icons.Default.Home)
-    data object Markets : Screen("markets", R.string.nav_markets, Icons.Default.TrendingUp)
-    data object Watchlist : Screen("watchlist", R.string.nav_watchlist, Icons.Default.Star)
-    data object Search : Screen("search", R.string.nav_search, Icons.Default.Search)
-    data object Alerts : Screen("alerts", R.string.nav_alerts, Icons.Default.Notifications)
+
+    companion object {
+        @Transient
+        val tabs: List<DashboardTab> = listOf(Home, Markets, Watchlist, Search, Alerts)
+    }
+
+    @Serializable
+    data object Home : DashboardTab(R.string.nav_home, Icons.Default.Home)
+
+    @Serializable
+    data object Markets : DashboardTab(R.string.nav_markets, Icons.Default.TrendingUp)
+
+    @Serializable
+    data object Watchlist : DashboardTab(R.string.nav_watchlist, Icons.Default.Star)
+
+    @Serializable
+    data object Search : DashboardTab(R.string.nav_search, Icons.Default.Search)
+
+    @Serializable
+    data object Alerts : DashboardTab(R.string.nav_alerts, Icons.Default.Notifications)
 }

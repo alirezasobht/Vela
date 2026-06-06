@@ -14,7 +14,7 @@ import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.ui.base.AssetHolder
 import com.vela.ui.base.PriceAwareViewModel
-import com.vela.ui.navigation.DetailDestination
+import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
@@ -54,7 +54,7 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
-        savedStateHandle.toRoute<DetailDestination>().let { dest ->
+        savedStateHandle.toRoute<Screen.CoinDetail>().let { dest ->
             coinId = dest.coinId
             initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
         }

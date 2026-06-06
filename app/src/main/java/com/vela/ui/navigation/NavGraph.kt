@@ -1,5 +1,6 @@
 package com.vela.ui.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -13,49 +14,74 @@ import com.vela.ui.screens.markets.MarketsRoute
 import com.vela.ui.screens.search.SearchRoute
 
 @Composable
-fun VelaNavGraph(
-    navController: NavHostController,
+fun RootNavGraph(
+    rootNavController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     NavHost(
-        navController = navController,
-        startDestination = Screen.Home.route,
+        navController = rootNavController,
+        startDestination = Screen.Dashboard,
         modifier = modifier
     ) {
 
-        composable(Screen.Home.route) {
-            HomeRoute(
-                navigateToDetail = { coinId ->
-                    navController.navigate(DetailDestination(coinId))
-                }
-            )
+        composable<Screen.Dashboard> {
+            DashboardScaffold { innerPadding, bottomNavController ->
+                DashboardNavGraph(
+                    rootNavController = rootNavController,
+                    bottomNavController = bottomNavController,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
         }
-        composable(Screen.Markets.route) {
-            MarketsRoute(
-                navigateToDetail = { coinId ->
-                    navController.navigate(DetailDestination(coinId))
-                }
-            )
-        }
-        composable(Screen.Watchlist.route) {
-            PlaceholderScreen(title = "Watchlist")
-        }
-        composable(Screen.Search.route) {
-            SearchRoute(
-                navigateToDetail = { coinId ->
-                    navController.navigate(DetailDestination(coinId))
-                }
-            )
-        }
-        composable(Screen.Alerts.route) {
-            PlaceholderScreen(title = "Alerts")
-        }
-        composable<DetailDestination> { backStackEntry ->
-            val dest: DetailDestination = backStackEntry.toRoute()
+
+        composable<Screen.CoinDetail> { backStackEntry ->
+            val dest: Screen.CoinDetail = backStackEntry.toRoute()
             DetailRoute(
                 coinId = dest.coinId,
-                onBack = { navController.popBackStack() }
+                onBack = { rootNavController.popBackStack() }
             )
+        }
+    }
+}
+
+@Composable
+fun DashboardNavGraph(
+    rootNavController: NavHostController,
+    bottomNavController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = bottomNavController,
+        startDestination = DashboardTab.Home,
+        modifier = modifier
+    ) {
+
+        composable<DashboardTab.Home> {
+            HomeRoute(
+                navigateToDetail = { coinId ->
+                    rootNavController.navigate(Screen.CoinDetail(coinId))
+                }
+            )
+        }
+        composable<DashboardTab.Markets> {
+            MarketsRoute(
+                navigateToDetail = { coinId ->
+                    rootNavController.navigate(Screen.CoinDetail(coinId))
+                }
+            )
+        }
+        composable<DashboardTab.Watchlist> {
+            PlaceholderScreen(title = "Watchlist")
+        }
+        composable<DashboardTab.Search> {
+            SearchRoute(
+                navigateToDetail = { coinId ->
+                    rootNavController.navigate(Screen.CoinDetail(coinId))
+                }
+            )
+        }
+        composable<DashboardTab.Alerts> {
+            PlaceholderScreen(title = "Alerts")
         }
     }
 }
