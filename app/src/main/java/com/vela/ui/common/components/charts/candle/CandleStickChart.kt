@@ -46,13 +46,15 @@ private val MarkerValueFormatter = DefaultCartesianMarker.ValueFormatter.default
 
 @Composable
 fun CandleStickChart(
-    model: CandlestickCartesianLayerModel.Partial?,
+    model: CandlestickCartesianLayerModel.Partial,
     modifier: Modifier = Modifier,
     verticalItemsCount: Int = 4,
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    if (LocalInspectionMode.current && model != null) {
+    // Use `runBlocking` only for previews, which don’t support asynchronous execution.
+    // https://github.com/patrykandpatrick/vico/blob/8f2aa9e175a358eba2aacc5c4e7f01bbbe663b70/sample/charts/compose/src/commonMain/kotlin/com/patrykandpatrick/vico/sample/charts/compose/GoldPrices.kt
+    if (LocalInspectionMode.current) {
         runBlocking {
             modelProducer.runTransaction {
                 add(model)
@@ -61,10 +63,8 @@ fun CandleStickChart(
     }
 
     LaunchedEffect(model) {
-        if (model != null) {
-            modelProducer.runTransaction {
-                add(model)
-            }
+        modelProducer.runTransaction {
+            add(model)
         }
     }
 
@@ -78,7 +78,8 @@ fun CandleStickChart(
                 ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 guideline = null,
-                valueFormatter = { _, value, _ -> "." }
+                // TODO: replace with real date/time labels from OhlcPoint.timestamp
+                valueFormatter = { _, _, _ -> "." }
             ),
             marker = rememberOhlcChartMarker(valueFormatter = MarkerValueFormatter, showIndicator = false),
         ),

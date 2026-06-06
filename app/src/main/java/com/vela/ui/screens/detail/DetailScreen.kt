@@ -38,12 +38,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.patrykandpatrick.vico.compose.cartesian.data.CandlestickCartesianLayerModel
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.AppError
+import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
@@ -169,7 +169,7 @@ private fun SuccessState(
         )
 
         OhlcChartSection(
-            candlestickModelPartial = uiState.candlestickModelPartial,
+            ohlcPoints = uiState.ohlcPoints,
             isLoading = uiState.isChartLoading,
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,7 +286,7 @@ private fun TimeRangeChips(
 
 @Composable
 private fun OhlcChartSection(
-    candlestickModelPartial: CandlestickCartesianLayerModel.Partial?,
+    ohlcPoints: List<OhlcPoint>,
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -297,10 +297,9 @@ private fun OhlcChartSection(
                     .size(24.dp)
                     .align(Alignment.Center)
             )
-
-            candlestickModelPartial != null -> {
+            ohlcPoints.isNotEmpty() -> {
                 CandleStickChart(
-                    model = candlestickModelPartial,
+                    model = ohlcPoints.toCandleStickModel(),
                     modifier = Modifier.fillMaxSize(),
                     verticalItemsCount = 4
                 )
@@ -395,7 +394,7 @@ private fun DetailScreenSuccessPreview() =
         uiState = DetailUiState.Success(
             detail = FakeDetailDataSource.detail.toUiModel(),
             isChartLoading = false,
-            candlestickModelPartial = FakeOhlcDataSource.bitcoinOhlc.toCandleStickModel()
+            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
         )
     )
 
@@ -406,7 +405,7 @@ private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
         uiState = DetailUiState.Success(
             detail = FakeDetailDataSource.detail.toUiModel(),
             isChartLoading = false,
-            candlestickModelPartial = FakeOhlcDataSource.bitcoinOhlc.toCandleStickModel(),
+            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
             nonBlockingError = AppError.NoInternet
         )
     )
