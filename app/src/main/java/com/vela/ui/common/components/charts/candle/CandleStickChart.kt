@@ -63,11 +63,14 @@ fun CandleStickChart(
     // Use `runBlocking` only for previews, which don’t support asynchronous execution.
     // https://github.com/patrykandpatrick/vico/blob/8f2aa9e175a358eba2aacc5c4e7f01bbbe663b70/sample/charts/compose/src/commonMain/kotlin/com/patrykandpatrick/vico/sample/charts/compose/GoldPrices.kt
     if (LocalInspectionMode.current) {
-        runBlocking {
-            modelProducer.runTransaction {
-                add(model)
-                extras { it[TimestampsKey] = timestamps }
+        remember(model) {
+            runBlocking {
+                modelProducer.runTransaction {
+                    add(model)
+                    extras { it[TimestampsKey] = timestamps }
+                }
             }
+            true
         }
     }
 
@@ -92,8 +95,8 @@ fun CandleStickChart(
             ),
             marker = rememberOhlcChartMarker(valueFormatter = MarkerValueFormatter, showIndicator = false),
         ),
-        modelProducer,
-        modifier,
+        modelProducer = modelProducer,
+        modifier = modifier,
         scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
     )
 }

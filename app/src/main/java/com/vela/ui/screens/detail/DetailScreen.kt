@@ -1,7 +1,6 @@
 package com.vela.ui.screens.detail
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +16,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.StarOutline
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,16 +40,15 @@ import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.AppError
-import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
-import com.vela.ui.common.components.charts.candle.CandleStickChart
 import com.vela.ui.common.components.model.SimplePriceUiModel
+import com.vela.ui.common.util.LandscapePreview
 import com.vela.ui.common.util.ScreenVisibilityObserver
-import com.vela.ui.screens.detail.mapper.timestamps
-import com.vela.ui.screens.detail.mapper.toCandleStickModel
+import com.vela.ui.screens.detail.chart.FullScreenChartDialog
+import com.vela.ui.screens.detail.chart.OhlcChartSection
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
@@ -67,6 +63,7 @@ private data class DetailActions(
     val onBack: () -> Unit,
     val onRetry: () -> Unit,
     val onRangeSelected: (TimeRange) -> Unit,
+    val onToggleFullScreen: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>
 )
 
@@ -84,6 +81,7 @@ fun DetailRoute(
         onBack = onBack,
         onRetry = viewModel::retry,
         onRangeSelected = viewModel::onRangeSelected,
+        onToggleFullScreen = viewModel::toggleChartFullScreen,
         observePrice = viewModel::observePrice
     )
 
@@ -91,6 +89,7 @@ fun DetailRoute(
         uiState = uiState,
         initialAsset = viewModel.initialHeader,
         selectedRange = viewModel.selectedRange,
+        isChartFullScreen = viewModel.isChartFullScreen,
         detailActions = detailActions
     )
 }
@@ -100,6 +99,7 @@ private fun DetailScreen(
     uiState: DetailUiState,
     initialAsset: CoinDetailUiModel?,
     selectedRange: TimeRange,
+    isChartFullScreen: Boolean,
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
@@ -122,10 +122,10 @@ private fun DetailScreen(
                 appError = uiState.appError,
                 onRetry = detailActions.onRetry
             )
-
             is DetailUiState.Success -> SuccessState(
                 uiState = uiState,
                 selectedRange = selectedRange,
+                isChartFullScreen = isChartFullScreen,
                 detailActions = detailActions
             )
         }
@@ -136,6 +136,7 @@ private fun DetailScreen(
 private fun SuccessState(
     uiState: DetailUiState.Success,
     selectedRange: TimeRange,
+    isChartFullScreen: Boolean,
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
@@ -150,6 +151,16 @@ private fun SuccessState(
     val marketCap = simplePrice?.marketCap ?: detail.marketCap
     val totalVolume = simplePrice?.totalVolume ?: detail.totalVolume
     val priceColor = if (isPositive) sparklineBullColor else sparklineBearColor
+
+    if (isChartFullScreen) {
+        FullScreenChartDialog(
+            ohlcPoints = uiState.ohlcPoints,
+            isChartLoading = uiState.isChartLoading,
+            selectedRange = selectedRange,
+            onRangeSelected = detailActions.onRangeSelected,
+            onDismiss = detailActions.onToggleFullScreen
+        )
+    }
 
     Column(
         modifier = modifier
@@ -166,20 +177,17 @@ private fun SuccessState(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        TimeRangeChips(
-            selectedRange = selectedRange,
-            onRangeSelected = detailActions.onRangeSelected,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-        )
-
         OhlcChartSection(
             ohlcPoints = uiState.ohlcPoints,
-            isLoading = uiState.isChartLoading,
-            timeRange = selectedRange,
+            isChartLoading = uiState.isChartLoading,
+            selectedRange = selectedRange,
+            isFullScreen = false,
+            onToggleFullScreen = detailActions.onToggleFullScreen,
+            onRangeSelected = detailActions.onRangeSelected,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(216.dp)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
         )
 
         StatsSection(
@@ -270,61 +278,6 @@ private fun PriceSection(
 }
 
 @Composable
-private fun TimeRangeChips(
-    selectedRange: TimeRange,
-    onRangeSelected: (TimeRange) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        TimeRange.entries.forEach { range ->
-            FilterChip(
-                selected = selectedRange == range,
-                onClick = { onRangeSelected(range) },
-                label = { Text(range.label) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun OhlcChartSection(
-    ohlcPoints: List<OhlcPoint>,
-    isLoading: Boolean,
-    timeRange: TimeRange,
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier) {
-        when {
-            isLoading -> CircularProgressIndicator(
-                modifier = Modifier
-                    .size(24.dp)
-                    .align(Alignment.Center)
-            )
-            ohlcPoints.isNotEmpty() -> {
-                CandleStickChart(
-                    model = ohlcPoints.toCandleStickModel(),
-                    timestamps = ohlcPoints.timestamps(),
-                    timeRange = timeRange,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalItemsCount = 4
-                )
-            }
-            else -> {
-                Text(
-                    text = stringResource(R.string.label_no_chart_data),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun StatsSection(
     marketCap: String,
     totalVolume: String,
@@ -377,16 +330,18 @@ private fun StatRow(
 // ---- Previews ----
 
 @Composable
-private fun DetailScreenPreview(uiState: DetailUiState) {
+private fun DetailScreenPreview(uiState: DetailUiState, isChartFullScreen: Boolean = false) {
     VelaTheme {
         DetailScreen(
             uiState = uiState,
             initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
             selectedRange = TimeRange.ONE_DAY,
+            isChartFullScreen = isChartFullScreen,
             detailActions = DetailActions(
                 onBack = {},
                 onRetry = {},
                 onRangeSelected = {},
+                onToggleFullScreen = {},
                 observePrice = { flowOf(null) }
             )
         )
@@ -424,4 +379,16 @@ private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
             ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
             nonBlockingError = AppError.NoInternet
         )
+    )
+
+@LandscapePreview(showBackground = true)
+@Composable
+private fun FullScreenChartPreview() =
+    DetailScreenPreview(
+        uiState = DetailUiState.Success(
+            detail = FakeDetailDataSource.detail.toUiModel(),
+            isChartLoading = false,
+            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+        ),
+        isChartFullScreen = true
     )

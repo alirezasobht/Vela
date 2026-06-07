@@ -46,6 +46,9 @@ class DetailViewModel @Inject constructor(
     var selectedRange by mutableStateOf(TimeRange.ONE_DAY)
         private set
 
+    var isChartFullScreen by mutableStateOf(false)
+        private set
+
     override fun getIdsForPricing(): List<String> = listOf(coinId)
 
     override fun onPriceError(error: AppError?) {
@@ -66,6 +69,10 @@ class DetailViewModel @Inject constructor(
     fun onRangeSelected(range: TimeRange) {
         selectedRange = range
         loadOhlc(range)
+    }
+
+    fun toggleChartFullScreen() {
+        isChartFullScreen = !isChartFullScreen
     }
 
     private fun loadDetail() {
