@@ -31,4 +31,5 @@
     <string name="label_circulating_supply">Circulating Supply</string>
     <string name="label_ath">All Time High</string>
     <string name="label_atl">All Time Low</string>
+    <string name="label_no_chart_data">No chart data available</string>
 </resources>

@@ -103,14 +103,16 @@ private fun DetailScreen(
     detailActions: DetailActions,
     modifier: Modifier = Modifier
 ) {
+    val headerModel = initialAsset ?: (uiState as? DetailUiState.Success)?.detail
+
     Column(
         modifier = modifier
             .fillMaxSize()
     ) {
         HeaderSection(
-            name = initialAsset?.name ?: (uiState as? DetailUiState.Success)?.detail?.name ?: "",
-            symbol = initialAsset?.symbol ?: (uiState as? DetailUiState.Success)?.detail?.symbol ?: "",
-            image = initialAsset?.image ?: (uiState as? DetailUiState.Success)?.detail?.image ?: "",
+            name = headerModel?.name ?: "",
+            symbol = headerModel?.symbol ?: "",
+            image = headerModel?.image,
             onBack = detailActions.onBack
         )
 
@@ -143,6 +145,7 @@ private fun SuccessState(
 
     val price = simplePrice?.price ?: detail.currentPrice
     val priceChangePercent = simplePrice?.priceChange ?: detail.priceChangePercent24h
+    val priceChange24h = simplePrice?.priceChange24h ?: detail.priceChange24h
     val isPositive = simplePrice?.isPositive ?: detail.isPositive
     val marketCap = simplePrice?.marketCap ?: detail.marketCap
     val totalVolume = simplePrice?.totalVolume ?: detail.totalVolume
@@ -157,7 +160,7 @@ private fun SuccessState(
 
         PriceSection(
             price = price,
-            priceChange24h = detail.priceChange24h,
+            priceChange24h = priceChange24h,
             priceChangePercent = priceChangePercent,
             priceColor = priceColor,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -235,7 +238,7 @@ private fun HeaderSection(
             )
         }
 
-        IconButton(onClick = { /* watchlist placeholder */ }) {
+        IconButton(onClick = { /* TODO: watchlist placeholder */ }) {
             Icon(
                 imageVector = Icons.Default.StarOutline,
                 contentDescription = stringResource(R.string.cd_watchlist)
@@ -259,7 +262,7 @@ private fun PriceSection(
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "$priceChange24h  ·  $priceChangePercent",
+            text = "$priceChange24h  \u00b7  $priceChangePercent",
             style = MaterialTheme.typography.bodyMedium,
             color = priceColor
         )
@@ -307,6 +310,14 @@ private fun OhlcChartSection(
                     timeRange = timeRange,
                     modifier = Modifier.fillMaxSize(),
                     verticalItemsCount = 4
+                )
+            }
+            else -> {
+                Text(
+                    text = stringResource(R.string.label_no_chart_data),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Center)
                 )
             }
         }

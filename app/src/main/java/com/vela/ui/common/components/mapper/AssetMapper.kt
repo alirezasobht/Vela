@@ -21,6 +21,7 @@ fun Asset.toUiModel(): AssetUiModel = AssetUiModel(
 fun SimplePrice.toUiModel(): SimplePriceUiModel = SimplePriceUiModel(
     price = price?.let { formatPrice(it) } ?: "",
     priceChange = priceChange?.let { formatChange(it) } ?: "",
+    priceChange24h = priceChange24hAbsolute?.let { formatSignedPrice(it) },
     isPositive = (priceChange ?: 0.0) >= 0.0,
     marketCap = marketCap?.let { formatLargeNumber(it) },
     totalVolume = totalVolume?.let { formatLargeNumber(it) }
@@ -37,6 +38,11 @@ internal fun formatPrice(price: Double): String = when {
         if (decimalCount <= 4) "$%.4f".format(price)
         else "$$trimmed"
     }
+}
+
+internal fun formatSignedPrice(value: Double): String {
+    val sign = if (value >= 0) "+" else ""
+    return "$sign${formatPrice(value)}"
 }
 
 internal fun formatChange(change: Double): String {

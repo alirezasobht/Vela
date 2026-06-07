@@ -73,7 +73,10 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = getCoinDetail(coinId)) {
                 is DataResult.Success -> {
-                    _uiState.value = DetailUiState.Success(detail = result.data.toUiModel())
+                    _uiState.value = DetailUiState.Success(
+                        detail = result.data.toUiModel(),
+                        isChartLoading = true
+                    )
                     loadOhlc(selectedRange)
                 }
                 is DataResult.Error -> _uiState.value = DetailUiState.Error(result.appError)
