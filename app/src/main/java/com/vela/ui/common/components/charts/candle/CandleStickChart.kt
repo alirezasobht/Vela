@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,7 +32,6 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.LayeredComponent
-import com.patrykandpatrick.vico.compose.common.MarkerCornerBasedShape
 import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
@@ -48,8 +48,6 @@ import com.vela.ui.screens.detail.mapper.toCandleStickModel
 import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.runBlocking
 
-private val MarkerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(prefix = "$")
-
 @Composable
 fun CandleStickChart(
     model: CandlestickCartesianLayerModel.Partial,
@@ -60,7 +58,7 @@ fun CandleStickChart(
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    // Use `runBlocking` only for previews, which don’t support asynchronous execution.
+    // Use `runBlocking` only for previews, which don't support asynchronous execution.
     // https://github.com/patrykandpatrick/vico/blob/8f2aa9e175a358eba2aacc5c4e7f01bbbe663b70/sample/charts/compose/src/commonMain/kotlin/com/patrykandpatrick/vico/sample/charts/compose/GoldPrices.kt
     if (LocalInspectionMode.current) {
         remember(model) {
@@ -81,6 +79,10 @@ fun CandleStickChart(
         }
     }
 
+    val markerValueFormatter = remember(timestamps, timeRange) {
+        ohlcMarkerValueFormatter(timestamps)
+    }
+
     CartesianChartHost(
         rememberCartesianChart(
             rememberCandlestickCartesianLayer(rangeProvider = RangeProvider),
@@ -93,7 +95,10 @@ fun CandleStickChart(
                 guideline = null,
                 valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
             ),
-            marker = rememberOhlcChartMarker(valueFormatter = MarkerValueFormatter, showIndicator = false),
+            marker = rememberOhlcChartMarker(
+                valueFormatter = markerValueFormatter,
+                showIndicator = false
+            ),
         ),
         modelProducer = modelProducer,
         modifier = modifier,
@@ -107,7 +112,12 @@ private fun rememberOhlcChartMarker(
         DefaultCartesianMarker.ValueFormatter.default(),
     showIndicator: Boolean = true,
 ): CartesianMarker {
-    val labelBackgroundShape = MarkerCornerBasedShape(CircleShape)
+    val labelBackgroundShape = ShapeComponent(
+        fill = Fill(MaterialTheme.colorScheme.background),
+        shape = RoundedCornerShape(8.dp),
+        strokeFill = Fill(MaterialTheme.colorScheme.outline),
+        strokeThickness = 1.dp,
+    ).shape
     val labelBackground =
         rememberShapeComponent(
             fill = Fill(MaterialTheme.colorScheme.background),
@@ -117,15 +127,15 @@ private fun rememberOhlcChartMarker(
         )
     val label =
         rememberTextComponent(
-            style =
-                TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    fontSize = 12.sp,
-                ),
+            style = TextStyle(
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+            ),
             padding = Insets(8.dp, 4.dp),
             background = labelBackground,
             minWidth = TextComponent.MinWidth.fixed(40.dp),
+            lineCount = 5, // date + O + H + L + C
         )
     val indicatorFrontComponent =
         rememberShapeComponent(Fill(MaterialTheme.colorScheme.surface), CircleShape)
@@ -133,6 +143,7 @@ private fun rememberOhlcChartMarker(
     return rememberDefaultCartesianMarker(
         label = label,
         valueFormatter = valueFormatter,
+        labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
         indicator =
             if (showIndicator) {
                 { color ->
