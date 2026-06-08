@@ -25,7 +25,7 @@ abstract class PriceAwareViewModel(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val refreshDelayTime: Long = savedStateHandle["delay"] ?: 5000L
+    private val refreshDelayTime: Long = savedStateHandle["delay"] ?: (5 * 60 * 1000L)
 
     private val _isScreenVisible = MutableStateFlow(false)
     private val _prices = MutableStateFlow<Map<String, SimplePrice?>>(emptyMap())

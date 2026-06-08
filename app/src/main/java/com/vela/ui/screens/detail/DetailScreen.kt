@@ -1,5 +1,6 @@
 package com.vela.ui.screens.detail
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,8 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.LandscapePreview
+import com.vela.ui.common.util.LocalAnimatedVisibilityScope
+import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.screens.detail.chart.FullScreenChartDialog
 import com.vela.ui.screens.detail.chart.OhlcChartSection
@@ -118,6 +121,7 @@ private fun DetailScreen(
             symbol = headerModel?.symbol ?: "",
             image = headerModel?.image,
             marketCapRank = headerModel?.marketCapRank,
+            coinId = headerModel?.id ?: "",
             onBack = detailActions.onBack
         )
 
@@ -213,15 +217,20 @@ private fun SuccessState(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HeaderSection(
     name: String,
     symbol: String,
     image: String?,
     marketCapRank: Int?,
+    coinId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current ?: return
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -236,22 +245,40 @@ private fun HeaderSection(
             )
         }
 
-        AsyncImage(
-            model = image,
-            contentDescription = name,
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape),
-            placeholder = rememberVectorPainter(Icons.Default.Paid),
-            error = rememberVectorPainter(Icons.Default.MonetizationOn)
-        )
+        with(sharedTransitionScope) {
+            AsyncImage(
+                model = image,
+                contentDescription = name,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (animatedVisibilityScope != null) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-image-$coinId"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        } else Modifier
+                    ),
+                placeholder = rememberVectorPainter(Icons.Default.Paid),
+                error = rememberVectorPainter(Icons.Default.MonetizationOn)
+            )
+        }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            with(sharedTransitionScope) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = if (animatedVisibilityScope != null) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "coin-name-$coinId"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    } else Modifier
+                )
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
