@@ -10,6 +10,7 @@ sealed interface DetailUiState {
         val detail: CoinDetailUiModel,
         val ohlcPoints: List<OhlcPoint> = emptyList(),
         val isChartLoading: Boolean = false,
+        val isRefreshing: Boolean = false,
         val nonBlockingError: AppError? = null
     ) : DetailUiState
 }

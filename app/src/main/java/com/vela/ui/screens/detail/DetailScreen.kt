@@ -18,11 +18,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -135,6 +137,7 @@ private fun DetailScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SuccessState(
     uiState: DetailUiState.Success,
@@ -165,42 +168,48 @@ private fun SuccessState(
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = detailActions.onRetry,
+        modifier = modifier.fillMaxSize()
     ) {
-        NonBlockingErrorBanner(error = uiState.nonBlockingError)
-
-        PriceSection(
-            price = price,
-            priceChange24h = priceChange24h,
-            priceChangePercent = priceChangePercent,
-            priceColor = priceColor,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        OhlcChartSection(
-            ohlcPoints = uiState.ohlcPoints,
-            isChartLoading = uiState.isChartLoading,
-            selectedRange = selectedRange,
-            isFullScreen = false,
-            onToggleFullScreen = detailActions.onToggleFullScreen,
-            onRangeSelected = detailActions.onRangeSelected,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(216.dp)
-                .padding(horizontal = 16.dp),
-        )
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            NonBlockingErrorBanner(error = uiState.nonBlockingError)
 
-        StatsSection(
-            marketCap = marketCap,
-            totalVolume = totalVolume,
-            circulatingSupply = detail.circulatingSupply,
-            ath = detail.ath,
-            atl = detail.atl,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+            PriceSection(
+                price = price,
+                priceChange24h = priceChange24h,
+                priceChangePercent = priceChangePercent,
+                priceColor = priceColor,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            OhlcChartSection(
+                ohlcPoints = uiState.ohlcPoints,
+                isChartLoading = uiState.isChartLoading,
+                selectedRange = selectedRange,
+                isFullScreen = false,
+                onToggleFullScreen = detailActions.onToggleFullScreen,
+                onRangeSelected = detailActions.onRangeSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(216.dp)
+                    .padding(horizontal = 16.dp),
+            )
+
+            StatsSection(
+                marketCap = marketCap,
+                totalVolume = totalVolume,
+                circulatingSupply = detail.circulatingSupply,
+                ath = detail.ath,
+                atl = detail.atl,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }
 

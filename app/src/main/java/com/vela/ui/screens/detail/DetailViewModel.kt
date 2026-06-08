@@ -64,7 +64,7 @@ class DetailViewModel @Inject constructor(
         loadDetail()
     }
 
-    fun retry() = loadDetail()
+    fun retry() = loadDetail(isRefresh = _uiState.value is DetailUiState.Success)
 
     fun onRangeSelected(range: TimeRange) {
         selectedRange = range
@@ -75,8 +75,13 @@ class DetailViewModel @Inject constructor(
         isChartFullScreen = !isChartFullScreen
     }
 
-    private fun loadDetail() {
-        _uiState.value = DetailUiState.Loading
+    private fun loadDetail(isRefresh: Boolean = false) {
+        if (isRefresh) {
+            val current = _uiState.value as? DetailUiState.Success ?: return
+            _uiState.value = current.copy(isRefreshing = true, nonBlockingError = null)
+        } else {
+            _uiState.value = DetailUiState.Loading
+        }
         viewModelScope.launch {
             when (val result = getCoinDetail(coinId)) {
                 is DataResult.Success -> {
@@ -86,7 +91,17 @@ class DetailViewModel @Inject constructor(
                     )
                     loadOhlc(selectedRange)
                 }
-                is DataResult.Error -> _uiState.value = DetailUiState.Error(result.appError)
+                is DataResult.Error -> {
+                    val current = _uiState.value
+                    if (current is DetailUiState.Success) {
+                        _uiState.value = current.copy(
+                            isRefreshing = false,
+                            nonBlockingError = result.appError
+                        )
+                    } else {
+                        _uiState.value = DetailUiState.Error(result.appError)
+                    }
+                }
             }
         }
     }
