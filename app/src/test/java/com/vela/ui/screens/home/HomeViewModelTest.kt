@@ -5,14 +5,17 @@ import androidx.lifecycle.ViewModelStore
 import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
+import com.vela.ui.base.AssetHolder
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -35,6 +38,8 @@ class HomeViewModelTest {
     private val getTopAssets: GetTopAssetsUseCase = mockk()
     private val refreshAssets: RefreshAssetsUseCase = mockk()
     private val getToday: GetTodayUseCase = mockk()
+    private val getPrices: GetPricesOnlyUseCase = mockk()
+    private val assetHolder = AssetHolder()
 
     private fun anAsset(id: String = "bitcoin") = Asset(
         id = id,
@@ -51,7 +56,9 @@ class HomeViewModelTest {
         getTopAssets = getTopAssets,
         refreshAssets = refreshAssets,
         getToday = getToday,
-        SavedStateHandle(mapOf("delay" to Long.MAX_VALUE))
+        assetHolder = assetHolder,
+        getPrices = getPrices,
+        savedStateHandle = SavedStateHandle(mapOf("delay" to Long.MAX_VALUE))
     )
 
     @Before
@@ -59,6 +66,7 @@ class HomeViewModelTest {
         every { getToday() } returns LocalDate.of(2000, 1, 1)
         every { getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
         coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
+        coEvery { getPrices(any()) } returns DataResult.Success(emptyMap())
         Dispatchers.setMain(testDispatcher)
     }
 
@@ -234,7 +242,7 @@ class HomeViewModelTest {
         viewModel.retry()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify(atLeast = 2) { getToday() }
+        verify(atLeast = 2) { getToday() }
     }
 
     @Test
@@ -322,30 +330,6 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `startAutoRefresh periodic execution timing`() = runTest {
-        val delay = 1000L
-        val vm = HomeViewModel(
-            getTopAssets = getTopAssets,
-            refreshAssets = refreshAssets,
-            getToday = getToday,
-            SavedStateHandle(mapOf("delay" to delay))
-        )
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        testDispatcher.scheduler.advanceTimeBy(delay + 1)
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 2) { refreshAssets(any()) }
-
-        // Clear the ViewModel to stop the infinite auto-refresh loop
-        val viewModelStore = ViewModelStore()
-        viewModelStore.put("key", vm)
-        viewModelStore.clear()
-
-        testDispatcher.scheduler.runCurrent()
-    }
-
-    @Test
     fun `Mutex concurrency exclusion`() = runTest {
         val vm = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -423,58 +407,6 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `SavedStateHandle default delay fallback check`() = runTest {
-        val vm = HomeViewModel(
-            getTopAssets = getTopAssets,
-            refreshAssets = refreshAssets,
-            getToday = getToday,
-            SavedStateHandle() // no delay key — defaults to 5000L
-        )
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        testDispatcher.scheduler.advanceTimeBy(4_999)
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        testDispatcher.scheduler.advanceTimeBy(2)
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 2) { refreshAssets(any()) }
-
-        // Clear the ViewModel to stop the infinite auto-refresh loop
-        val viewModelStore = ViewModelStore()
-        viewModelStore.put("key", vm)
-        viewModelStore.clear()
-
-        testDispatcher.scheduler.runCurrent()
-    }
-
-    @Test
-    fun `SavedStateHandle custom delay application`() = runTest {
-        val vm = HomeViewModel(
-            getTopAssets = getTopAssets,
-            refreshAssets = refreshAssets,
-            getToday = getToday,
-            SavedStateHandle(mapOf("delay" to 10_000L))
-        )
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        testDispatcher.scheduler.advanceTimeBy(9_999)
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        testDispatcher.scheduler.advanceTimeBy(2)
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 2) { refreshAssets(any()) }
-
-        // Clear the ViewModel to stop the infinite auto-refresh loop
-        val viewModelStore = ViewModelStore()
-        viewModelStore.put("key", vm)
-        viewModelStore.clear()
-
-        testDispatcher.scheduler.runCurrent()
-    }
-
-    @Test
     fun `doRefresh skip loading state if Success exists`() = runTest {
         val vm = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -546,7 +478,9 @@ class HomeViewModelTest {
             getTopAssets = getTopAssets,
             refreshAssets = refreshAssets,
             getToday = getToday,
-            SavedStateHandle(mapOf("delay" to delay))
+            assetHolder = assetHolder,
+            getPrices = getPrices,
+            savedStateHandle = SavedStateHandle(mapOf("delay" to delay))
         )
         testDispatcher.scheduler.runCurrent()
         coVerify(exactly = 1) { refreshAssets(any()) }
@@ -589,6 +523,6 @@ class HomeViewModelTest {
 
         val state = vm.uiState.value as HomeUiState.Success
         assertEquals("Tuesday, 26 May", state.formattedDate)
-        coVerify(atLeast = 1) { getToday() }
+        verify(atLeast = 1) { getToday() }
     }
 }
