@@ -6,14 +6,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.SearchAssetsUseCase
 import com.vela.ui.base.AssetHolder
-import com.vela.ui.base.PriceAwareViewModel
+import com.vela.ui.base.pricepolling.PricePolling
+import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -30,9 +32,9 @@ import javax.inject.Inject
 class SearchViewModel @Inject constructor(
     private val searchAssets: SearchAssetsUseCase,
     private val assetHolder: AssetHolder,
-    getPrices: GetPricesOnlyUseCase,
-    savedStateHandle: SavedStateHandle
-) : PriceAwareViewModel(getPrices, savedStateHandle) {
+    private val getPrices: GetPricesOnlyUseCase,
+    private val pricePolling: PricePollingController
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
 
     var query by mutableStateOf("")
         private set
@@ -42,10 +44,26 @@ class SearchViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
-    override fun getIdsForPricing(): List<String> =
+    override fun getIds(): List<String> =
         (_uiState.value as? SearchUiState.Results)?.assets?.map { it.id } ?: emptyList()
 
+    override fun onPriceError(error: AppError?) {
+        val current = _uiState.value as? SearchUiState.Results ?: return
+        _uiState.value = current.copy(nonBlockingError = error)
+    }
+
+    override fun onCleared() {
+        pricePolling.cancel()
+        super.onCleared()
+    }
+
     init {
+        pricePolling.bind(
+            scope = viewModelScope,
+            getPrices = getPrices,
+            delegate = this
+        )
+
         viewModelScope.launch {
             snapshotFlow { query }
                 .debounce(500)
@@ -55,11 +73,6 @@ class SearchViewModel @Inject constructor(
                     else startSearch(q)
                 }
         }
-    }
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value as? SearchUiState.Results ?: return
-        _uiState.value = current.copy(nonBlockingError = error)
     }
 
     fun onQueryChange(newQuery: String) {

@@ -5,7 +5,7 @@ package com.vela.ui.screens.home
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
@@ -14,7 +14,9 @@ import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.AssetHolder
-import com.vela.ui.base.PriceAwareViewModel
+import com.vela.ui.base.pricepolling.PricePolling
+import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.common.components.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,9 +37,9 @@ class HomeViewModel @Inject constructor(
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
     private val assetHolder: AssetHolder,
-    getPrices: GetPricesOnlyUseCase,
-    savedStateHandle: SavedStateHandle
-) : PriceAwareViewModel(getPrices, savedStateHandle) {
+    private val getPrices: GetPricesOnlyUseCase,
+    private val pricePolling: PricePollingController
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
 
     private val _pullRefreshing = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -49,16 +51,26 @@ class HomeViewModel @Inject constructor(
     var selectedLimit: Int by mutableIntStateOf(50)
         private set
 
-    override fun getIdsForPricing(): List<String> =
+    override fun getIds(): List<String> =
         (_uiState.value as? HomeUiState.Success)?.assets?.map { it.id } ?: emptyList()
-
-    init {
-        startFresh(selectedLimit)
-    }
 
     override fun onPriceError(error: AppError?) {
         val current = _uiState.value as? HomeUiState.Success ?: return
         _uiState.value = current.copy(nonBlockingError = error)
+    }
+
+    override fun onCleared() {
+        pricePolling.cancel()
+        super.onCleared()
+    }
+
+    init {
+        pricePolling.bind(
+            scope = viewModelScope,
+            getPrices = getPrices,
+            delegate = this
+        )
+        startFresh(selectedLimit)
     }
 
     fun onLimitChanged(limit: Int) {

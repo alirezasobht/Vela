@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.vela.domain.model.AppError
@@ -13,7 +14,9 @@ import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.ui.base.AssetHolder
-import com.vela.ui.base.PriceAwareViewModel
+import com.vela.ui.base.pricepolling.PricePolling
+import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
@@ -32,9 +35,10 @@ class DetailViewModel @Inject constructor(
     private val getCoinDetail: GetCoinDetailUseCase,
     private val getOhlc: GetOhlcUseCase,
     private val assetHolder: AssetHolder,
-    getFullPrices: GetPricesAndMarketDataUseCase,
+    private val getPrices: GetPricesAndMarketDataUseCase,
+    private val pricePolling: PricePollingController,
     savedStateHandle: SavedStateHandle
-) : PriceAwareViewModel(getFullPrices, savedStateHandle) {
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
 
     val initialHeader: CoinDetailUiModel?
     private val coinId: String
@@ -49,11 +53,16 @@ class DetailViewModel @Inject constructor(
     var isChartFullScreen by mutableStateOf(false)
         private set
 
-    override fun getIdsForPricing(): List<String> = listOf(coinId)
+    override fun getIds(): List<String> = listOf(coinId)
 
     override fun onPriceError(error: AppError?) {
         val current = _uiState.value as? DetailUiState.Success ?: return
         _uiState.value = current.copy(nonBlockingError = error)
+    }
+
+    override fun onCleared() {
+        pricePolling.cancel()
+        super.onCleared()
     }
 
     init {
@@ -61,6 +70,11 @@ class DetailViewModel @Inject constructor(
             coinId = dest.coinId
             initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
         }
+        pricePolling.bind(
+            scope = viewModelScope,
+            getPrices = getPrices,
+            delegate = this
+        )
         loadDetail()
     }
 

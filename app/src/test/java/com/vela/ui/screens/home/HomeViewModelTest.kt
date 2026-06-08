@@ -1,6 +1,5 @@
 package com.vela.ui.screens.home
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
@@ -10,6 +9,7 @@ import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.pricepolling.PricePollingController
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,8 +38,9 @@ class HomeViewModelTest {
     private val getTopAssets: GetTopAssetsUseCase = mockk()
     private val refreshAssets: RefreshAssetsUseCase = mockk()
     private val getToday: GetTodayUseCase = mockk()
-    private val getPrices: GetPricesOnlyUseCase = mockk()
-    private val assetHolder = AssetHolder()
+    private val assetHolder: AssetHolder = mockk(relaxed = true)
+    private val getPrices: GetPricesOnlyUseCase = mockk(relaxed = true)
+    private val pricePolling: PricePollingController = mockk(relaxed = true)
 
     private fun anAsset(id: String = "bitcoin") = Asset(
         id = id,
@@ -58,7 +59,7 @@ class HomeViewModelTest {
         getToday = getToday,
         assetHolder = assetHolder,
         getPrices = getPrices,
-        savedStateHandle = SavedStateHandle(mapOf("delay" to Long.MAX_VALUE))
+        pricePolling = pricePolling
     )
 
     @Before
@@ -182,15 +183,13 @@ class HomeViewModelTest {
         assertTrue(viewModel.uiState.value is HomeUiState.Error)
 
         coEvery { refreshAssets(any()) } coAnswers {
-            kotlinx.coroutines.delay(1000) // Simulate work
+            kotlinx.coroutines.delay(1000)
             DataResult.Success(Unit)
         }
 
         viewModel.retry()
-
         testDispatcher.scheduler.runCurrent()
 
-        // before advancing — should be Loading
         assertTrue(viewModel.uiState.value is HomeUiState.Loading)
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -228,9 +227,7 @@ class HomeViewModelTest {
         viewModelStore.clear()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // state doesn't reset on clear — stays as it was
         assertEquals(stateBeforeClear, viewModel.uiState.value)
-        // no more refreshes after clear
         coVerify(exactly = 1) { refreshAssets(any()) }
     }
 
@@ -340,14 +337,13 @@ class HomeViewModelTest {
         }
 
         vm.pullToRefresh()
-        testDispatcher.scheduler.runCurrent() // starts first refresh, suspends at delay
+        testDispatcher.scheduler.runCurrent()
 
-        vm.pullToRefresh() // mutex locked — skipped
+        vm.pullToRefresh()
         testDispatcher.scheduler.runCurrent()
 
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // 1 initial + 1 pull (second pull skipped by mutex)
         coVerify(exactly = 2) { refreshAssets(any()) }
     }
 
@@ -368,7 +364,6 @@ class HomeViewModelTest {
         val stateWithError = vm.uiState.value as HomeUiState.Success
         assertEquals(AppError.NoInternet, stateWithError.nonBlockingError)
 
-        // Room emits new data — nonBlockingError should be preserved
         assetsFlow.emit(DataResult.Success(listOf(anAsset("ethereum"))))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -402,7 +397,6 @@ class HomeViewModelTest {
         assetsFlow.emit(DataResult.Error(AppError.ServerError))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // State stays Success, error suppressed
         assertTrue(vm.uiState.value is HomeUiState.Success)
     }
 
@@ -418,9 +412,8 @@ class HomeViewModelTest {
         }
 
         vm.pullToRefresh()
-        testDispatcher.scheduler.runCurrent() // start refresh, suspend at delay
+        testDispatcher.scheduler.runCurrent()
 
-        // Still Success — no Loading flicker
         assertTrue(vm.uiState.value is HomeUiState.Success)
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -436,7 +429,6 @@ class HomeViewModelTest {
         vm.pullToRefresh()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // _pullRefreshing must be reset even on exception
         assertFalse(vm.pullRefreshing.value)
     }
 
@@ -469,31 +461,6 @@ class HomeViewModelTest {
 
         assertEquals(100, vm.selectedLimit)
         coVerify { refreshAssets(100) }
-    }
-
-    @Test
-    fun `Auto refresh loop termination on scope destruction`() = runTest {
-        val delay = 1000L
-        val vm = HomeViewModel(
-            getTopAssets = getTopAssets,
-            refreshAssets = refreshAssets,
-            getToday = getToday,
-            assetHolder = assetHolder,
-            getPrices = getPrices,
-            savedStateHandle = SavedStateHandle(mapOf("delay" to delay))
-        )
-        testDispatcher.scheduler.runCurrent()
-        coVerify(exactly = 1) { refreshAssets(any()) }
-
-        val viewModelStore = ViewModelStore()
-        viewModelStore.put("key", vm)
-        viewModelStore.clear()
-
-        testDispatcher.scheduler.advanceTimeBy(delay * 3)
-        testDispatcher.scheduler.runCurrent()
-
-        // Only initial refresh — loop terminated
-        coVerify(exactly = 1) { refreshAssets(any()) }
     }
 
     @Test

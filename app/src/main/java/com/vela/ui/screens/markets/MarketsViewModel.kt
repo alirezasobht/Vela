@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
@@ -22,7 +22,9 @@ import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.AssetHolder
-import com.vela.ui.base.PriceAwareViewModel
+import com.vela.ui.base.pricepolling.PricePolling
+import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,15 +45,15 @@ class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
     private val assetHolder: AssetHolder,
-    getPrices: GetPricesOnlyUseCase,
-    savedStateHandle: SavedStateHandle
-) : PriceAwareViewModel(getPrices, savedStateHandle) {
+    private val getPrices: GetPricesOnlyUseCase,
+    private val pricePolling: PricePollingController
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
 
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
 
     private var getCategoriesJob: Job? = null
-    private var _categoriesLoaded = MutableStateFlow<Boolean>(false)
+    private val _categoriesLoaded = MutableStateFlow(false)
     private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
     val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
@@ -63,7 +65,17 @@ class MarketsViewModel @Inject constructor(
     var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
         private set
 
-    override fun getIdsForPricing(): List<String> = _loadedIds.value
+    override fun getIds(): List<String> = _loadedIds.value
+
+    override fun onPriceError(error: AppError?) {
+        val current = _uiState.value as? MarketsUiState.Success ?: return
+        _uiState.value = current.copy(nonBlockingError = error)
+    }
+
+    override fun onCleared() {
+        pricePolling.cancel()
+        super.onCleared()
+    }
 
     val pagingFlow: Flow<PagingData<AssetUiModel>> = snapshotFlow {
         Pair(selectedCategory, selectedSort)
@@ -80,19 +92,17 @@ class MarketsViewModel @Inject constructor(
         .cachedIn(viewModelScope)
 
     init {
+        pricePolling.bind(
+            scope = viewModelScope,
+            getPrices = getPrices,
+            delegate = this
+        )
         fetchCategories()
     }
 
     fun retry() {
         getCategoriesJob?.cancel()
-        if (!_categoriesLoaded.value) {
-            fetchCategories()
-        }
-    }
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value as? MarketsUiState.Success ?: return
-        _uiState.value = current.copy(nonBlockingError = error)
+        if (!_categoriesLoaded.value) fetchCategories()
     }
 
     fun onCategorySelected(category: MarketCategory) {
@@ -115,13 +125,11 @@ class MarketsViewModel @Inject constructor(
         _uiState.value = when (refresh) {
             is LoadState.Loading -> MarketsUiState.Loading
             is LoadState.Error -> MarketsUiState.Error(refresh.error.toAppError())
-            else -> {
-                MarketsUiState.Success(
-                    isLoadingMore = append is LoadState.Loading,
-                    nonBlockingError = (append as? LoadState.Error)?.error?.toAppError()
-                        ?: currentSuccess?.nonBlockingError
-                )
-            }
+            else -> MarketsUiState.Success(
+                isLoadingMore = append is LoadState.Loading,
+                nonBlockingError = (append as? LoadState.Error)?.error?.toAppError()
+                    ?: currentSuccess?.nonBlockingError
+            )
         }
     }
 
