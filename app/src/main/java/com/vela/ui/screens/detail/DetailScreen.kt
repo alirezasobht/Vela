@@ -1,5 +1,6 @@
 package com.vela.ui.screens.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -113,6 +115,7 @@ private fun DetailScreen(
             name = headerModel?.name ?: "",
             symbol = headerModel?.symbol ?: "",
             image = headerModel?.image,
+            marketCapRank = headerModel?.marketCapRank,
             onBack = detailActions.onBack
         )
 
@@ -206,6 +209,7 @@ private fun HeaderSection(
     name: String,
     symbol: String,
     image: String?,
+    marketCapRank: Int?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -239,11 +243,29 @@ private fun HeaderSection(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            Text(
-                text = symbol,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = symbol,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                marketCapRank?.let {
+                    Text(
+                        text = "#$it",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+            }
         }
 
         IconButton(onClick = { /* TODO: watchlist placeholder */ }) {

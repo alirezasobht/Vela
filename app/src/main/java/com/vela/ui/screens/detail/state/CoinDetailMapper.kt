@@ -24,7 +24,8 @@ fun CoinDetail.toUiModel(): CoinDetailUiModel = CoinDetailUiModel(
     totalVolume = totalVolume?.let { formatLargeNumber(it) } ?: "—",
     circulatingSupply = circulatingSupply?.let { formatSupply(it, symbol.uppercase()) } ?: "—",
     ath = ath?.let { formatPrice(it) } ?: "—",
-    atl = atl?.let { formatPrice(it) } ?: "—"
+    atl = atl?.let { formatPrice(it) } ?: "—",
+    marketCapRank = marketCapRank
 )
 
 fun Asset.toCoinDetailUiModel(): CoinDetailUiModel = CoinDetailUiModel(
@@ -40,5 +41,6 @@ fun Asset.toCoinDetailUiModel(): CoinDetailUiModel = CoinDetailUiModel(
     totalVolume = "",
     circulatingSupply = "",
     ath = "",
-    atl = ""
+    atl = "",
+    marketCapRank = marketCapRank
 )

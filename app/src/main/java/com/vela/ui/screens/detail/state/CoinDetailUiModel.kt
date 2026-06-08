@@ -13,5 +13,6 @@ data class CoinDetailUiModel(
     val totalVolume: String,
     val circulatingSupply: String,
     val ath: String,
-    val atl: String
+    val atl: String,
+    val marketCapRank: Int?
 )

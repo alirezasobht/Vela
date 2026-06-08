@@ -12,5 +12,6 @@ data class CoinDetail(
     val totalVolume: Double?,
     val circulatingSupply: Double?,
     val ath: Double?,
-    val atl: Double?
+    val atl: Double?,
+    val marketCapRank: Int?
 )

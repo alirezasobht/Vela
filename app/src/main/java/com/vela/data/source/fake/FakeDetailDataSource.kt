@@ -16,6 +16,7 @@ object FakeDetailDataSource {
         totalVolume = 38_400_000_000.0,
         circulatingSupply = 19_700_000.0,
         ath = 73750.0,
-        atl = 67.81
+        atl = 67.81,
+        marketCapRank = 27
     )
 }

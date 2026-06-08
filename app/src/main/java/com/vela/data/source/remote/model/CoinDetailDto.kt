@@ -14,5 +14,6 @@ data class CoinDetailDto(
     @Json(name = "total_volume") val totalVolume: Double?,
     @Json(name = "circulating_supply") val circulatingSupply: Double?,
     @Json(name = "ath") val ath: Double?,
-    @Json(name = "atl") val atl: Double?
+    @Json(name = "atl") val atl: Double?,
+    @Json(name = "market_cap_rank") val marketCapRank: Int?
 )

@@ -69,7 +69,8 @@ fun CoinDetailDto.toDomain(): CoinDetail = CoinDetail(
     totalVolume = totalVolume,
     circulatingSupply = circulatingSupply,
     ath = ath,
-    atl = atl
+    atl = atl,
+    marketCapRank = marketCapRank
 )
 
 fun List<Double>.toOhlcPoint(): OhlcPoint = OhlcPoint(
