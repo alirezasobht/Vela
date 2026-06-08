@@ -42,6 +42,7 @@ import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.charts.RangeProvider
 import com.vela.ui.common.components.charts.StartAxisValueFormatter
 import com.vela.ui.common.components.charts.bottomAxisValueFormatter
+import com.vela.ui.common.components.charts.ohlcMarkerValueFormatter
 import com.vela.ui.screens.detail.mapper.TimestampsKey
 import com.vela.ui.screens.detail.mapper.timestamps
 import com.vela.ui.screens.detail.mapper.toCandleStickModel

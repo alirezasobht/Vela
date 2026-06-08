@@ -6,12 +6,19 @@ import com.vela.domain.model.OhlcPoint
 
 val TimestampsKey = ExtraStore.Key<List<Long>>()
 
-fun List<OhlcPoint>.toCandleStickModel(): CandlestickCartesianLayerModel.Partial =
-    CandlestickCartesianLayerModel.partial(
-        opening = map { it.open },
-        closing = map { it.close },
-        low = map { it.low },
-        high = map { it.high }
+fun List<OhlcPoint>.toCandleStickModel(): CandlestickCartesianLayerModel.Partial {
+    val validPoints = filter {
+        it.open.isFinite() && it.close.isFinite() && it.low.isFinite() && it.high.isFinite()
+    }
+    return CandlestickCartesianLayerModel.partial(
+        opening = validPoints.map { it.open },
+        closing = validPoints.map { it.close },
+        low = validPoints.map { it.low },
+        high = validPoints.map { it.high }
     )
+}
 
-fun List<OhlcPoint>.timestamps(): List<Long> = map { it.timestamp }
+fun List<OhlcPoint>.timestamps(): List<Long> =
+    filter {
+        it.open.isFinite() && it.close.isFinite() && it.low.isFinite() && it.high.isFinite()
+    }.map { it.timestamp }

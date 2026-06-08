@@ -6,9 +6,10 @@ import java.util.Locale
 
 internal val StartAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
     val candlestickModel = context.model.models.filterIsInstance<CandlestickCartesianLayerModel>().firstOrNull()
-    val range = candlestickModel?.let { it.maxY - it.minY } ?: 0.0
+    val range = candlestickModel?.let { (it.maxY - it.minY).takeIf { r -> r.isFinite() } } ?: 0.0
 
     when {
+        value.isNaN() -> ""
         value >= 1000000 -> String.format(Locale.US, "$%.1fM", value / 1000000)
         value >= 1000 -> {
             val thousands = value / 1000

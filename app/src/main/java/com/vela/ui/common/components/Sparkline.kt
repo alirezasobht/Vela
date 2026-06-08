@@ -21,15 +21,16 @@ fun Sparkline(
 ) {
 
     Canvas(modifier = modifier) {
-        if (prices.size < 2) return@Canvas
+        val validPrices = prices.filter { it.isFinite() }
+        if (validPrices.size < 2) return@Canvas
 
-        val min = prices.min()
-        val max = prices.max()
+        val min = validPrices.min()
+        val max = validPrices.max()
         val range = if (max - min == 0.0) 1.0 else max - min
 
         val path = Path()
-        prices.forEachIndexed { index, price ->
-            val x = index / (prices.size - 1).toFloat() * size.width
+        validPrices.forEachIndexed { index, price ->
+            val x = index / (validPrices.size - 1).toFloat() * size.width
             val y = ((max - price) / range * size.height).toFloat()
             if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }

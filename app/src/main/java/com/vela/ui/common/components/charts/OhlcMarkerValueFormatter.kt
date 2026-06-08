@@ -1,4 +1,4 @@
-package com.vela.ui.common.components.charts.candle
+package com.vela.ui.common.components.charts
 
 import com.patrykandpatrick.vico.compose.cartesian.marker.CandlestickCartesianLayerMarkerTarget
 import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
@@ -16,8 +16,13 @@ internal fun ohlcMarkerValueFormatter(
         val timestamp = timestamps.getOrNull(index)
 
         val dateStr = timestamp?.let {
+            val instant = if (it > 10_000_000_000L) {
+                Instant.ofEpochMilli(it)
+            } else {
+                Instant.ofEpochSecond(it)
+            }
             DateTimeFormatter.ofPattern("MMM d, HH:mm")
-                .format(Instant.ofEpochSecond(it).atZone(ZoneId.systemDefault()))
+                .format(instant.atZone(ZoneId.systemDefault()))
         } ?: ""
 
 

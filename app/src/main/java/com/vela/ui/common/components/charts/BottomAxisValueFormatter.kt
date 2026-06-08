@@ -19,8 +19,12 @@ internal fun bottomAxisValueFormatter(timeRange: TimeRange): CartesianValueForma
     return CartesianValueFormatter { context, value, _ ->
         val timestamps = context.model.extraStore.getOrNull(TimestampsKey)
         val timestamp = timestamps?.getOrNull(value.toInt()) ?: return@CartesianValueFormatter ""
-        Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
+        val instant = if (timestamp > 10_000_000_000L) {
+            Instant.ofEpochMilli(timestamp)
+        } else {
+            Instant.ofEpochSecond(timestamp)
+        }
+        instant.atZone(ZoneId.systemDefault())
             .format(formatter)
     }
 }
