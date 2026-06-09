@@ -12,7 +12,13 @@ import java.io.IOException
 
 class SafeApiCallTest {
 
-    // region safeApiCall
+    // ----- safeApiCall -----
+
+    @Test
+    fun `successful API call returns Success`() = runTest {
+        val result = safeApiCall { "success" }
+        assertEquals(DataResult.Success("success"), result)
+    }
 
     @Test
     fun `IOException maps to NoInternet`() = runTest {
@@ -40,9 +46,7 @@ class SafeApiCallTest {
         assertEquals(DataResult.Error(AppError.Unknown("Something went wrong")), result)
     }
 
-    // endregion
-
-    // region Throwable.toAppError
+    // ------ Throwable.toAppError -------
 
     @Test
     fun `toAppError - IOException maps to NoInternet`() {
@@ -59,6 +63,4 @@ class SafeApiCallTest {
     fun `toAppError - unknown Throwable with null message maps to fallback`() {
         assertEquals(AppError.Unknown("Something went wrong"), RuntimeException(null as String?).toAppError())
     }
-
-    // endregion
 }
