@@ -32,19 +32,19 @@ class SearchAssetsUseCaseTest {
     // ----- search success + price fetch -----
 
     @Test
-    fun `search success and price fetch success returns enriched list`() = runTest {
+    fun `search success and price fetch success returns full list`() = runTest {
         val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
-        val enrichedAssets = listOf(asset("bitcoin", price = 30_000.0), asset("ethereum", price = 2_000.0))
+        val fullAssets = listOf(asset("bitcoin", price = 30_000.0), asset("ethereum", price = 2_000.0))
         coEvery { repository.search(any()) } returns DataResult.Success(searchAssets)
-        coEvery { repository.getPricesByIds(any()) } returns DataResult.Success(enrichedAssets)
+        coEvery { repository.getPricesByIds(any()) } returns DataResult.Success(fullAssets)
 
         val result = useCase("crypto")
 
-        assertEquals(DataResult.Success(enrichedAssets), result)
+        assertEquals(DataResult.Success(fullAssets), result)
     }
 
     @Test
-    fun `search success and price fetch error falls back to unenriched assets`() = runTest {
+    fun `search success and price fetch error falls back to searched assets`() = runTest {
         val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
         coEvery { repository.search(any()) } returns DataResult.Success(searchAssets)
         coEvery { repository.getPricesByIds(any()) } returns DataResult.Error(AppError.NoInternet)
