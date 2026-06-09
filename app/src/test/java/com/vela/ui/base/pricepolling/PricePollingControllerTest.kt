@@ -159,4 +159,52 @@ class PricePollingControllerTest {
     fun `default refresh delay is five seconds`() {
         Assert.assertEquals(5L, PricePollingConfig().refreshDelaySeconds)
     }
+
+    @Test
+    fun `getIds returning empty list skips getPrices call`() = runTest {
+        coEvery { delegate.getIds() } returns emptyList()
+
+        val controller = createController()
+        controller.onScreenVisible(true)
+        advanceTimeBy(5_001.milliseconds)
+        runCurrent()
+
+        coVerify(exactly = 0) { getPrices(any()) }
+        controller.cancel()
+    }
+
+    @Test
+    fun `bind called twice does not cause double polling`() = runTest {
+        coEvery { delegate.getIds() } returns listOf("bitcoin")
+        coEvery { getPrices(any()) } returns DataResult.Success(emptyMap())
+
+        val controller = PricePollingController(config)
+        controller.bind(scope = this, getPrices = getPrices, delegate = delegate)
+        controller.bind(scope = this, getPrices = getPrices, delegate = delegate)
+        controller.onScreenVisible(true)
+        advanceTimeBy(5_001.milliseconds)
+        runCurrent()
+
+        coVerify(exactly = 1) { getPrices(any()) }
+        controller.cancel()
+    }
+
+    @Test
+    fun `error then success clears onPriceError`() = runTest {
+        coEvery { delegate.getIds() } returns listOf("bitcoin")
+        coEvery { getPrices(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val controller = createController()
+        controller.onScreenVisible(true)
+        advanceTimeBy(5_001.milliseconds)
+        runCurrent()
+        coVerify { delegate.onPriceError(AppError.NoInternet) }
+
+        coEvery { getPrices(any()) } returns DataResult.Success(emptyMap())
+        advanceTimeBy(5_001.milliseconds)
+        runCurrent()
+
+        coVerify { delegate.onPriceError(null) }
+        controller.cancel()
+    }
 }

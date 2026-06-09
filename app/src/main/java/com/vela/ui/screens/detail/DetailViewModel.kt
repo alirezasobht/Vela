@@ -66,10 +66,14 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
-        savedStateHandle.toRoute<Screen.CoinDetail>().let { dest ->
-            coinId = dest.coinId
-            initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
+
+        coinId = try {
+            savedStateHandle.toRoute<Screen.CoinDetail>().coinId
+        } catch (_: Exception) {
+            savedStateHandle.get<String>("coinId") ?: ""
         }
+        initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
+
         pricePolling.bind(
             scope = viewModelScope,
             getPrices = getPrices,
