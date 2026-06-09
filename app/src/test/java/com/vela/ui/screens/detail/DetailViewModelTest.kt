@@ -29,6 +29,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
@@ -38,21 +39,25 @@ class DetailViewModelTest {
     private val getCoinDetail: GetCoinDetailUseCase = mockk()
     private val getOhlc: GetOhlcUseCase = mockk()
     private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
-    private val assetHolder: AssetHolder = mockk { every { get(any()) } answers { null } }
+    private val assetHolder: AssetHolder = mockk()
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
 
-    private fun createViewModel(): DetailViewModel = DetailViewModel(
-        getCoinDetail = getCoinDetail,
-        getOhlc = getOhlc,
-        assetHolder = assetHolder,
-        getPrices = getPrices,
-        pricePolling = PricePollingController(config),
-        savedStateHandle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
-    )
+    private fun createViewModel(): DetailViewModel {
+        val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
+        return DetailViewModel(
+            getCoinDetail = getCoinDetail,
+            getOhlc = getOhlc,
+            assetHolder = assetHolder,
+            getPrices = getPrices,
+            pricePolling = PricePollingController(config),
+            savedStateHandle = handle
+        )
+    }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        every { assetHolder.get(any()) } returns null
     }
 
     @After
@@ -63,9 +68,9 @@ class DetailViewModelTest {
     // ----- initial load -----
 
     @Test
-    fun `initial load success - state is Success with isChartLoading true before ohlc loads`() = runTest {
+    fun `initial load success - state is Success with isChartLoading false after ohlc loads`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
-        coEvery { getOhlc(any(), any()) } coAnswers { kotlinx.coroutines.delay(1_000); DataResult.Success(emptyList()) }
+        coEvery { getOhlc(any(), any()) } coAnswers { kotlinx.coroutines.delay(1_000.milliseconds); DataResult.Success(emptyList()) }
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
@@ -97,7 +102,10 @@ class DetailViewModelTest {
 
         val detailBefore = (vm.uiState.value as DetailUiState.Success).detail
 
-        coEvery { getCoinDetail(any()) } coAnswers { kotlinx.coroutines.delay(1_000); DataResult.Success(coinDetail()) }
+        coEvery { getCoinDetail(any()) } coAnswers {
+            kotlinx.coroutines.delay(1_000.milliseconds)
+            DataResult.Success(coinDetail())
+        }
         vm.retry()
         dispatcher.scheduler.advanceTimeBy(100)
 
@@ -136,7 +144,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coEvery { getOhlc(any(), eq(TimeRange.SEVEN_DAYS)) } coAnswers {
-            kotlinx.coroutines.delay(500); DataResult.Success(slowPoints)
+            kotlinx.coroutines.delay(500.milliseconds); DataResult.Success(slowPoints)
         }
         coEvery { getOhlc(any(), eq(TimeRange.ONE_MONTH)) } returns DataResult.Success(fastPoints)
 
@@ -213,7 +221,10 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        coEvery { getCoinDetail(any()) } coAnswers { kotlinx.coroutines.delay(500); DataResult.Success(coinDetail()) }
+        coEvery { getCoinDetail(any()) } coAnswers {
+            kotlinx.coroutines.delay(500.milliseconds)
+            DataResult.Success(coinDetail())
+        }
         vm.retry()
         dispatcher.scheduler.advanceTimeBy(100)
 

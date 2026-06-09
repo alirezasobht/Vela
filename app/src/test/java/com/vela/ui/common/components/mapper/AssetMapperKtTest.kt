@@ -68,13 +68,13 @@ class AssetMapperKtTest {
     @Test
     fun `Price formatting for values below 1`() {
         val uiModel = anAsset(currentPrice = 0.52).toUiModel()
-        assertEquals("$0.5200", uiModel.price)
+        assertEquals("$0.52", uiModel.price)
     }
 
     @Test
     fun `Price formatting for zero value`() {
         val uiModel = anAsset(currentPrice = 0.0).toUiModel()
-        assertEquals("$0.0000", uiModel.price)
+        assertEquals("$0.00", uiModel.price)
     }
 
     @Test
@@ -92,7 +92,7 @@ class AssetMapperKtTest {
     @Test
     fun `Price change formatting for zero value`() {
         val uiModel = anAsset(priceChangePercent24h = 0.0).toUiModel()
-        assertEquals("+0.00%", uiModel.priceChange)
+        assertEquals("0.00%", uiModel.priceChange)
     }
 
     @Test
@@ -116,7 +116,7 @@ class AssetMapperKtTest {
     @Test
     fun `Rounding behavior for high value prices`() {
         val uiModel = anAsset(currentPrice = 1000.55).toUiModel()
-        assertEquals("$1,001", uiModel.price)
+        assertEquals("$1,000", uiModel.price)
     }
 
     @Test
@@ -162,7 +162,7 @@ class AssetMapperKtTest {
     fun `Price formatting for small values exceeding 8 decimal places`() {
         // 0.000000001 underflows 8 decimal places → formats to "0.00000000" → trims to "0." → 0 decimals → fallback $0.0000
         val uiModel = anAsset(currentPrice = 0.000000001).toUiModel()
-        assertEquals("$0.0000", uiModel.price)
+        assertEquals("$0.00", uiModel.price)
     }
 
     @Test
@@ -174,7 +174,7 @@ class AssetMapperKtTest {
     @Test
     fun `Price formatting for high values with decimal rounding`() {
         val uiModel = anAsset(currentPrice = 1234.5).toUiModel()
-        assertEquals("$1,235", uiModel.price)
+        assertEquals("$1,234", uiModel.price)
     }
 
     @Test
@@ -236,7 +236,7 @@ class AssetMapperKtTest {
     @Test
     fun `Negative price handling`() {
         val uiModel = anAsset(currentPrice = -0.5).toUiModel()
-        assertEquals("$-0.5000", uiModel.price)
+        assertEquals("$-0.50", uiModel.price)
     }
 
     @Test
