@@ -24,7 +24,7 @@ class AssetEntityMapperTest {
 
         val asset = entity.toDomain()
 
-        assertEquals(listOf(1.0, 3.0, 4.0), asset.sparkline)
+        assertEquals(listOf(1.0, 3.0, 4.0, -1.0), asset.sparkline)
     }
 
     @Test

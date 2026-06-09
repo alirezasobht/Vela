@@ -6,6 +6,11 @@ import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.theme.sparklineBearColor
 import com.vela.ui.theme.sparklineBullColor
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.truncate
 
 fun Asset.toUiModel(): AssetUiModel = AssetUiModel(
     id = id,
@@ -27,26 +32,26 @@ fun SimplePrice.toUiModel(): SimplePriceUiModel = SimplePriceUiModel(
     totalVolume = totalVolume?.let { formatLargeNumber(it) }
 )
 
-internal fun formatPrice(price: Double): String = when {
-    price >= 1000 -> "$${"%,.0f".format(price)}"
-    price >= 1 -> "$%.2f".format(price)
-    else -> {
-        val eightDecimals = "%.8f".format(price)
-        val trimmed = eightDecimals.trimEnd('0')
-        val dotIndex = trimmed.indexOf('.')
-        val decimalCount = if (dotIndex >= 0) trimmed.length - dotIndex - 1 else 0
-        if (decimalCount <= 4) "$%.4f".format(price)
-        else "$$trimmed"
+internal fun formatPrice(value: Double, symbol: String = "$", locale: Locale = Locale.US): String {
+    val symbols = DecimalFormatSymbols(locale)
+    val pattern = when {
+        abs(value) >= 1_000 -> "#,##0"
+        abs(value) >= 1 -> "#,##0.00"
+        else -> "#,##0.00######"
     }
+    val formatted = DecimalFormat(pattern, symbols).format(
+        if (abs(value) >= 1_000) truncate(value) else value
+    )
+    return "$symbol$formatted"
 }
 
 internal fun formatSignedPrice(value: Double): String {
-    val sign = if (value >= 0) "+" else ""
+    val sign = if (value >= 0) "+" else "-"
     return "$sign${formatPrice(value)}"
 }
 
 internal fun formatChange(change: Double): String {
-    val sign = if (change >= 0) "+" else ""
+    val sign = if (change > 0) "+" else ""
     return "$sign${"%.2f".format(change)}%"
 }
 

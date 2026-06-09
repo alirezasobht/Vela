@@ -11,5 +11,5 @@ fun AssetEntity.toDomain(): Asset = Asset(
     currentPrice = currentPrice,
     priceChangePercent24h = priceChangePercent24h,
     marketCapRank = marketCapRank,
-    sparkline = sparkline?.split(",")?.mapNotNull { it.toDoubleOrNull() }?.filter { it > 0 }
+    sparkline = sparkline?.split(",")?.mapNotNull { it.toDoubleOrNull() }
 )

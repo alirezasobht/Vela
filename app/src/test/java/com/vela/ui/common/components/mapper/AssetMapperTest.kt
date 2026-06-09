@@ -10,38 +10,72 @@ class AssetMapperTest {
 
     // ----- formatPrice -----
 
-    @Test
-    fun `formatPrice - sub-cent trims trailing zeros but keeps significant digits`() {
-        assertEquals("$0.00001234", formatPrice(0.00001234))
+    private fun assertPriceFormat(input: Double, expected: String) {
+        assertEquals("formatPrice($input)", expected, formatPrice(input))
     }
 
     @Test
-    fun `formatPrice - value below threshold uses 4 decimal floor`() {
-        assertEquals("$0.0000", formatPrice(0.000001))
-    }
+    fun `formatPrice - large trillion value`() =
+        assertPriceFormat(1_000_000_000_000.00, "$1,000,000,000,000")
 
     @Test
-    fun `formatPrice - exactly 1 uses two decimal format`() {
-        assertEquals("$1.00", formatPrice(1.0))
-    }
+    fun `formatPrice - rounds down at 1000`() =
+        assertPriceFormat(1_000.001, "$1,000")
 
     @Test
-    fun `formatPrice - exactly 1000 uses comma format with no decimals`() {
-        assertEquals("$1,000", formatPrice(1000.0))
-    }
+    fun `formatPrice - rounds cents at 1001`() =
+        assertPriceFormat(1_001.01, "$1,001")
 
     @Test
-    fun `formatPrice - 999 stays in decimal format`() {
-        assertEquals("$999.00", formatPrice(999.0))
-    }
+    fun `formatPrice - whole number fifty thousand`() =
+        assertPriceFormat(50_000.0, "$50,000")
+
+    @Test
+    fun `formatPrice - whole number one thousand`() =
+        assertPriceFormat(1_000.0, "$1,000")
+
+    @Test
+    fun `formatPrice - cents below one thousand`() =
+        assertPriceFormat(999.99, "$999.99")
+
+    @Test
+    fun `formatPrice - padding zero for whole number small price`() =
+        assertPriceFormat(15.0, "$15.00")
+
+    @Test
+    fun `formatPrice - padding zero for single digit cents`() =
+        assertPriceFormat(15.1, "$15.10")
+
+    @Test
+    fun `formatPrice - rounding small cents`() =
+        assertPriceFormat(15.003, "$15.00")
+
+    @Test
+    fun `formatPrice - leading zero cents 0-50`() =
+        assertPriceFormat(0.5, "$0.50")
+
+    @Test
+    fun `formatPrice - leading zero cents 0-10`() =
+        assertPriceFormat(0.1, "$0.10")
+
+    @Test
+    fun `formatPrice - high precision sub-cent 8 digits`() =
+        assertPriceFormat(0.00001234, "$0.00001234")
+
+    @Test
+    fun `formatPrice - high precision sub-cent 7 digits`() =
+        assertPriceFormat(0.0000123, "$0.0000123")
+
+    @Test
+    fun `formatPrice - high precision sub-cent 6 digits`() =
+        assertPriceFormat(0.000001, "$0.000001")
 
     // ----- formatSignedPrice -----
 
     @Test
-    fun `formatSignedPrice - negative value produces minus prefix not plus-minus`() {
+    fun `formatSignedPrice - negative value produces minus prefix`() {
         val result = formatSignedPrice(-500.0)
         assertTrue(result.startsWith("-"))
-        assertTrue(!result.startsWith("+-"))
     }
 
     @Test
@@ -76,8 +110,18 @@ class AssetMapperTest {
     // ----- formatChange -----
 
     @Test
-    fun `formatChange - zero produces positive sign`() {
-        assertEquals("+0.00%", formatChange(0.0))
+    fun `formatChange - zero produces has no sign`() {
+        assertEquals("0.00%", formatChange(0.0))
+    }
+
+    @Test
+    fun `formatChange - positive value produces plus sign`() {
+        assertEquals("+123.46%", formatChange(123.456))
+    }
+
+    @Test
+    fun `formatChange - negative value produces minus sign`() {
+        assertEquals("-12.34%", formatChange(-12.343))
     }
 
     // ----- SimplePrice.priceChange24hAbsolute -----
@@ -85,7 +129,7 @@ class AssetMapperTest {
     @Test
     fun `priceChange24hAbsolute - derived correctly from price and percent`() {
         val price = SimplePrice(price = 100.0, priceChange = 2.5, marketCap = null, totalVolume = null)
-        assertEquals(2.5, price.priceChange24hAbsolute!!,  0.0001)
+        assertEquals(2.5, price.priceChange24hAbsolute!!, 0.0001)
     }
 
     @Test
