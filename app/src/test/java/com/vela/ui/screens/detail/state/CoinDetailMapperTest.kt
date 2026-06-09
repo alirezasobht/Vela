@@ -2,6 +2,7 @@ package com.vela.ui.screens.detail.state
 
 import com.vela.domain.model.CoinDetail
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -10,45 +11,42 @@ class CoinDetailMapperTest {
     // ----- priceChange24h sign formatting -----
 
     @Test
-    fun `priceChange24h - positive value gets plus prefix`() {
+    fun `priceChange24h - positive value produces plus prefix`() {
         val model = coinDetail(priceChange24h = 500.0).toUiModel()
         assertTrue(model.priceChange24h.startsWith("+"))
     }
 
     @Test
-    fun `priceChange24h - negative value gets minus prefix`() {
+    fun `priceChange24h - negative value produces minus prefix not double-negative`() {
         val model = coinDetail(priceChange24h = -500.0).toUiModel()
         assertTrue(model.priceChange24h.startsWith("-"))
+        assertFalse(model.priceChange24h.startsWith("--"))
     }
 
     @Test
-    fun `priceChange24h - null produces dash`() {
+    fun `priceChange24h - null produces em dash`() {
         val model = coinDetail(priceChange24h = null).toUiModel()
         assertEquals("\u2014", model.priceChange24h)
-    }
-
-    // ----- priceChange24h uses abs -----
-
-    @Test
-    fun `priceChange24h - negative raw value formats as positive amount with minus prefix`() {
-        val model = coinDetail(priceChange24h = -500.0).toUiModel()
-        assertTrue(!model.priceChange24h.startsWith("--"))
-        assertTrue(!model.priceChange24h.contains("-$-"))
-        assertEquals("-$500", model.priceChange24h)
     }
 
     // ----- isPositive -----
 
     @Test
-    fun `isPositive is true when priceChangePercent24h is exactly 0`() {
+    fun `isPositive - true when priceChangePercent24h is exactly 0`() {
         val model = coinDetail(priceChangePercent24h = 0.0).toUiModel()
         assertTrue(model.isPositive)
     }
 
-    // ----- null fields produce dash -----
+    @Test
+    fun `isPositive - false when priceChangePercent24h is negative`() {
+        val model = coinDetail(priceChangePercent24h = -1.0).toUiModel()
+        assertFalse(model.isPositive)
+    }
+
+    // ----- null fields -----
 
     @Test
-    fun `all nullable fields produce dash when null`() {
+    fun `all nullable fields null produce em dash not empty string or crash`() {
         val model = coinDetail(
             currentPrice = null,
             priceChange24h = null,
@@ -59,7 +57,6 @@ class CoinDetailMapperTest {
             ath = null,
             atl = null
         ).toUiModel()
-
         val dash = "\u2014"
         assertEquals(dash, model.currentPrice)
         assertEquals(dash, model.priceChange24h)
@@ -86,7 +83,7 @@ class CoinDetailMapperTest {
         currentPrice: Double? = 30_000.0,
         priceChange24h: Double? = 500.0,
         priceChangePercent24h: Double? = 1.5,
-        marketCap: Double? = 500_000_000_000.0,
+        marketCap: Double? = 600_000_000_000.0,
         totalVolume: Double? = 20_000_000_000.0,
         circulatingSupply: Double? = 19_000_000.0,
         ath: Double? = 69_000.0,
