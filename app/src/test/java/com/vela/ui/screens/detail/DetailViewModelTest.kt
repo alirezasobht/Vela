@@ -38,7 +38,7 @@ class DetailViewModelTest {
     private val getCoinDetail: GetCoinDetailUseCase = mockk()
     private val getOhlc: GetOhlcUseCase = mockk()
     private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
-    private val assetHolder: AssetHolder = mockk { every { get(any()) } returns null }
+    private val assetHolder: AssetHolder = mockk { every { get(any()) } answers { null } }
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
 
     private fun createViewModel(): DetailViewModel = DetailViewModel(
@@ -135,12 +135,12 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        coEvery { getOhlc(any(), eq(TimeRange.ONE_WEEK)) } coAnswers {
+        coEvery { getOhlc(any(), eq(TimeRange.SEVEN_DAYS)) } coAnswers {
             kotlinx.coroutines.delay(500); DataResult.Success(slowPoints)
         }
         coEvery { getOhlc(any(), eq(TimeRange.ONE_MONTH)) } returns DataResult.Success(fastPoints)
 
-        vm.onRangeSelected(TimeRange.ONE_WEEK)
+        vm.onRangeSelected(TimeRange.SEVEN_DAYS)
         dispatcher.scheduler.advanceTimeBy(100)
         vm.onRangeSelected(TimeRange.ONE_MONTH)
         dispatcher.scheduler.advanceUntilIdle()
@@ -162,7 +162,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coEvery { getOhlc(any(), any()) } returns DataResult.Error(AppError.NoInternet)
-        vm.onRangeSelected(TimeRange.ONE_WEEK)
+        vm.onRangeSelected(TimeRange.SEVEN_DAYS)
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value as DetailUiState.Success
