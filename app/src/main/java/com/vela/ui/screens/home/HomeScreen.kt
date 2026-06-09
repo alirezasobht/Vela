@@ -31,7 +31,7 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private data class HomeActions(
+internal data class HomeActions(
     val onLimitChanged: (Int) -> Unit,
     val onRetry: () -> Unit,
     val onPullToRefresh: () -> Unit,
@@ -70,7 +70,7 @@ fun HomeRoute(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeScreen(
+internal fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     pullRefreshing: Boolean,

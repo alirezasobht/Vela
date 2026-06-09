@@ -50,7 +50,7 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private data class SearchActions(
+internal data class SearchActions(
     val onQueryChange: (String) -> Unit,
     val onClearQuery: () -> Unit,
     val onRetry: () -> Unit,
@@ -86,7 +86,7 @@ fun SearchRoute(
 }
 
 @Composable
-private fun SearchScreen(
+internal fun SearchScreen(
     uiState: SearchUiState,
     query: String,
     searchActions: SearchActions,

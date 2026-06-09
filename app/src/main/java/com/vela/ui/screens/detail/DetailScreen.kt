@@ -66,7 +66,7 @@ import com.vela.ui.theme.sparklineBullColor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private data class DetailActions(
+internal data class DetailActions(
     val onBack: () -> Unit,
     val onRetry: () -> Unit,
     val onRangeSelected: (TimeRange) -> Unit,
@@ -102,7 +102,7 @@ fun DetailRoute(
 }
 
 @Composable
-private fun DetailScreen(
+internal fun DetailScreen(
     uiState: DetailUiState,
     initialAsset: CoinDetailUiModel?,
     selectedRange: TimeRange,

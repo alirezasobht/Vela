@@ -64,7 +64,7 @@ import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private data class MarketActions(
+internal data class MarketActions(
     val onCategorySelected: (MarketCategory) -> Unit,
     val onSortSelected: (MarketSort) -> Unit,
     val onRetry: () -> Unit,
@@ -111,7 +111,7 @@ fun MarketsRoute(
 
 
 @Composable
-private fun MarketsScreen(
+internal fun MarketsScreen(
     uiState: MarketsUiState,
     categories: List<MarketCategory>,
     selectedCategory: MarketCategory,
