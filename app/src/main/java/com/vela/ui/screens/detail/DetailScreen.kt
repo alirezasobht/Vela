@@ -54,13 +54,13 @@ import com.vela.ui.common.util.LandscapePreview
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
+import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.screens.detail.chart.FullScreenChartDialog
 import com.vela.ui.screens.detail.chart.OhlcChartSection
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
-import com.vela.ui.theme.VelaTheme
 import com.vela.ui.theme.sparklineBearColor
 import com.vela.ui.theme.sparklineBullColor
 import kotlinx.coroutines.flow.Flow
@@ -131,6 +131,7 @@ internal fun DetailScreen(
                 appError = uiState.appError,
                 onRetry = detailActions.onRetry
             )
+
             is DetailUiState.Success -> SuccessState(
                 uiState = uiState,
                 selectedRange = selectedRange,
@@ -389,7 +390,7 @@ private fun StatRow(
 
 @Composable
 private fun DetailScreenPreview(uiState: DetailUiState, isChartFullScreen: Boolean = false) {
-    VelaTheme {
+    SharedTransitionWrapper {
         DetailScreen(
             uiState = uiState,
             initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
@@ -450,3 +451,19 @@ private fun FullScreenChartPreview() =
         ),
         isChartFullScreen = true
     )
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+private fun HeaderSectionPreview() {
+    SharedTransitionWrapper {
+        HeaderSection(
+            name = "Bitcoin",
+            symbol = "BTC",
+            image = null,
+            marketCapRank = 1,
+            coinId = "bitcoin",
+            onBack = {}
+        )
+    }
+}

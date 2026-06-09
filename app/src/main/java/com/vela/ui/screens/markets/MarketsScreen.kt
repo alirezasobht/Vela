@@ -60,8 +60,10 @@ import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
+import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 internal data class MarketActions(
@@ -156,18 +158,18 @@ internal fun MarketsScreen(
         )
 
         when (uiState) {
-            is MarketsUiState.Loading -> FullScreenLoader(modifier = modifier)
+            is MarketsUiState.Loading -> FullScreenLoader(modifier = Modifier.weight(1f))
             is MarketsUiState.Error -> FullScreenError(
                 appError = uiState.appError,
                 onRetry = marketAction.onRetry,
-                modifier = modifier,
+                modifier = Modifier.weight(1f),
             )
 
             is MarketsUiState.Success -> SuccessState(
                 uiState = uiState,
                 pagingItems = pagingItems,
                 marketAction = marketAction,
-                modifier = modifier
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -212,20 +214,13 @@ private fun SuccessState(
     marketAction: MarketActions,
     modifier: Modifier = Modifier
 ) {
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-    ) {
-
     PagedAssetList(
-            pagingItems = pagingItems,
-            isLoadingMore = uiState.isLoadingMore,
+        pagingItems = pagingItems,
+        isLoadingMore = uiState.isLoadingMore,
         observePrice = marketAction.observePrice,
-        onItemClick = marketAction.onAssetClick
-        )
-    }
+        onItemClick = marketAction.onAssetClick,
+        modifier = modifier.fillMaxSize()
+    )
 }
 
 @Composable
@@ -365,13 +360,15 @@ private fun MarketsScreenPreview(
     uiState: MarketsUiState,
     categories: List<MarketCategory> = FakeCategoryDataSource.categories
 ) {
-    VelaTheme {
+    val pagingItems = remember {
+        MutableStateFlow(PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() }))
+    }.collectAsLazyPagingItems()
+
+    SharedTransitionWrapper {
         MarketsScreen(
             uiState = uiState,
             categories = categories,
-            pagingItems = flowOf(
-                PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() })
-            ).collectAsLazyPagingItems(),
+            pagingItems = pagingItems,
             selectedCategory = MarketCategory.ALL,
             selectedSort = MarketSort.MARKET_CAP,
             sorts = MarketSort.entries,

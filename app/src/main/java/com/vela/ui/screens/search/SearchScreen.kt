@@ -46,7 +46,7 @@ import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
-import com.vela.ui.theme.VelaTheme
+import com.vela.ui.common.util.SharedTransitionWrapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -244,7 +244,7 @@ private fun SearchScreenPreview(
     uiState: SearchUiState,
     query: String = ""
 ) {
-    VelaTheme {
+    SharedTransitionWrapper {
         SearchScreen(
             uiState = uiState,
             query = query,
@@ -262,68 +262,56 @@ private fun SearchScreenPreview(
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenEmptyPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.Empty
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.Empty
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenLoadingPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.Loading
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.Loading
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenResultsPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.Results(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() }
-            ),
-            query = "bitcoin"
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.Results(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() }
+        ),
+        query = "bitcoin"
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenResultsWithErrorPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.Results(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-                nonBlockingError = AppError.NoInternet
-            ),
-            query = "bitcoin"
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.Results(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            nonBlockingError = AppError.NoInternet
+        ),
+        query = "bitcoin"
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenNoResultsPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.NoResults,
-            query = "xyz123"
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.NoResults,
+        query = "xyz123"
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenErrorPreview() {
-    VelaTheme {
-        SearchScreenPreview(
-            uiState = SearchUiState.Error(AppError.NoInternet),
-            query = "bitcoin"
-        )
-    }
+    SearchScreenPreview(
+        uiState = SearchUiState.Error(AppError.NoInternet),
+        query = "bitcoin"
+    )
 }

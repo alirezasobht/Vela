@@ -29,7 +29,7 @@ import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
-import com.vela.ui.theme.VelaTheme
+import com.vela.ui.common.util.SharedTransitionWrapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -112,7 +112,7 @@ fun AssetListItem(
 @Preview(showBackground = true)
 @Composable
 private fun AssetListItemPreview() {
-    VelaTheme {
+    SharedTransitionWrapper {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
             observePrice = { flowOf(null) },

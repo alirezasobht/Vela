@@ -48,7 +48,7 @@ fun NonBlockingErrorBanner(
                 Text(
                     text = activeError.toMessage(),
                     color = MaterialTheme.colorScheme.onError,
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
                 )
             }
         }

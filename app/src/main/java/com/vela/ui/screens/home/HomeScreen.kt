@@ -27,6 +27,7 @@ import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
+import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -104,7 +105,7 @@ private fun SuccessState(
         onRefresh = homeActions.onPullToRefresh,
         modifier = modifier.fillMaxSize()
     ) {
-        Column(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             NonBlockingErrorBanner(error = uiState.nonBlockingError)
             ScreenHeader(
                 title = stringResource(R.string.title_markets),
@@ -120,7 +121,7 @@ private fun SuccessState(
                 assets = uiState.assets,
                 observePrice = homeActions.observePrice,
                 onItemClick = homeActions.onAssetClick,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -151,7 +152,7 @@ private fun LimitChips(
 
 @Composable
 private fun HomeScreenPreview(uiState: HomeUiState) {
-    VelaTheme {
+    SharedTransitionWrapper {
         HomeScreen(
             uiState = uiState,
             pullRefreshing = false,
