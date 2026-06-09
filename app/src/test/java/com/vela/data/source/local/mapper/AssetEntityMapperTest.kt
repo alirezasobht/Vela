@@ -7,7 +7,7 @@ import org.junit.Test
 
 class AssetEntityMapperTest {
 
-    // ----- sparkline CSV roundtrip -----
+    // ----- sparkline CSV -----
 
     @Test
     fun `sparkline CSV string is parsed to correct double list`() {
@@ -20,11 +20,11 @@ class AssetEntityMapperTest {
 
     @Test
     fun `sparkline with malformed values skips invalid entries`() {
-        val entity = assetEntity(sparkline = "1.0,abc,3.0")
+        val entity = assetEntity(sparkline = "1.0,abc,3.0,4,-1.0")
 
         val asset = entity.toDomain()
 
-        assertEquals(listOf(1.0, 3.0), asset.sparkline)
+        assertEquals(listOf(1.0, 3.0, 4.0), asset.sparkline)
     }
 
     @Test
