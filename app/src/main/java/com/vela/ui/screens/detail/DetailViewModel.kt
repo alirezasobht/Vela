@@ -13,6 +13,8 @@ import com.vela.domain.model.TimeRange
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
+import com.vela.domain.usecase.IsWatchlistedUseCase
+import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
@@ -25,8 +27,10 @@ import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,6 +41,8 @@ class DetailViewModel @Inject constructor(
     private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesAndMarketDataUseCase,
     private val pricePolling: PricePollingController,
+    private val isWatchlistedUseCase: IsWatchlistedUseCase,
+    private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
 
@@ -53,6 +59,9 @@ class DetailViewModel @Inject constructor(
     var isChartFullScreen by mutableStateOf(false)
         private set
 
+    lateinit var isWatchlisted: StateFlow<Boolean>
+        private set
+
     override fun getIds(): List<String> = listOf(coinId)
 
     override fun onPriceError(error: AppError?) {
@@ -66,7 +75,6 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
-
         coinId = try {
             savedStateHandle.toRoute<Screen.CoinDetail>().coinId
         } catch (_: Exception) {
@@ -74,12 +82,23 @@ class DetailViewModel @Inject constructor(
         }
         initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
 
+        isWatchlisted = isWatchlistedUseCase(coinId)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = false
+            )
+
         pricePolling.bind(
             scope = viewModelScope,
             getPrices = getPrices,
             delegate = this
         )
         loadDetail()
+    }
+
+    fun toggleWatchlist() {
+        viewModelScope.launch { toggleWatchlistUseCase(coinId) }
     }
 
     fun retry() = loadDetail(isRefresh = _uiState.value is DetailUiState.Success)
