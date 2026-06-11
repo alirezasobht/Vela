@@ -32,6 +32,7 @@
     <string name="label_ath">All Time High</string>
     <string name="label_atl">All Time Low</string>
     <string name="label_no_chart_data">No chart data available</string>
-    <string name="cd_fullscreen_chart">Open fullscreen chart</string>
+    <string name="cd_fullscreen_chart_open">Open fullscreen chart</string>
+    <string name="cd_fullscreen_chart_close">Close fullscreen chart</string>
     <string name="cd_exit_fullscreen_chart">Exit fullscreen chart</string>
 </resources>

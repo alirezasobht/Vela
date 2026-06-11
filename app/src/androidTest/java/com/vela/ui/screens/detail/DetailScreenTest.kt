@@ -1,7 +1,12 @@
 package com.vela.ui.screens.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +16,7 @@ import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.AppError
 import com.vela.domain.model.TimeRange
+import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toUiModel
@@ -33,6 +39,7 @@ class DetailScreenTest {
         onToggleFullScreen = {},
         observePrice = { flowOf(null) }
     )
+    private val testOrientationController = FullScreenOrientationController { {} }
 
     private val successState = DetailUiState.Success(
         detail = FakeDetailDataSource.detail.toUiModel(),
@@ -42,6 +49,7 @@ class DetailScreenTest {
 
     private fun setDetailScreen(
         uiState: DetailUiState,
+        isChartFullScreen: Boolean = false,
         actions: DetailActions = defaultActions
     ) {
         composeRule.setContent {
@@ -50,8 +58,9 @@ class DetailScreenTest {
                     uiState = uiState,
                     initialAsset = null,
                     selectedRange = TimeRange.ONE_DAY,
-                    isChartFullScreen = false,
-                    detailActions = actions
+                    isChartFullScreen = isChartFullScreen,
+                    detailActions = actions,
+                    orientationController = testOrientationController
                 )
             }
         }
@@ -128,5 +137,37 @@ class DetailScreenTest {
         )
         composeRule.onNodeWithContentDescription("Back").performClick()
         assert(backed)
+    }
+
+    @Test
+    fun candleStickChart_toggleFullScreen() {
+
+        composeRule.setContent {
+            var currentIsFullScreen by remember { mutableStateOf(false) }
+            SharedTransitionWrapper {
+                DetailScreen(
+                    uiState = successState,
+                    initialAsset = null,
+                    selectedRange = TimeRange.ONE_DAY,
+                    isChartFullScreen = currentIsFullScreen,
+                    detailActions = defaultActions.copy(
+                        onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
+                    ),
+                    orientationController = testOrientationController
+                )
+            }
+        }
+
+        // Open Fullscreen
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").performClick()
+
+        // Close Fullscreen
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsNotDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").performClick()
+
+        // Back to Initial
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
     }
 }
