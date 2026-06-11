@@ -1,6 +1,13 @@
 package com.vela.ui.screens.detail
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,12 +35,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,12 +60,13 @@ import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.model.SimplePriceUiModel
+import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.LandscapePreview
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
-import com.vela.ui.screens.detail.chart.FullScreenChartDialog
+import com.vela.ui.common.util.rememberFullScreenOrientationController
 import com.vela.ui.screens.detail.chart.OhlcChartSection
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailUiState
@@ -76,7 +87,6 @@ internal data class DetailActions(
 
 @Composable
 fun DetailRoute(
-    coinId: String,
     onBack: () -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
@@ -108,7 +118,8 @@ internal fun DetailScreen(
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
     detailActions: DetailActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    orientationController: FullScreenOrientationController = rememberFullScreenOrientationController()
 ) {
     val headerModel = initialAsset ?: (uiState as? DetailUiState.Success)?.detail
 
@@ -122,7 +133,7 @@ internal fun DetailScreen(
             image = headerModel?.image,
             marketCapRank = headerModel?.marketCapRank,
             coinId = headerModel?.id ?: "",
-            onBack = detailActions.onBack
+            onBack = if (isChartFullScreen) detailActions.onToggleFullScreen else detailActions.onBack
         )
 
         when (uiState) {
@@ -136,7 +147,8 @@ internal fun DetailScreen(
                 uiState = uiState,
                 selectedRange = selectedRange,
                 isChartFullScreen = isChartFullScreen,
-                detailActions = detailActions
+                detailActions = detailActions,
+                orientationController = orientationController
             )
         }
     }
@@ -149,6 +161,7 @@ private fun SuccessState(
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
     detailActions: DetailActions,
+    orientationController: FullScreenOrientationController,
     modifier: Modifier = Modifier
 ) {
     val detail = uiState.detail
@@ -163,57 +176,84 @@ private fun SuccessState(
     val totalVolume = simplePrice?.totalVolume ?: detail.totalVolume
     val priceColor = if (isPositive) sparklineBullColor else sparklineBearColor
 
-    if (isChartFullScreen) {
-        FullScreenChartDialog(
-            ohlcPoints = uiState.ohlcPoints,
-            isChartLoading = uiState.isChartLoading,
-            selectedRange = selectedRange,
-            onRangeSelected = detailActions.onRangeSelected,
-            onDismiss = detailActions.onToggleFullScreen
-        )
+    BackHandler(enabled = isChartFullScreen) {
+        detailActions.onToggleFullScreen()
     }
 
-    PullToRefreshBox(
-        isRefreshing = uiState.isRefreshing,
-        onRefresh = detailActions.onRetry,
+    DisposableEffect(isChartFullScreen) {
+        if (isChartFullScreen) {
+            val restoreOrientation = orientationController.lockLandscape()
+            onDispose(restoreOrientation)
+        } else onDispose { }
+    }
+
+    AnimatedContent(
+        targetState = isChartFullScreen,
+        transitionSpec = {
+            fadeIn(tween(300)) togetherWith fadeOut(tween(300)) using SizeTransform(clip = false)
+        },
+        label = "FullScreenTransition",
         modifier = modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            NonBlockingErrorBanner(error = uiState.nonBlockingError)
-
-            PriceSection(
-                price = price,
-                priceChange24h = priceChange24h,
-                priceChangePercent = priceChangePercent,
-                priceColor = priceColor,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
+    ) { fullScreen ->
+        if (fullScreen) {
             OhlcChartSection(
                 ohlcPoints = uiState.ohlcPoints,
                 isChartLoading = uiState.isChartLoading,
                 selectedRange = selectedRange,
-                isFullScreen = false,
-                onToggleFullScreen = detailActions.onToggleFullScreen,
                 onRangeSelected = detailActions.onRangeSelected,
+                isFullScreen = true,
+                onToggleFullScreen = detailActions.onToggleFullScreen,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(216.dp)
-                    .padding(horizontal = 16.dp),
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .systemBarsPadding()
+                    .layoutId("chart")
             )
+        } else {
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = detailActions.onRetry,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    NonBlockingErrorBanner(error = uiState.nonBlockingError)
 
-            StatsSection(
-                marketCap = marketCap,
-                totalVolume = totalVolume,
-                circulatingSupply = detail.circulatingSupply,
-                ath = detail.ath,
-                atl = detail.atl,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+                    PriceSection(
+                        price = price,
+                        priceChange24h = priceChange24h,
+                        priceChangePercent = priceChangePercent,
+                        priceColor = priceColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    OhlcChartSection(
+                        ohlcPoints = uiState.ohlcPoints,
+                        isChartLoading = uiState.isChartLoading,
+                        selectedRange = selectedRange,
+                        isFullScreen = false,
+                        onToggleFullScreen = detailActions.onToggleFullScreen,
+                        onRangeSelected = detailActions.onRangeSelected,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(216.dp)
+                            .padding(horizontal = 16.dp)
+                            .layoutId("chart"),
+                    )
+
+                    StatsSection(
+                        marketCap = marketCap,
+                        totalVolume = totalVolume,
+                        circulatingSupply = detail.circulatingSupply,
+                        ath = detail.ath,
+                        atl = detail.atl,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
         }
     }
 }

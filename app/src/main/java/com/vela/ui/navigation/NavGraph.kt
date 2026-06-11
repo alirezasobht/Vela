@@ -46,7 +46,6 @@ fun RootNavGraph(
                     CompositionLocalProvider(LocalAnimatedVisibilityScope provides this@composable) {
                         val dest: Screen.CoinDetail = backStackEntry.toRoute()
                         DetailRoute(
-                            coinId = dest.coinId,
                             onBack = { rootNavController.popBackStack() }
                         )
                     }
