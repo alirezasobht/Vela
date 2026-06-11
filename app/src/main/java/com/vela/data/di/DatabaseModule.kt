@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.vela.data.source.local.AppDatabase
 import com.vela.data.source.local.dao.HomeAssetDao
+import com.vela.data.source.local.dao.WatchlistDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,10 +23,17 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "vela.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     @Singleton
     fun provideHomeAssetDao(database: AppDatabase): HomeAssetDao =
         database.assetDao()
+
+    @Provides
+    @Singleton
+    fun provideWatchlistDao(database: AppDatabase): WatchlistDao =
+        database.watchlistDao()
 }
