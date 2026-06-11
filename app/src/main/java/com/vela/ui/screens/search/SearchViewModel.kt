@@ -12,7 +12,7 @@ import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.SearchAssetsUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
@@ -31,7 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchAssets: SearchAssetsUseCase,
-    private val assetHolder: AssetHolder,
+    private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesOnlyUseCase,
     private val pricePolling: PricePollingController
 ) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
@@ -100,7 +100,7 @@ class SearchViewModel @Inject constructor(
             when (val result = searchAssets(q)) {
                 is DataResult.Success -> {
                     val assets = result.data
-                    assetHolder.put(assets)
+                    assetPreviewCache.put(assets)
                     _uiState.value = if (assets.isEmpty()) {
                         SearchUiState.NoResults
                     } else {

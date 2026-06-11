@@ -9,7 +9,7 @@ import com.vela.domain.model.TimeRange
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.screens.detail.state.DetailUiState
@@ -39,7 +39,7 @@ class DetailViewModelTest {
     private val getCoinDetail: GetCoinDetailUseCase = mockk()
     private val getOhlc: GetOhlcUseCase = mockk()
     private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
-    private val assetHolder: AssetHolder = mockk()
+    private val assetPreviewCache: AssetPreviewCache = mockk()
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
 
     private fun createViewModel(): DetailViewModel {
@@ -47,7 +47,7 @@ class DetailViewModelTest {
         return DetailViewModel(
             getCoinDetail = getCoinDetail,
             getOhlc = getOhlc,
-            assetHolder = assetHolder,
+            assetPreviewCache = assetPreviewCache,
             getPrices = getPrices,
             pricePolling = PricePollingController(config),
             savedStateHandle = handle
@@ -57,7 +57,7 @@ class DetailViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        every { assetHolder.get(any()) } returns null
+        every { assetPreviewCache.get(any()) } returns null
     }
 
     @After

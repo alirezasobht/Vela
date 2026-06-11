@@ -13,7 +13,7 @@ import com.vela.domain.model.TimeRange
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
@@ -34,7 +34,7 @@ import javax.inject.Inject
 class DetailViewModel @Inject constructor(
     private val getCoinDetail: GetCoinDetailUseCase,
     private val getOhlc: GetOhlcUseCase,
-    private val assetHolder: AssetHolder,
+    private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesAndMarketDataUseCase,
     private val pricePolling: PricePollingController,
     savedStateHandle: SavedStateHandle
@@ -72,7 +72,7 @@ class DetailViewModel @Inject constructor(
         } catch (_: Exception) {
             savedStateHandle.get<String>("coinId") ?: ""
         }
-        initialHeader = assetHolder.get(coinId)?.toCoinDetailUiModel()
+        initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
 
         pricePolling.bind(
             scope = viewModelScope,

@@ -21,7 +21,7 @@ import com.vela.domain.model.MarketSort
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
@@ -44,7 +44,7 @@ import javax.inject.Inject
 class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
-    private val assetHolder: AssetHolder,
+    private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesOnlyUseCase,
     private val pricePolling: PricePollingController
 ) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
@@ -84,7 +84,7 @@ class MarketsViewModel @Inject constructor(
             getMarkets(category, sort).map { pagingData ->
                 pagingData.map { asset ->
                     _loadedIds.update { current -> (current + asset.id).distinct() }
-                    assetHolder.put(asset)
+                    assetPreviewCache.put(asset)
                     asset.toUiModel()
                 }
             }
