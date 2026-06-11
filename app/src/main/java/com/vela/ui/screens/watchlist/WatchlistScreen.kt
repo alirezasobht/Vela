@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.AssetLazyList
@@ -19,6 +22,7 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
+import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -28,6 +32,29 @@ internal data class WatchlistActions(
     val onAssetClick: (String) -> Unit,
     val onRemove: (String) -> Unit
 )
+
+@Composable
+fun WatchlistRoute(
+    modifier: Modifier = Modifier,
+    viewModel: WatchlistViewModel = hiltViewModel(),
+    navigateToDetail: (String) -> Unit
+) {
+    ScreenVisibilityObserver(viewModel::onScreenVisible)
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val watchlistActions = WatchlistActions(
+        observePrice = viewModel::observePrice,
+        onAssetClick = navigateToDetail,
+        onRemove = viewModel::removeFromWatchlist
+    )
+
+    WatchlistScreen(
+        uiState = uiState,
+        watchlistActions = watchlistActions,
+        modifier = modifier
+    )
+}
 
 @Composable
 internal fun WatchlistScreen(
