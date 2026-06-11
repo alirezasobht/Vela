@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -82,6 +83,7 @@ internal data class DetailActions(
     val onRetry: () -> Unit,
     val onRangeSelected: (TimeRange) -> Unit,
     val onToggleFullScreen: () -> Unit,
+    val onToggleWatchlist: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>
 )
 
@@ -93,12 +95,14 @@ fun DetailRoute(
     ScreenVisibilityObserver(viewModel::onScreenVisible)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isWatchlisted by viewModel.isWatchlisted.collectAsStateWithLifecycle()
 
     val detailActions = DetailActions(
         onBack = onBack,
         onRetry = viewModel::retry,
         onRangeSelected = viewModel::onRangeSelected,
         onToggleFullScreen = viewModel::toggleChartFullScreen,
+        onToggleWatchlist = viewModel::toggleWatchlist,
         observePrice = viewModel::observePrice
     )
 
@@ -107,6 +111,7 @@ fun DetailRoute(
         initialAsset = viewModel.initialHeader,
         selectedRange = viewModel.selectedRange,
         isChartFullScreen = viewModel.isChartFullScreen,
+        isWatchlisted = isWatchlisted,
         detailActions = detailActions
     )
 }
@@ -117,6 +122,7 @@ internal fun DetailScreen(
     initialAsset: CoinDetailUiModel?,
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
+    isWatchlisted: Boolean,
     detailActions: DetailActions,
     modifier: Modifier = Modifier,
     orientationController: FullScreenOrientationController = rememberFullScreenOrientationController()
@@ -133,7 +139,9 @@ internal fun DetailScreen(
             image = headerModel?.image,
             marketCapRank = headerModel?.marketCapRank,
             coinId = headerModel?.id ?: "",
-            onBack = if (isChartFullScreen) detailActions.onToggleFullScreen else detailActions.onBack
+            isWatchlisted = isWatchlisted,
+            onBack = if (isChartFullScreen) detailActions.onToggleFullScreen else detailActions.onBack,
+            onToggleWatchlist = detailActions.onToggleWatchlist
         )
 
         when (uiState) {
@@ -142,7 +150,6 @@ internal fun DetailScreen(
                 appError = uiState.appError,
                 onRetry = detailActions.onRetry
             )
-
             is DetailUiState.Success -> SuccessState(
                 uiState = uiState,
                 selectedRange = selectedRange,
@@ -266,7 +273,9 @@ private fun HeaderSection(
     image: String?,
     marketCapRank: Int?,
     coinId: String,
+    isWatchlisted: Boolean,
     onBack: () -> Unit,
+    onToggleWatchlist: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sharedTransitionScope = LocalSharedTransitionScope.current ?: return
@@ -345,10 +354,12 @@ private fun HeaderSection(
             }
         }
 
-        IconButton(onClick = { /* TODO: watchlist placeholder */ }) {
+        IconButton(onClick = onToggleWatchlist) {
             Icon(
-                imageVector = Icons.Default.StarOutline,
-                contentDescription = stringResource(R.string.cd_watchlist)
+                imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
+                contentDescription = stringResource(R.string.cd_watchlist),
+                tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -429,18 +440,24 @@ private fun StatRow(
 // ---- Previews ----
 
 @Composable
-private fun DetailScreenPreview(uiState: DetailUiState, isChartFullScreen: Boolean = false) {
+private fun DetailScreenPreview(
+    uiState: DetailUiState,
+    isChartFullScreen: Boolean = false,
+    isWatchlisted: Boolean = false
+) {
     SharedTransitionWrapper {
         DetailScreen(
             uiState = uiState,
             initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
             selectedRange = TimeRange.ONE_DAY,
             isChartFullScreen = isChartFullScreen,
+            isWatchlisted = isWatchlisted,
             detailActions = DetailActions(
                 onBack = {},
                 onRetry = {},
                 onRangeSelected = {},
                 onToggleFullScreen = {},
+                onToggleWatchlist = {},
                 observePrice = { flowOf(null) }
             )
         )
@@ -466,6 +483,18 @@ private fun DetailScreenSuccessPreview() =
             isChartLoading = false,
             ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
         )
+    )
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailScreenSuccessWatchlistedPreview() =
+    DetailScreenPreview(
+        uiState = DetailUiState.Success(
+            detail = FakeDetailDataSource.detail.toUiModel(),
+            isChartLoading = false,
+            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
+        ),
+        isWatchlisted = true
     )
 
 @Preview(showBackground = true)
@@ -503,7 +532,27 @@ private fun HeaderSectionPreview() {
             image = null,
             marketCapRank = 1,
             coinId = "bitcoin",
-            onBack = {}
+            isWatchlisted = false,
+            onBack = {},
+            onToggleWatchlist = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+private fun HeaderSectionWatchlistedPreview() {
+    SharedTransitionWrapper {
+        HeaderSection(
+            name = "Bitcoin",
+            symbol = "BTC",
+            image = null,
+            marketCapRank = 1,
+            coinId = "bitcoin",
+            isWatchlisted = true,
+            onBack = {},
+            onToggleWatchlist = {}
         )
     }
 }
