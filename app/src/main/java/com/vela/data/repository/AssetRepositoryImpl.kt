@@ -3,6 +3,7 @@ package com.vela.data.repository
 import com.vela.data.source.local.dao.HomeAssetDao
 import com.vela.data.source.local.mapper.toDomain
 import com.vela.data.source.remote.api.CoinGeckoApi
+import com.vela.data.source.remote.mapper.toDomain
 import com.vela.data.source.remote.mapper.toEntity
 import com.vela.data.source.remote.util.safeApiCall
 import com.vela.domain.model.Asset
@@ -25,5 +26,9 @@ class AssetRepositoryImpl @Inject constructor(
     override suspend fun refresh(limit: Int): DataResult<Unit> = safeApiCall {
         val entities = api.getMarkets(limit = limit).map { it.toEntity() }
         dao.refresh(entities)
+    }
+
+    override suspend fun getAssetsByIds(ids: List<String>): DataResult<List<Asset>> = safeApiCall {
+        api.getMarketsByIds(ids = ids.joinToString(",")).map { it.toDomain() }
     }
 }
