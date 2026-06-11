@@ -5,5 +5,4 @@ import com.vela.domain.model.DataResult
 
 interface SearchRepository {
     suspend fun search(query: String): DataResult<List<Asset>>
-    suspend fun getPricesByIds(ids: List<String>): DataResult<List<Asset>>
 }
