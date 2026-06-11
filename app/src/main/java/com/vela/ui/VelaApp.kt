@@ -1,6 +1,7 @@
 package com.vela.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,7 +17,9 @@ fun VelaApp() {
         Surface {
             RootNavGraph(
                 rootNavController = rootNavController,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
             )
         }
     }
