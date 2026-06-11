@@ -41,7 +41,7 @@ internal fun FullScreenToggle(
         ) {
             Icon(
                 imageVector = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                contentDescription = stringResource(R.string.cd_fullscreen_chart),
+                contentDescription = stringResource(if (isFullScreen) R.string.cd_fullscreen_chart_close else R.string.cd_fullscreen_chart_open),
                 tint = Color.White
             )
         }

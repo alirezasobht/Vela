@@ -1,11 +1,13 @@
-package com.vela.di
+package com.vela.data.di
 
 import com.vela.data.repository.fake.FakeAssetRepository
 import com.vela.data.repository.fake.FakeDetailRepository
+import com.vela.data.repository.fake.FakeMarketsRepository
 import com.vela.data.repository.fake.FakePriceRepository
 import com.vela.data.repository.fake.FakeSearchRepository
 import com.vela.domain.repository.AssetRepository
 import com.vela.domain.repository.DetailRepository
+import com.vela.domain.repository.MarketsRepository
 import com.vela.domain.repository.PriceRepository
 import com.vela.domain.repository.SearchRepository
 import dagger.Binds
@@ -28,6 +30,10 @@ abstract class FakeRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDetailRepository(fake: FakeDetailRepository): DetailRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMarketsRepository(impl: FakeMarketsRepository): MarketsRepository
 
     @Binds
     @Singleton

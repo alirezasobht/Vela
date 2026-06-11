@@ -1,10 +1,14 @@
 package com.vela.ui.navigation
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.vela.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -32,7 +36,7 @@ class NavigationTest {
     @Test
     fun appLaunches_homeScreenVisible() {
         // Home tab is the start destination — Markets title should be visible
-        composeRule.onNodeWithText("Markets").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
     }
 
     @Test
@@ -58,12 +62,12 @@ class NavigationTest {
         composeRule.onNodeWithText("Bitcoin").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Back").performClick()
-        composeRule.onNodeWithText("Markets").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
     }
 
     @Test
     fun bottomNav_tapMarkets_navigatesToMarketsTab() {
-        composeRule.onNodeWithText("Markets").performClick()
+        composeRule.onAllNodesWithText("Markets")[1].performClick()
         // Markets tab shows filter chip with "All" category
         composeRule.onNodeWithText("All").assertIsDisplayed()
     }
@@ -90,10 +94,15 @@ class NavigationTest {
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
+        // Go back to Search
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.onNodeWithText("Search").assertIsDisplayed()
     }
 
     @Test
     fun bottomNav_tabSwitching_preservesBackStack() {
+        // Land on Home
+        composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
         // Go to Search
         composeRule.onNodeWithText("Search").performClick()
         composeRule.onNodeWithText("Start typing to search").assertIsDisplayed()
@@ -102,6 +111,36 @@ class NavigationTest {
         composeRule.onNodeWithText("All").assertIsDisplayed()
         // Back to Home
         composeRule.onNodeWithText("Home").performClick()
-        composeRule.onNodeWithText("Markets").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
+    }
+
+    @Test
+    fun candleStickChart_tapFullScreen_navigateToFullScreenChart() {
+        // go to Detail
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Bitcoin")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Bitcoin").performClick()
+
+        //Open fullscreen chart
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasContentDescription("Close fullscreen chart")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        //Close fullscreen chart
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsNotDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").performClick()
+
+        // Verify we are back to detail screen
+        composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
     }
 }
