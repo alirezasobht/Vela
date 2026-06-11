@@ -15,8 +15,4 @@ class SearchRepositoryImpl @Inject constructor(
     override suspend fun search(query: String): DataResult<List<Asset>> = safeApiCall {
         api.search(query).coins.map { it.toDomain() }
     }
-
-    override suspend fun getPricesByIds(ids: List<String>): DataResult<List<Asset>> = safeApiCall {
-        api.getMarketsByIds(ids = ids.joinToString(",")).map { it.toDomain() }
-    }
 }
