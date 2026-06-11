@@ -5,9 +5,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class AssetHolderTest {
+class AssetPreviewCacheTest {
 
-    private val holder = AssetHolder()
+    private val holder = AssetPreviewCache()
 
     // ----- put(list) + get -----
 

@@ -5,7 +5,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AssetHolder @Inject constructor() {
+class AssetPreviewCache @Inject constructor() {
     private val assetMap = mutableMapOf<String, Asset>()
 
     fun put(assets: List<Asset>) {

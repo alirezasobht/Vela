@@ -8,7 +8,7 @@ import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingController
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -38,7 +38,7 @@ class HomeViewModelTest {
     private val getTopAssets: GetTopAssetsUseCase = mockk()
     private val refreshAssets: RefreshAssetsUseCase = mockk()
     private val getToday: GetTodayUseCase = mockk()
-    private val assetHolder: AssetHolder = mockk(relaxed = true)
+    private val assetPreviewCache: AssetPreviewCache = mockk(relaxed = true)
     private val getPrices: GetPricesOnlyUseCase = mockk(relaxed = true)
     private val pricePolling: PricePollingController = mockk(relaxed = true)
 
@@ -57,7 +57,7 @@ class HomeViewModelTest {
         getTopAssets = getTopAssets,
         refreshAssets = refreshAssets,
         getToday = getToday,
-        assetHolder = assetHolder,
+        assetPreviewCache = assetPreviewCache,
         getPrices = getPrices,
         pricePolling = pricePolling
     )

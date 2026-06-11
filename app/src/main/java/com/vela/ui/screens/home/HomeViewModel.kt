@@ -13,7 +13,7 @@ import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
-import com.vela.ui.base.AssetHolder
+import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
@@ -36,7 +36,7 @@ class HomeViewModel @Inject constructor(
     private val getTopAssets: GetTopAssetsUseCase,
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
-    private val assetHolder: AssetHolder,
+    private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesOnlyUseCase,
     private val pricePolling: PricePollingController
 ) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
@@ -131,7 +131,7 @@ class HomeViewModel @Inject constructor(
         getTopAssets(limit).collect { result ->
             when (result) {
                 is DataResult.Success -> {
-                    assetHolder.put(result.data)
+                    assetPreviewCache.put(result.data)
                     val current = _uiState.value
                     _uiState.value = HomeUiState.Success(
                         assets = result.data.map { it.toUiModel() },
