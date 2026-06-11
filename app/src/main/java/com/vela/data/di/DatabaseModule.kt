@@ -24,7 +24,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "vela.db"
         )
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(false)
             .build()
 
     @Provides
