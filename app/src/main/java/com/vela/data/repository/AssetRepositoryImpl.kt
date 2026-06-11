@@ -23,7 +23,7 @@ class AssetRepositoryImpl @Inject constructor(
             DataResult.Success(entities.map { it.toDomain() })
         }
 
-    override suspend fun refresh(limit: Int): DataResult<Unit> = safeApiCall {
+    override suspend fun fetchTopAssets(limit: Int): DataResult<Unit> = safeApiCall {
         val entities = api.getMarkets(limit = limit).map { it.toEntity() }
         dao.refresh(entities)
     }
