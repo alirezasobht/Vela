@@ -8,5 +8,5 @@ class RefreshAssetsUseCase @Inject constructor(
     private val repository: AssetRepository
 ) {
     suspend operator fun invoke(limit: Int = 50): DataResult<Unit> =
-        repository.refresh(limit)
+        repository.fetchTopAssets(limit)
 }
