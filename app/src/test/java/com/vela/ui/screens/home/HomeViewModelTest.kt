@@ -10,6 +10,7 @@ import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -41,6 +42,7 @@ class HomeViewModelTest {
     private val assetPreviewCache: AssetPreviewCache = mockk(relaxed = true)
     private val getPrices: GetPricesOnlyUseCase = mockk(relaxed = true)
     private val pricePolling: PricePollingController = mockk(relaxed = true)
+    private val watchlistController: WatchlistControllerImpl = mockk(relaxed = true)
 
     private fun anAsset(id: String = "bitcoin") = Asset(
         id = id,
@@ -59,7 +61,8 @@ class HomeViewModelTest {
         getToday = getToday,
         assetPreviewCache = assetPreviewCache,
         getPrices = getPrices,
-        pricePolling = pricePolling
+        pricePolling = pricePolling,
+        watchlistController = watchlistController
     )
 
     @Before
