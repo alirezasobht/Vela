@@ -37,7 +37,8 @@ class DetailScreenTest {
         onRetry = {},
         onRangeSelected = {},
         onToggleFullScreen = {},
-        observePrice = { flowOf(null) }
+        observePrice = { flowOf(null) },
+        onToggleWatchlist = {}
     )
     private val testOrientationController = FullScreenOrientationController { {} }
 
@@ -59,6 +60,7 @@ class DetailScreenTest {
                     initialAsset = null,
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = isChartFullScreen,
+                    isWatchlisted = false,
                     detailActions = actions,
                     orientationController = testOrientationController
                 )
@@ -150,6 +152,7 @@ class DetailScreenTest {
                     initialAsset = null,
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = currentIsFullScreen,
+                    isWatchlisted = false,
                     detailActions = defaultActions.copy(
                         onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
                     ),

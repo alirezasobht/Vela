@@ -9,7 +9,4 @@ import javax.inject.Inject
 class FakeSearchRepository @Inject constructor() : SearchRepository {
     override suspend fun search(query: String): DataResult<List<Asset>> =
         DataResult.Success(FakeAssetDataSource.assets)
-
-    override suspend fun getPricesByIds(ids: List<String>): DataResult<List<Asset>> =
-        DataResult.Success(FakeAssetDataSource.assets)
 }

@@ -5,11 +5,13 @@ import com.vela.data.repository.fake.FakeDetailRepository
 import com.vela.data.repository.fake.FakeMarketsRepository
 import com.vela.data.repository.fake.FakePriceRepository
 import com.vela.data.repository.fake.FakeSearchRepository
+import com.vela.data.repository.fake.FakeWatchlistRepository
 import com.vela.domain.repository.AssetRepository
 import com.vela.domain.repository.DetailRepository
 import com.vela.domain.repository.MarketsRepository
 import com.vela.domain.repository.PriceRepository
 import com.vela.domain.repository.SearchRepository
+import com.vela.domain.repository.WatchlistRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.components.SingletonComponent
@@ -42,4 +44,8 @@ abstract class FakeRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPriceRepository(fake: FakePriceRepository): PriceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindWatchlistRepository(fake: FakeWatchlistRepository): WatchlistRepository
 }
