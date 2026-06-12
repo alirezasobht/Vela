@@ -1,10 +1,13 @@
 package com.vela.ui.common.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -60,46 +63,12 @@ fun AssetListItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        with(sharedTransitionScope) {
-            AsyncImage(
-                model = asset.image,
-                contentDescription = asset.name,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .then(
-                        if (animatedVisibilityScope != null) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "coin-image-${asset.id}"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                        } else Modifier
-                    ),
-                placeholder = rememberVectorPainter(Icons.Default.Paid),
-                error = rememberVectorPainter(Icons.Default.MonetizationOn)
-            )
-        }
 
-        Column(modifier = Modifier.weight(1f)) {
-            with(sharedTransitionScope) {
-                Text(
-                    text = asset.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = if (animatedVisibilityScope != null) {
-                        Modifier.sharedElement(
-                            rememberSharedContentState(key = "coin-name-${asset.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                    } else Modifier
-                )
-            }
-            Text(
-                text = asset.symbolAndRank,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        NameAndIconCell(
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            asset = asset
+        )
 
         Sparkline(
             prices = asset.sparkline,
@@ -115,21 +84,84 @@ fun AssetListItem(
             observePrice = actions.observePrice
         )
 
-        if (showWatchlistButton) {
-            val isWatchlisted by remember(asset.id) { actions.observeIsWatchlisted(asset.id) }
-                .collectAsStateWithLifecycle(initialValue = false)
+        WatchlistButton(
+            asset = asset,
+            showWatchlistButton = showWatchlistButton,
+            actions = actions
+        )
+    }
+}
 
-            IconButton(onClick = { actions.onToggleWatchlist(asset.id) }) {
-                Icon(
-                    imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
-                    contentDescription = stringResource(R.string.cd_watchlist),
-                    tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+@Composable
+private fun WatchlistButton(
+    asset: AssetUiModel,
+    showWatchlistButton: Boolean,
+    actions: AssetListItemActions
+) {
+    if (showWatchlistButton) {
+        val isWatchlisted by remember(asset.id) { actions.observeIsWatchlisted(asset.id) }
+            .collectAsStateWithLifecycle(initialValue = false)
+
+        IconButton(onClick = { actions.onToggleWatchlist(asset.id) }) {
+            Icon(
+                imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
+                contentDescription = stringResource(R.string.cd_watchlist),
+                tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
+
+@Composable
+private fun RowScope.NameAndIconCell(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    asset: AssetUiModel
+) {
+    with(sharedTransitionScope) {
+        AsyncImage(
+            model = asset.image,
+            contentDescription = asset.name,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .then(
+                    if (animatedVisibilityScope != null) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "coin-image-${asset.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    } else Modifier
+                ),
+            placeholder = rememberVectorPainter(Icons.Default.Paid),
+            error = rememberVectorPainter(Icons.Default.MonetizationOn)
+        )
+    }
+
+    Column(modifier = Modifier.weight(1f)) {
+        with(sharedTransitionScope) {
+            Text(
+                text = asset.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = if (animatedVisibilityScope != null) {
+                    Modifier.sharedElement(
+                        rememberSharedContentState(key = "coin-name-${asset.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                } else Modifier
+            )
+        }
+        Text(
+            text = asset.symbolAndRank,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ----- Previews ------
 
 @Preview(showBackground = true)
 @Composable
