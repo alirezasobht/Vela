@@ -56,12 +56,11 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.components.model.AssetUiModel
-import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.theme.VelaTheme
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
@@ -69,8 +68,7 @@ internal data class MarketActions(
     val onCategorySelected: (MarketCategory) -> Unit,
     val onSortSelected: (MarketSort) -> Unit,
     val onRetry: () -> Unit,
-    val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val onAssetClick: (String) -> Unit
+    val assetListItemActions: AssetListItemActions
 )
 
 @Composable
@@ -94,8 +92,7 @@ fun MarketsRoute(
         onCategorySelected = viewModel::onCategorySelected,
         onSortSelected = viewModel::onSortSelected,
         onRetry = { pagingItems.retry(); viewModel.retry() },
-        observePrice = viewModel::observePrice,
-        onAssetClick = navigateToDetail
+        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
     )
 
     MarketsScreen(
@@ -214,8 +211,7 @@ private fun SuccessState(
     PagedAssetList(
         pagingItems = pagingItems,
         isLoadingMore = uiState.isLoadingMore,
-        observePrice = marketAction.observePrice,
-        onItemClick = marketAction.onAssetClick,
+        actions = marketAction.assetListItemActions,
         modifier = modifier.fillMaxSize()
     )
 }
@@ -224,8 +220,7 @@ private fun SuccessState(
 private fun PagedAssetList(
     pagingItems: LazyPagingItems<AssetUiModel>,
     isLoadingMore: Boolean,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    onItemClick: (String) -> Unit,
+    actions: AssetListItemActions,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -234,7 +229,7 @@ private fun PagedAssetList(
             key = pagingItems.itemKey { it.id }
         ) { index ->
             pagingItems[index]?.let { asset ->
-                AssetListItem(asset = asset, observePrice = observePrice, onClick = onItemClick)
+                AssetListItem(asset = asset, actions = actions)
                 if (index < pagingItems.itemCount - 1) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -373,8 +368,12 @@ private fun MarketsScreenPreview(
                 onCategorySelected = {},
                 onSortSelected = {},
                 onRetry = {},
-                observePrice = { flowOf(null) },
-                onAssetClick = {}
+                assetListItemActions = AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
             )
         )
     }

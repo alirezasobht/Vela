@@ -25,7 +25,10 @@ import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
+import com.vela.ui.base.watchlist.WatchlistController
+import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.components.model.AssetUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,8 +49,9 @@ class MarketsViewModel @Inject constructor(
     private val getCategories: GetMarketCategoriesUseCase,
     private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesOnlyUseCase,
-    private val pricePolling: PricePollingController
-) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
+    private val pricePolling: PricePollingController,
+    private val watchlistController: WatchlistControllerImpl
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate, WatchlistController by watchlistController {
 
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
@@ -97,8 +101,17 @@ class MarketsViewModel @Inject constructor(
             getPrices = getPrices,
             delegate = this
         )
+        watchlistController.bind(viewModelScope)
         fetchCategories()
     }
+
+    fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
+        AssetListItemActions(
+            observePrice = ::observePrice,
+            observeIsWatchlisted = ::observeIsWatchlisted,
+            onToggleWatchlist = ::toggleWatchlist,
+            onClick = onClick
+        )
 
     fun retry() {
         getCategoriesJob?.cancel()
