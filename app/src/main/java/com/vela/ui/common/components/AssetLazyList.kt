@@ -10,17 +10,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.components.model.AssetUiModel
-import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.SharedTransitionWrapper
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun AssetLazyList(
     assets: List<AssetUiModel>,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    onItemClick: (String) -> Unit,
+    actions: AssetListItemActions,
+    showWatchlistButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
@@ -28,7 +27,7 @@ fun AssetLazyList(
             items = assets,
             key = { _, asset -> asset.id }
         ) { index, asset ->
-            AssetListItem(asset = asset, observePrice = observePrice, onClick = onItemClick)
+            AssetListItem(asset = asset, actions = actions, showWatchlistButton = showWatchlistButton)
             if (index < assets.lastIndex) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -45,8 +44,12 @@ private fun AssetLazyListPreview() {
     SharedTransitionWrapper {
         AssetLazyList(
             assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            observePrice = { flowOf(null) },
-            onItemClick = {}
+            actions = AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(false) },
+                onToggleWatchlist = {},
+                onClick = {}
+            )
         )
     }
 }

@@ -12,33 +12,41 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.components.model.AssetUiModel
-import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.SharedTransitionWrapper
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AssetListItem(
     asset: AssetUiModel,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    onClick: (String) -> Unit,
+    actions: AssetListItemActions,
+    showWatchlistButton: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val sharedTransitionScope = LocalSharedTransitionScope.current ?: return
@@ -48,7 +56,7 @@ fun AssetListItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .clickable { onClick(asset.id) },
+            .clickable { actions.onClick(asset.id) },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -104,8 +112,22 @@ fun AssetListItem(
             initialPrice = asset.price,
             initialPriceChange = asset.priceChange,
             initialColor = asset.color,
-            observePrice = observePrice
+            observePrice = actions.observePrice
         )
+
+        if (showWatchlistButton) {
+            val isWatchlisted by remember(asset.id) { actions.observeIsWatchlisted(asset.id) }
+                .collectAsStateWithLifecycle(initialValue = false)
+
+            IconButton(onClick = { actions.onToggleWatchlist(asset.id) }) {
+                Icon(
+                    imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
+                    contentDescription = stringResource(R.string.cd_watchlist),
+                    tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -115,8 +137,45 @@ private fun AssetListItemPreview() {
     SharedTransitionWrapper {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
-            observePrice = { flowOf(null) },
-            onClick = {}
+            actions = AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(false) },
+                onToggleWatchlist = {},
+                onClick = {}
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AssetListItemWatchlistedPreview() {
+    SharedTransitionWrapper {
+        AssetListItem(
+            asset = FakeAssetDataSource.assets.first().toUiModel(),
+            actions = AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(true) },
+                onToggleWatchlist = {},
+                onClick = {}
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AssetListItemNoWatchlistButtonPreview() {
+    SharedTransitionWrapper {
+        AssetListItem(
+            asset = FakeAssetDataSource.assets.first().toUiModel(),
+            showWatchlistButton = false,
+            actions = AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(false) },
+                onToggleWatchlist = {},
+                onClick = {}
+            )
         )
     }
 }
