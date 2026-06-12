@@ -27,7 +27,11 @@ fun AssetLazyList(
             items = assets,
             key = { _, asset -> asset.id }
         ) { index, asset ->
-            AssetListItem(asset = asset, actions = actions, showWatchlistButton = showWatchlistButton)
+            AssetListItem(
+                asset = asset,
+                actions = actions, showWatchlistButton = showWatchlistButton,
+                modifier = Modifier.animateItem()
+            )
             if (index < assets.lastIndex) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
