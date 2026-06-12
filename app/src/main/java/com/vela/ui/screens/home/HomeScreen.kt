@@ -25,19 +25,17 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.ScreenHeader
 import com.vela.ui.common.components.mapper.toUiModel
-import com.vela.ui.common.components.model.SimplePriceUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.theme.VelaTheme
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal data class HomeActions(
     val onLimitChanged: (Int) -> Unit,
     val onRetry: () -> Unit,
     val onPullToRefresh: () -> Unit,
-    val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val onAssetClick: (String) -> Unit
+    val assetListItemActions: AssetListItemActions
 )
 
 @Composable
@@ -56,8 +54,7 @@ fun HomeRoute(
         onLimitChanged = viewModel::onLimitChanged,
         onRetry = viewModel::retry,
         onPullToRefresh = viewModel::pullToRefresh,
-        observePrice = viewModel::observePrice,
-        onAssetClick = navigateToDetail
+        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
     )
 
     HomeScreen(
@@ -119,8 +116,7 @@ private fun SuccessState(
             )
             AssetLazyList(
                 assets = uiState.assets,
-                observePrice = homeActions.observePrice,
-                onItemClick = homeActions.onAssetClick,
+                actions = homeActions.assetListItemActions,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -161,8 +157,12 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
                 onLimitChanged = {},
                 onRetry = {},
                 onPullToRefresh = {},
-                observePrice = { flowOf(null) },
-                onAssetClick = {}
+                assetListItemActions = AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
             )
         )
     }
