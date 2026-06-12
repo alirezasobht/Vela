@@ -17,7 +17,10 @@ import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
+import com.vela.ui.base.watchlist.WatchlistController
+import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -38,8 +41,9 @@ class HomeViewModel @Inject constructor(
     private val getToday: GetTodayUseCase,
     private val assetPreviewCache: AssetPreviewCache,
     private val getPrices: GetPricesOnlyUseCase,
-    private val pricePolling: PricePollingController
-) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
+    private val pricePolling: PricePollingController,
+    private val watchlistController: WatchlistControllerImpl
+) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate, WatchlistController by watchlistController {
 
     private val _pullRefreshing = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -70,8 +74,17 @@ class HomeViewModel @Inject constructor(
             getPrices = getPrices,
             delegate = this
         )
+        watchlistController.bind(viewModelScope)
         startFresh(selectedLimit)
     }
+
+    fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
+        AssetListItemActions(
+            observePrice = ::observePrice,
+            observeIsWatchlisted = ::observeIsWatchlisted,
+            onToggleWatchlist = ::toggleWatchlist,
+            onClick = onClick
+        )
 
     fun onLimitChanged(limit: Int) {
         selectedLimit = limit
