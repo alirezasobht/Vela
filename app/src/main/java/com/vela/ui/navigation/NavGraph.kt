@@ -17,6 +17,7 @@ import com.vela.ui.screens.detail.DetailRoute
 import com.vela.ui.screens.home.HomeRoute
 import com.vela.ui.screens.markets.MarketsRoute
 import com.vela.ui.screens.search.SearchRoute
+import com.vela.ui.screens.watchlist.WatchlistRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -82,7 +83,11 @@ fun DashboardNavGraph(
             )
         }
         composable<DashboardTab.Watchlist> {
-            PlaceholderScreen(title = "Watchlist")
+            WatchlistRoute(
+                navigateToDetail = { coinId ->
+                    rootNavController.navigate(Screen.CoinDetail(coinId))
+                }
+            )
         }
         composable<DashboardTab.Search> {
             SearchRoute(

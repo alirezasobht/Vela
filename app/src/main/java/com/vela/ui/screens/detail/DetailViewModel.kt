@@ -85,7 +85,7 @@ class DetailViewModel @Inject constructor(
         isWatchlisted = isWatchlistedUseCase(coinId)
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
                 initialValue = false
             )
 

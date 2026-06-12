@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.GetWatchlistAssetsUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class WatchlistViewModel @Inject constructor(
     private val getWatchlistAssets: GetWatchlistAssetsUseCase,
     private val toggleWatchlist: ToggleWatchlistUseCase,
+    private val getPrices: GetPricesOnlyUseCase,
     private val assetPreviewCache: AssetPreviewCache,
     private val pricePolling: PricePollingController
 ) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate {
@@ -44,7 +46,7 @@ class WatchlistViewModel @Inject constructor(
     init {
         pricePolling.bind(
             scope = viewModelScope,
-            getPrices = TODO("inject GetPricesOnlyUseCase"),
+            getPrices = getPrices,
             delegate = this
         )
         observeWatchlist()
