@@ -44,18 +44,16 @@ import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.mapper.toUiModel
-import com.vela.ui.common.components.model.SimplePriceUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal data class SearchActions(
     val onQueryChange: (String) -> Unit,
     val onClearQuery: () -> Unit,
     val onRetry: () -> Unit,
-    val observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    val onAssetClick: (String) -> Unit
+    val assetListItemActions: AssetListItemActions
 )
 
 @Composable
@@ -73,8 +71,7 @@ fun SearchRoute(
         onQueryChange = viewModel::onQueryChange,
         onClearQuery = viewModel::onClearQuery,
         onRetry = viewModel::retry,
-        observePrice = viewModel::observePrice,
-        onAssetClick = navigateToDetail
+        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
     )
 
     SearchScreen(
@@ -211,8 +208,7 @@ private fun ResultsState(
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
         AssetLazyList(
             assets = uiState.assets,
-            observePrice = searchActions.observePrice,
-            onItemClick = searchActions.onAssetClick,
+            actions = searchActions.assetListItemActions,
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection) // Attach the spy here
@@ -252,8 +248,12 @@ private fun SearchScreenPreview(
                 onQueryChange = {},
                 onClearQuery = {},
                 onRetry = {},
-                observePrice = { flowOf(null) },
-                onAssetClick = {}
+                assetListItemActions = AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
             )
         )
     }
