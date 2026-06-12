@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.domain.model.AppError
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.util.SharedTransitionWrapper
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
@@ -25,8 +26,12 @@ class SearchScreenTest {
         onQueryChange = {},
         onClearQuery = {},
         onRetry = {},
-        observePrice = { flowOf(null) },
-        onAssetClick = {}
+        assetListItemActions = AssetListItemActions(
+            observePrice = { flowOf(null) },
+            observeIsWatchlisted = { flowOf(false) },
+            onToggleWatchlist = {},
+            onClick = {}
+        )
     )
 
     @Test

@@ -13,6 +13,7 @@ import com.vela.domain.model.AppError
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.ui.common.components.mapper.toUiModel
+import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.theme.VelaTheme
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
@@ -29,8 +30,12 @@ class MarketsScreenTest {
         onCategorySelected = {},
         onSortSelected = {},
         onRetry = {},
-        observePrice = { flowOf(null) },
-        onAssetClick = {}
+        assetListItemActions = AssetListItemActions(
+            observePrice = { flowOf(null) },
+            observeIsWatchlisted = { flowOf(false) },
+            onToggleWatchlist = {},
+            onClick = {}
+        )
     )
 
     private val fakePagingItems
