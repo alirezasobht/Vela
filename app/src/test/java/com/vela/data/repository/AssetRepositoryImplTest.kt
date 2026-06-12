@@ -139,7 +139,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = any()) } returns listOf(aCoinDto())
         coEvery { dao.refresh(any()) } just runs
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Success)
         coVerify { dao.refresh(any()) }
@@ -150,7 +150,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = any()) } returns listOf(aCoinDto())
         coEvery { dao.refresh(any()) } just runs
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertEquals(DataResult.Success(Unit), result)
     }
@@ -159,7 +159,7 @@ class AssetRepositoryImplTest {
     fun `refresh Network connectivity failure`() = runTest {
         coEvery { api.getMarkets(limit = any()) } throws IOException("No internet")
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Error)
         assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
@@ -169,7 +169,7 @@ class AssetRepositoryImplTest {
     fun `refresh Generic exception handling`() = runTest {
         coEvery { api.getMarkets(limit = any()) } throws RuntimeException("Server crashed")
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Error)
         val error = (result as DataResult.Error).appError
@@ -181,7 +181,7 @@ class AssetRepositoryImplTest {
     fun `refresh Exception with null message handling`() = runTest {
         coEvery { api.getMarkets(limit = any()) } throws RuntimeException(null as String?)
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Error)
         val error = (result as DataResult.Error).appError
@@ -190,11 +190,11 @@ class AssetRepositoryImplTest {
     }
 
     @Test
-    fun `refresh handles database transaction failure`() = runTest {
+    fun `fetchTopAssets handles database transaction failure`() = runTest {
         coEvery { api.getMarkets(limit = any()) } returns listOf(aCoinDto())
         coEvery { dao.refresh(any()) } throws RuntimeException("DB error")
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Error)
         val error = (result as DataResult.Error).appError
@@ -207,7 +207,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = 25) } returns emptyList()
         coEvery { dao.refresh(any()) } just runs
 
-        repository.refresh(limit = 25)
+        repository.fetchTopAssets(limit = 25)
 
         coVerify { api.getMarkets(limit = 25) }
     }
@@ -217,7 +217,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = 0) } returns emptyList()
         coEvery { dao.refresh(any()) } just runs
 
-        val result = repository.refresh(limit = 0)
+        val result = repository.fetchTopAssets(limit = 0)
 
         coVerify { api.getMarkets(limit = 0) }
         assertTrue(result is DataResult.Success)
@@ -228,7 +228,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = Int.MAX_VALUE) } returns emptyList()
         coEvery { dao.refresh(any()) } just runs
 
-        val result = repository.refresh(limit = Int.MAX_VALUE)
+        val result = repository.fetchTopAssets(limit = Int.MAX_VALUE)
 
         coVerify { api.getMarkets(limit = Int.MAX_VALUE) }
         assertTrue(result is DataResult.Success)
@@ -240,7 +240,7 @@ class AssetRepositoryImplTest {
         coEvery { api.getMarkets(limit = any()) } returns listOf(dto)
         coEvery { dao.refresh(any()) } just runs
 
-        val result = repository.refresh()
+        val result = repository.fetchTopAssets()
 
         assertTrue(result is DataResult.Success)
         coVerify { dao.refresh(any()) }
@@ -253,7 +253,7 @@ class AssetRepositoryImplTest {
         val entitiesSlot = slot<List<AssetEntity>>()
         coEvery { dao.refresh(capture(entitiesSlot)) } just runs
 
-        repository.refresh()
+        repository.fetchTopAssets()
 
         val entity = entitiesSlot.captured[0]
         assertEquals(dto.id, entity.id)

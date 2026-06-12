@@ -9,6 +9,8 @@ import com.vela.domain.model.TimeRange
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
+import com.vela.domain.usecase.IsWatchlistedUseCase
+import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
@@ -18,6 +20,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -41,6 +44,8 @@ class DetailViewModelTest {
     private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
     private val assetPreviewCache: AssetPreviewCache = mockk()
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
+    private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk()
+    private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
 
     private fun createViewModel(): DetailViewModel {
         val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
@@ -50,6 +55,8 @@ class DetailViewModelTest {
             assetPreviewCache = assetPreviewCache,
             getPrices = getPrices,
             pricePolling = PricePollingController(config),
+            isWatchlistedUseCase = isWatchlistedUseCase,
+            toggleWatchlistUseCase = toggleWatchlistUseCase,
             savedStateHandle = handle
         )
     }
@@ -58,6 +65,7 @@ class DetailViewModelTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         every { assetPreviewCache.get(any()) } returns null
+        every { isWatchlistedUseCase.invoke(any()) } returns flowOf(false)
     }
 
     @After
