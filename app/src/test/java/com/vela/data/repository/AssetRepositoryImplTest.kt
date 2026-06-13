@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
@@ -63,7 +62,7 @@ class AssetRepositoryImplTest {
 
         val result = repository.getTopAssets().first()
 
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
         assertEquals(1, (result as DataResult.Success).data.size)
         assertEquals("bitcoin", result.data[0].id)
     }
@@ -74,8 +73,8 @@ class AssetRepositoryImplTest {
 
         val result = repository.getTopAssets().first()
 
-        assertTrue(result is DataResult.Success)
-        assertTrue((result as DataResult.Success).data.isEmpty())
+        assertEquals(true, result is DataResult.Success)
+        assertEquals(true, (result as DataResult.Success).data.isEmpty())
     }
 
     @Test
@@ -97,14 +96,14 @@ class AssetRepositoryImplTest {
 
             entityFlow.emit(listOf(anAssetEntity("bitcoin")))
             awaitItem().let { emit1 ->
-                assertTrue(emit1 is DataResult.Success)
+                assertEquals(true, emit1 is DataResult.Success)
                 assertEquals(1, (emit1 as DataResult.Success).data.size)
                 assertEquals("bitcoin", emit1.data[0].id)
             }
 
             entityFlow.emit(listOf(anAssetEntity("bitcoin"), anAssetEntity("ethereum")))
             awaitItem().let { emit2 ->
-                assertTrue(emit2 is DataResult.Success)
+                assertEquals(true, emit2 is DataResult.Success)
                 assertEquals(2, (emit2 as DataResult.Success).data.size)
                 assertEquals("bitcoin", emit2.data[0].id)
                 assertEquals("ethereum", emit2.data[1].id)
@@ -141,7 +140,7 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
         coVerify { dao.refresh(any()) }
     }
 
@@ -161,7 +160,7 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Error)
+        assertEquals(true, result is DataResult.Error)
         assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
     }
 
@@ -171,9 +170,9 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Error)
+        assertEquals(true, result is DataResult.Error)
         val error = (result as DataResult.Error).appError
-        assertTrue(error is AppError.Unknown)
+        assertEquals(true, error is AppError.Unknown)
         assertEquals("Server crashed", (error as AppError.Unknown).message)
     }
 
@@ -183,9 +182,9 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Error)
+        assertEquals(true, result is DataResult.Error)
         val error = (result as DataResult.Error).appError
-        assertTrue(error is AppError.Unknown)
+        assertEquals(true, error is AppError.Unknown)
         assertEquals("Something went wrong", (error as AppError.Unknown).message)
     }
 
@@ -196,9 +195,9 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Error)
+        assertEquals(true, result is DataResult.Error)
         val error = (result as DataResult.Error).appError
-        assertTrue(error is AppError.Unknown)
+        assertEquals(true, error is AppError.Unknown)
         assertEquals("DB error", (error as AppError.Unknown).message)
     }
 
@@ -220,7 +219,7 @@ class AssetRepositoryImplTest {
         val result = repository.fetchTopAssets(limit = 0)
 
         coVerify { api.getMarkets(limit = 0) }
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
     }
 
     @Test
@@ -231,7 +230,7 @@ class AssetRepositoryImplTest {
         val result = repository.fetchTopAssets(limit = Int.MAX_VALUE)
 
         coVerify { api.getMarkets(limit = Int.MAX_VALUE) }
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
     }
 
     @Test
@@ -242,7 +241,7 @@ class AssetRepositoryImplTest {
 
         val result = repository.fetchTopAssets()
 
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
         coVerify { dao.refresh(any()) }
     }
 

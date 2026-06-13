@@ -27,8 +27,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -83,7 +81,7 @@ class HomeViewModelTest {
     @Test
     fun `Initial state emission check`() {
         val viewModel = createViewModel()
-        assertTrue(viewModel.uiState.value is HomeUiState.Loading)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
     }
 
     @Test
@@ -95,7 +93,7 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Success)
+        assertEquals(true, state is HomeUiState.Success)
         assertEquals(1, (state as HomeUiState.Success).assets.size)
         assertEquals("bitcoin", state.assets[0].id)
     }
@@ -119,7 +117,7 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Error)
+        assertEquals(true, state is HomeUiState.Error)
         assertEquals(AppError.NoInternet, (state as HomeUiState.Error).appError)
     }
 
@@ -131,7 +129,7 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Error)
+        assertEquals(true, state is HomeUiState.Error)
         assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
     }
 
@@ -144,8 +142,8 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Error)
-        assertTrue((state as HomeUiState.Error).appError is AppError.Unknown)
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals(true, (state as HomeUiState.Error).appError is AppError.Unknown)
         assertEquals(errorMessage, (state.appError as AppError.Unknown).message)
     }
 
@@ -157,7 +155,7 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Error)
+        assertEquals(true, state is HomeUiState.Error)
         assertEquals("", ((state as HomeUiState.Error).appError as AppError.Unknown).message)
     }
 
@@ -167,7 +165,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value is HomeUiState.Error)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
 
         coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
         every { getTopAssets(any()) } returns flowOf(DataResult.Success(listOf(anAsset())))
@@ -175,7 +173,7 @@ class HomeViewModelTest {
         viewModel.retry()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value is HomeUiState.Success)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
     }
 
     @Test
@@ -184,7 +182,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value is HomeUiState.Error)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
 
         coEvery { refreshAssets(any()) } coAnswers {
             kotlinx.coroutines.delay(1000)
@@ -194,7 +192,7 @@ class HomeViewModelTest {
         viewModel.retry()
         testDispatcher.scheduler.runCurrent()
 
-        assertTrue(viewModel.uiState.value is HomeUiState.Loading)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
 
         testDispatcher.scheduler.advanceUntilIdle()
     }
@@ -207,8 +205,8 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Success)
-        assertTrue((state as HomeUiState.Success).assets.isEmpty())
+        assertEquals(true, state is HomeUiState.Success)
+        assertEquals(true, (state as HomeUiState.Success).assets.isEmpty())
     }
 
     @Test
@@ -250,11 +248,11 @@ class HomeViewModelTest {
     fun `onLimitChanged resets state to Loading`() = runTest {
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value is HomeUiState.Success)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
 
         viewModel.onLimitChanged(25)
 
-        assertTrue(viewModel.uiState.value is HomeUiState.Loading)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
     }
 
     @Test
@@ -284,7 +282,7 @@ class HomeViewModelTest {
 
         viewModel.pullToRefresh()
 
-        assertTrue(viewModel.pullRefreshing.value)
+        assertEquals(true, viewModel.pullRefreshing.value)
     }
 
     @Test
@@ -295,21 +293,21 @@ class HomeViewModelTest {
         viewModel.pullToRefresh()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertFalse(viewModel.pullRefreshing.value)
+        assertEquals(false, viewModel.pullRefreshing.value)
     }
 
     @Test
     fun `nonBlockingError set when refresh fails after success`() = runTest {
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value is HomeUiState.Success)
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
 
         coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
         viewModel.pullToRefresh()
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Success)
+        assertEquals(true, state is HomeUiState.Success)
         assertEquals(AppError.NoInternet, (state as HomeUiState.Success).nonBlockingError)
     }
 
@@ -359,7 +357,7 @@ class HomeViewModelTest {
 
         val vm = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(vm.uiState.value is HomeUiState.Success)
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
 
         coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
         vm.pullToRefresh()
@@ -384,7 +382,7 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
-        assertTrue(state is HomeUiState.Error)
+        assertEquals(true, state is HomeUiState.Error)
         assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
     }
 
@@ -396,19 +394,19 @@ class HomeViewModelTest {
 
         val vm = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(vm.uiState.value is HomeUiState.Success)
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
 
         assetsFlow.emit(DataResult.Error(AppError.ServerError))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.uiState.value is HomeUiState.Success)
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
     }
 
     @Test
     fun `doRefresh skip loading state if Success exists`() = runTest {
         val vm = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(vm.uiState.value is HomeUiState.Success)
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
 
         coEvery { refreshAssets(any()) } coAnswers {
             kotlinx.coroutines.delay(500)
@@ -418,7 +416,7 @@ class HomeViewModelTest {
         vm.pullToRefresh()
         testDispatcher.scheduler.runCurrent()
 
-        assertTrue(vm.uiState.value is HomeUiState.Success)
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
 
         testDispatcher.scheduler.advanceUntilIdle()
     }
@@ -433,7 +431,7 @@ class HomeViewModelTest {
         vm.pullToRefresh()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertFalse(vm.pullRefreshing.value)
+        assertEquals(false, vm.pullRefreshing.value)
     }
 
     @Test

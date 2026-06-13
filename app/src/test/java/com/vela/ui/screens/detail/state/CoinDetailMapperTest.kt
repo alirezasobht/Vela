@@ -2,8 +2,6 @@ package com.vela.ui.screens.detail.state
 
 import com.vela.domain.model.CoinDetail
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CoinDetailMapperTest {
@@ -13,14 +11,14 @@ class CoinDetailMapperTest {
     @Test
     fun `priceChange24h - positive value produces plus prefix`() {
         val model = coinDetail(priceChange24h = 500.0).toUiModel()
-        assertTrue(model.priceChange24h.startsWith("+"))
+        assertEquals(true, model.priceChange24h.startsWith("+"))
     }
 
     @Test
     fun `priceChange24h - negative value produces minus prefix not double-negative`() {
         val model = coinDetail(priceChange24h = -500.0).toUiModel()
-        assertTrue(model.priceChange24h.startsWith("-"))
-        assertFalse(model.priceChange24h.startsWith("--"))
+        assertEquals(true, model.priceChange24h.startsWith("-"))
+        assertEquals(false, model.priceChange24h.startsWith("--"))
     }
 
     @Test
@@ -34,13 +32,13 @@ class CoinDetailMapperTest {
     @Test
     fun `isPositive - true when priceChangePercent24h is exactly 0`() {
         val model = coinDetail(priceChangePercent24h = 0.0).toUiModel()
-        assertTrue(model.isPositive)
+        assertEquals(true, model.isPositive)
     }
 
     @Test
     fun `isPositive - false when priceChangePercent24h is negative`() {
         val model = coinDetail(priceChangePercent24h = -1.0).toUiModel()
-        assertFalse(model.isPositive)
+        assertEquals(false, model.isPositive)
     }
 
     // ----- null fields -----

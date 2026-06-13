@@ -24,7 +24,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -75,7 +74,7 @@ class WatchlistViewModelTest {
 
         val vm = createViewModel()
 
-        assertTrue(vm.uiState.value is WatchlistUiState.Loading)
+        assertEquals(true, vm.uiState.value is WatchlistUiState.Loading)
     }
 
     @Test
@@ -85,7 +84,7 @@ class WatchlistViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.uiState.value is WatchlistUiState.Empty)
+        assertEquals(true, vm.uiState.value is WatchlistUiState.Empty)
     }
 
     @Test
@@ -121,7 +120,7 @@ class WatchlistViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.uiState.value is WatchlistUiState.Empty)
+        assertEquals(true, vm.uiState.value is WatchlistUiState.Empty)
     }
 
     @Test
@@ -168,6 +167,6 @@ class WatchlistViewModelTest {
 
         vm.onPriceError(AppError.NoInternet)
 
-        assertTrue(vm.uiState.value is WatchlistUiState.Empty)
+        assertEquals(true, vm.uiState.value is WatchlistUiState.Empty)
     }
 }

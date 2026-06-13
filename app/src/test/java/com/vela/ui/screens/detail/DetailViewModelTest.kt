@@ -30,9 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.milliseconds
@@ -87,7 +85,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value as DetailUiState.Success
-        assertFalse(state.isChartLoading)
+        assertEquals(false, state.isChartLoading)
         assertNotNull(state.detail)
     }
 
@@ -98,7 +96,7 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.uiState.value is DetailUiState.Error)
+        assertEquals(true, vm.uiState.value is DetailUiState.Error)
     }
 
     // ----- refresh -----
@@ -121,7 +119,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceTimeBy(100)
 
         val refreshingState = vm.uiState.value as DetailUiState.Success
-        assertTrue(refreshingState.isRefreshing)
+        assertEquals(true, refreshingState.isRefreshing)
         assertEquals(detailBefore, refreshingState.detail)
     }
 
@@ -138,7 +136,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value as DetailUiState.Success
-        assertFalse(state.isRefreshing)
+        assertEquals(false, state.isRefreshing)
         assertEquals(AppError.NoInternet, state.nonBlockingError)
     }
 
@@ -200,11 +198,11 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertFalse(vm.isChartFullScreen)
+        assertEquals(false, vm.isChartFullScreen)
         vm.toggleChartFullScreen()
-        assertTrue(vm.isChartFullScreen)
+        assertEquals(true, vm.isChartFullScreen)
         vm.toggleChartFullScreen()
-        assertFalse(vm.isChartFullScreen)
+        assertEquals(false, vm.isChartFullScreen)
     }
 
     // ----- retry -----
@@ -215,14 +213,14 @@ class DetailViewModelTest {
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(vm.uiState.value is DetailUiState.Error)
+        assertEquals(true, vm.uiState.value is DetailUiState.Error)
 
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
         vm.retry()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.uiState.value is DetailUiState.Success)
+        assertEquals(true, vm.uiState.value is DetailUiState.Success)
     }
 
     @Test
@@ -240,7 +238,7 @@ class DetailViewModelTest {
         vm.retry()
         dispatcher.scheduler.advanceTimeBy(100)
 
-        assertTrue(vm.uiState.value is DetailUiState.Success)
+        assertEquals(true, vm.uiState.value is DetailUiState.Success)
     }
 
     // ----- watchlist -----

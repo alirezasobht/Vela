@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @Suppress("UnusedFlow")
@@ -80,7 +79,7 @@ class GetTopAssetsUseCaseTest {
         val results = useCase().toList()
 
         assertEquals(1, results.size)
-        assertTrue(results[0] is DataResult.Success)
+        assertEquals(true, results[0] is DataResult.Success)
         assertEquals(assets, (results[0] as DataResult.Success).data)
     }
 
@@ -91,8 +90,8 @@ class GetTopAssetsUseCaseTest {
         val results = useCase().toList()
 
         assertEquals(1, results.size)
-        assertTrue(results[0] is DataResult.Success)
-        assertTrue((results[0] as DataResult.Success).data.isEmpty())
+        assertEquals(true, results[0] is DataResult.Success)
+        assertEquals(true, (results[0] as DataResult.Success).data.isEmpty())
     }
 
     @Test
@@ -102,7 +101,7 @@ class GetTopAssetsUseCaseTest {
         val results = useCase().toList()
 
         assertEquals(1, results.size)
-        assertTrue(results[0] is DataResult.Error)
+        assertEquals(true, results[0] is DataResult.Error)
         assertEquals(AppError.NoInternet, (results[0] as DataResult.Error).appError)
     }
 
