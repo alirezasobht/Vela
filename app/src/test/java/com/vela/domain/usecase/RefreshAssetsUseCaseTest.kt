@@ -8,7 +8,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RefreshAssetsUseCaseTest {
@@ -22,7 +21,7 @@ class RefreshAssetsUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
     }
 
     @Test
@@ -31,7 +30,7 @@ class RefreshAssetsUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result is DataResult.Error)
+        assertEquals(true, result is DataResult.Error)
         assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
     }
 
@@ -100,7 +99,7 @@ class RefreshAssetsUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result is DataResult.Success)
+        assertEquals(true, result is DataResult.Success)
         coVerify(exactly = 1) { repository.fetchTopAssets(any()) }
     }
 }

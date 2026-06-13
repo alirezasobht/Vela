@@ -3,7 +3,6 @@ package com.vela.ui.common.components.mapper
 import com.vela.domain.model.SimplePrice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AssetMapperTest {
@@ -75,12 +74,12 @@ class AssetMapperTest {
     @Test
     fun `formatSignedPrice - negative value produces minus prefix`() {
         val result = formatSignedPrice(-500.0)
-        assertTrue(result.startsWith("-"))
+        assertEquals(true, result.startsWith("-"))
     }
 
     @Test
     fun `formatSignedPrice - positive value produces plus prefix`() {
-        assertTrue(formatSignedPrice(100.0).startsWith("+"))
+        assertEquals(true, formatSignedPrice(100.0).startsWith("+"))
     }
 
     // ----- formatLargeNumber -----
@@ -149,6 +148,6 @@ class AssetMapperTest {
     @Test
     fun `toUiModel - isPositive is true when priceChange is exactly 0`() {
         val model = SimplePrice(price = 100.0, priceChange = 0.0, marketCap = null, totalVolume = null).toUiModel()
-        assertTrue(model.isPositive)
+        assertEquals(true, model.isPositive)
     }
 }
