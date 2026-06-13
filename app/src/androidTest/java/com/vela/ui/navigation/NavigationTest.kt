@@ -4,14 +4,15 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.vela.MainActivity
+import com.vela.ui.common.util.TestTags
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -68,26 +69,26 @@ class NavigationTest {
 
     @Test
     fun bottomNav_tapMarkets_navigatesToMarketsTab() {
-        composeRule.onAllNodesWithText("Markets")[1].performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("markets")).performClick()
         // Markets tab shows filter chip with "All" category
         composeRule.onNodeWithText("All").assertIsDisplayed()
     }
 
     @Test
     fun bottomNav_tapSearch_navigatesToSearchTab() {
-        composeRule.onNodeWithText("Search").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("search")).performClick()
         composeRule.onNodeWithText("Start typing to search").assertIsDisplayed()
     }
 
     @Test
     fun bottomNav_tapWatchlist_navigatesToWatchlistTab() {
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.onAllNodesWithText("Watchlist").assertCountEquals(2)
     }
 
     @Test
     fun searchScreen_tapCoin_navigatesToDetail() {
-        composeRule.onNodeWithText("Search").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("search")).performClick()
         // Search results are pre-populated via FakeSearchRepository
         // Type a query to trigger search
         composeRule.onNodeWithText("Search coins…").performClick()
@@ -111,17 +112,17 @@ class NavigationTest {
         // Land on Home
         composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
         // Go to Search
-        composeRule.onNodeWithText("Search").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("search")).performClick()
         composeRule.onNodeWithText("Start typing to search").assertIsDisplayed()
         // Go to Markets
-        composeRule.onNodeWithText("Markets").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("markets")).performClick()
         composeRule.onNodeWithText("All").assertIsDisplayed()
         // Go to Watchlist
         composeRule.onAllNodesWithText("Watchlist").assertCountEquals(1)
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.onAllNodesWithText("Watchlist").assertCountEquals(2)
         // Back to Home
-        composeRule.onNodeWithText("Home").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("home")).performClick()
         composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
     }
 
@@ -159,7 +160,7 @@ class NavigationTest {
 
     @Test
     fun bottomNav_tapWatchlist_showsPrePopulatedAssets() {
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
 
         // FakeWatchlistRepository pre-populates with the first 3 fake assets
         composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -174,7 +175,7 @@ class NavigationTest {
 
     @Test
     fun watchlistTab_tapCoin_navigatesToDetail() {
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(
                 androidx.compose.ui.test.hasText("Bitcoin")
@@ -193,11 +194,11 @@ class NavigationTest {
             ).fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Bitcoin is pre-watchlisted (first item) — tap its star to remove it
-        composeRule.onAllNodesWithContentDescription("Watchlist")[0].performClick()
+        // Bitcoin is pre-watchlisted — tap its star to remove it
+        composeRule.onNodeWithTag(TestTags.watchlistStar("bitcoin")).performClick()
 
         // Switch to Watchlist tab
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(
                 androidx.compose.ui.test.hasText("Ethereum")
@@ -211,7 +212,7 @@ class NavigationTest {
 
     @Test
     fun toggleStarOnDetail_addsAssetToWatchlistTab() {
-        // Navigate to a non-watchlisted coin's detail (4th item: Solana)
+        // Navigate to a non-watchlisted coin's detail (Solana)
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(
                 androidx.compose.ui.test.hasText("Solana")
@@ -225,7 +226,7 @@ class NavigationTest {
 
         // Go back and switch to Watchlist tab
         composeRule.onNodeWithContentDescription("Back").performClick()
-        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(

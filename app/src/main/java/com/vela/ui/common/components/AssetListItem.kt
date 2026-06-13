@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +43,7 @@ import com.vela.ui.common.components.model.AssetUiModel
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.SharedTransitionWrapper
+import com.vela.ui.common.util.TestTags
 import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -102,7 +104,10 @@ private fun WatchlistButton(
         val isWatchlisted by remember(asset.id) { actions.observeIsWatchlisted(asset.id) }
             .collectAsStateWithLifecycle(initialValue = false)
 
-        IconButton(onClick = { actions.onToggleWatchlist(asset.id) }) {
+        IconButton(
+            onClick = { actions.onToggleWatchlist(asset.id) },
+            modifier = Modifier.testTag(TestTags.watchlistStar(asset.id))
+        ) {
             Icon(
                 imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
                 contentDescription = stringResource(R.string.cd_watchlist),
