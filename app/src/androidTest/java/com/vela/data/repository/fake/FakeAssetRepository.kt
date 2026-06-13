@@ -16,5 +16,5 @@ class FakeAssetRepository @Inject constructor() : AssetRepository {
         DataResult.Success(Unit)
 
     override suspend fun getAssetsByIds(ids: List<String>): DataResult<List<Asset>> =
-        DataResult.Success(FakeAssetDataSource.assets)
+        DataResult.Success(FakeAssetDataSource.assets.filter { it.id in ids })
 }
