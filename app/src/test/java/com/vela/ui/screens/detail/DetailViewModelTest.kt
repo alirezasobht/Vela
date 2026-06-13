@@ -2,6 +2,7 @@ package com.vela.ui.screens.detail
 
 import androidx.lifecycle.SavedStateHandle
 import com.vela.domain.model.AppError
+import com.vela.domain.model.Asset
 import com.vela.domain.model.CoinDetail
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.OhlcPoint
@@ -22,6 +23,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -136,6 +138,7 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value as DetailUiState.Success
+        assertFalse(state.isRefreshing)
         assertEquals(AppError.NoInternet, state.nonBlockingError)
     }
 
@@ -243,15 +246,28 @@ class DetailViewModelTest {
     // ----- watchlist -----
 
     @Test
-    fun `isWatchlisted reflects IsWatchlistedUseCase flow value`() = runTest {
-        every { isWatchlistedUseCase.invoke("bitcoin") } returns flowOf(true)
+    fun `isWatchlisted initial value is false`() = runTest {
+        every { isWatchlistedUseCase.invoke(any()) } returns flowOf(true)
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
+
+        assertEquals(false, vm.isWatchlisted.value)
+    }
+
+    @Test
+    fun `isWatchlisted reflects IsWatchlistedUseCase flow value`() = runTest {
+        every { isWatchlistedUseCase.invoke(any()) } returns flowOf(true)
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        val job = launch { vm.isWatchlisted.collect {} }
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(vm.isWatchlisted.value)
+        assertEquals(true, vm.isWatchlisted.value)
+        job.cancel()
     }
 
     @Test
@@ -267,6 +283,55 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coVerify { toggleWatchlistUseCase.invoke("bitcoin") }
+    }
+
+    // ----- cache and polling -----
+
+    @Test
+    fun `initialHeader is populated from cache if available`() = runTest {
+        val cachedAsset = Asset(
+            id = "bitcoin",
+            symbol = "btc",
+            name = "Bitcoin",
+            image = "img_url",
+            currentPrice = 60000.0,
+            priceChangePercent24h = 2.0,
+            marketCapRank = 1,
+            sparkline = null
+        )
+        every { assetPreviewCache.get("bitcoin") } returns cachedAsset
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel()
+
+        assertNotNull(vm.initialHeader)
+        assertEquals("Bitcoin", vm.initialHeader?.name)
+        assertEquals("img_url", vm.initialHeader?.image)
+    }
+
+    @Test
+    fun `onPriceError updates nonBlockingError in Success state`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onPriceError(AppError.NoInternet)
+
+        val state = vm.uiState.value as DetailUiState.Success
+        assertEquals(AppError.NoInternet, state.nonBlockingError)
+    }
+
+    @Test
+    fun `onRangeSelected updates selectedRange state`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        vm.onRangeSelected(TimeRange.ONE_YEAR)
+
+        assertEquals(TimeRange.ONE_YEAR, vm.selectedRange)
     }
 
     // ----- helpers -----

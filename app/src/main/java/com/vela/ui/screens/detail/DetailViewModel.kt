@@ -59,7 +59,7 @@ class DetailViewModel @Inject constructor(
     var isChartFullScreen by mutableStateOf(false)
         private set
 
-    lateinit var isWatchlisted: StateFlow<Boolean>
+    var isWatchlisted: StateFlow<Boolean>
         private set
 
     override fun getIds(): List<String> = listOf(coinId)
