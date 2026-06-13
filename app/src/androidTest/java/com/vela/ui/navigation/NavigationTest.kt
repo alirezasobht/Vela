@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -79,6 +80,12 @@ class NavigationTest {
     }
 
     @Test
+    fun bottomNav_tapWatchlist_navigatesToWatchlistTab() {
+        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onAllNodesWithText("Watchlist").assertCountEquals(2)
+    }
+
+    @Test
     fun searchScreen_tapCoin_navigatesToDetail() {
         composeRule.onNodeWithText("Search").performClick()
         // Search results are pre-populated via FakeSearchRepository
@@ -109,6 +116,10 @@ class NavigationTest {
         // Go to Markets
         composeRule.onNodeWithText("Markets").performClick()
         composeRule.onNodeWithText("All").assertIsDisplayed()
+        // Go to Watchlist
+        composeRule.onAllNodesWithText("Watchlist").assertCountEquals(1)
+        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.onAllNodesWithText("Watchlist").assertCountEquals(2)
         // Back to Home
         composeRule.onNodeWithText("Home").performClick()
         composeRule.onAllNodesWithText("Markets").assertCountEquals(2)
@@ -142,5 +153,85 @@ class NavigationTest {
         // Verify we are back to detail screen
         composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
+    }
+
+    // ----- Watchlist -----
+
+    @Test
+    fun bottomNav_tapWatchlist_showsPrePopulatedAssets() {
+        composeRule.onNodeWithText("Watchlist").performClick()
+
+        // FakeWatchlistRepository pre-populates with the first 3 fake assets
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Bitcoin")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Bitcoin").assertIsDisplayed()
+        composeRule.onNodeWithText("Ethereum").assertIsDisplayed()
+        composeRule.onNodeWithText("Tether").assertIsDisplayed()
+    }
+
+    @Test
+    fun watchlistTab_tapCoin_navigatesToDetail() {
+        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Bitcoin")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Bitcoin").performClick()
+        composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
+    }
+
+    @Test
+    fun toggleStarOnHome_removesAssetFromWatchlistTab() {
+        // Wait for Home assets to load
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Bitcoin")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Bitcoin is pre-watchlisted (first item) — tap its star to remove it
+        composeRule.onAllNodesWithContentDescription("Watchlist")[0].performClick()
+
+        // Switch to Watchlist tab
+        composeRule.onNodeWithText("Watchlist").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Ethereum")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Bitcoin should no longer be in the watchlist
+        composeRule.onNodeWithText("Bitcoin").assertDoesNotExist()
+        composeRule.onNodeWithText("Ethereum").assertIsDisplayed()
+    }
+
+    @Test
+    fun toggleStarOnDetail_addsAssetToWatchlistTab() {
+        // Navigate to a non-watchlisted coin's detail (4th item: Solana)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Solana")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Solana").performClick()
+        composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
+
+        // Tap the star in the detail header to add it to the watchlist
+        composeRule.onNodeWithContentDescription("Watchlist").performClick()
+
+        // Go back and switch to Watchlist tab
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.onNodeWithText("Watchlist").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasText("Solana")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Solana").assertIsDisplayed()
     }
 }
