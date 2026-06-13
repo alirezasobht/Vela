@@ -19,6 +19,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -494,5 +495,25 @@ class HomeViewModelTest {
         val state = vm.uiState.value as HomeUiState.Success
         assertEquals("Tuesday, 26 May", state.formattedDate)
         verify(atLeast = 1) { getToday() }
+    }
+
+    // ----- assetListItemActions -----
+
+    @Test
+    fun `assetListItemActions wires onClick, observeIsWatchlisted and onToggleWatchlist correctly`() = runTest {
+        every { watchlistController.observeIsWatchlisted("bitcoin") } returns flowOf(true)
+
+        val vm = createViewModel()
+        var clickedId: String? = null
+        val actions = vm.assetListItemActions(onClick = { clickedId = it })
+
+        actions.onClick("bitcoin")
+        assertEquals("bitcoin", clickedId)
+
+        val isWatchlisted = actions.observeIsWatchlisted("bitcoin")
+        assertEquals(true, isWatchlisted.first())
+
+        actions.onToggleWatchlist("bitcoin")
+        verify { watchlistController.toggleWatchlist("bitcoin") }
     }
 }
