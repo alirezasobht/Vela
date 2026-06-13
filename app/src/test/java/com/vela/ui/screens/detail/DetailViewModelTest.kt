@@ -16,6 +16,7 @@ import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.screens.detail.state.DetailUiState
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -237,6 +238,35 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceTimeBy(100)
 
         assertTrue(vm.uiState.value is DetailUiState.Success)
+    }
+
+    // ----- watchlist -----
+
+    @Test
+    fun `isWatchlisted reflects IsWatchlistedUseCase flow value`() = runTest {
+        every { isWatchlistedUseCase.invoke("bitcoin") } returns flowOf(true)
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(vm.isWatchlisted.value)
+    }
+
+    @Test
+    fun `toggleWatchlist calls ToggleWatchlistUseCase with correct coinId`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+        coEvery { toggleWatchlistUseCase.invoke("bitcoin") } returns Unit
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.toggleWatchlist()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { toggleWatchlistUseCase.invoke("bitcoin") }
     }
 
     // ----- helpers -----
