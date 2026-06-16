@@ -6,4 +6,9 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
+    alias(libs.plugins.ktlint)
+}
+
+ktlint {
+    coloredOutput.set(false)
 }
