@@ -6,9 +6,10 @@ import com.vela.domain.repository.AssetRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class GetTopAssetsUseCase @Inject constructor(
-    private val repository: AssetRepository
-) {
-    operator fun invoke(limit: Int = 50): Flow<DataResult<List<Asset>>> =
-        repository.getTopAssets(limit)
-}
+class GetTopAssetsUseCase
+    @Inject
+    constructor(
+        private val repository: AssetRepository
+    ) {
+        operator fun invoke(limit: Int = 50): Flow<DataResult<List<Asset>>> = repository.getTopAssets(limit)
+    }

@@ -6,7 +6,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AssetPreviewCacheTest {
-
     private val holder = AssetPreviewCache()
 
     // ----- put(list) + get -----
@@ -39,7 +38,10 @@ class AssetPreviewCacheTest {
 
     // ----- helpers -----
 
-    private fun asset(id: String, price: Double? = null) = Asset(
+    private fun asset(
+        id: String,
+        price: Double? = null
+    ) = Asset(
         id = id,
         symbol = id,
         name = id,

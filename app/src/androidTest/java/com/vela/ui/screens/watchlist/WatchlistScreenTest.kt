@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class WatchlistScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -28,17 +27,19 @@ class WatchlistScreenTest {
         isWatchlisted: Boolean = true,
         onToggleWatchlist: (String) -> Unit = {}
     ) = WatchlistActions(
-        assetListItemActions = AssetListItemActions(
-            observePrice = { flowOf(null) },
-            observeIsWatchlisted = { flowOf(isWatchlisted) },
-            onToggleWatchlist = onToggleWatchlist,
-            onClick = {}
-        )
+        assetListItemActions =
+            AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(isWatchlisted) },
+                onToggleWatchlist = onToggleWatchlist,
+                onClick = {}
+            )
     )
 
-    private val successState = WatchlistUiState.Success(
-        assets = FakeAssetDataSource.assets.take(3).map { it.toUiModel() }
-    )
+    private val successState =
+        WatchlistUiState.Success(
+            assets = FakeAssetDataSource.assets.take(3).map { it.toUiModel() }
+        )
 
     @Test
     fun loadingState_showsNoAssets() {
@@ -102,10 +103,11 @@ class WatchlistScreenTest {
             SharedTransitionWrapper {
                 WatchlistScreen(
                     uiState = successState,
-                    watchlistActions = defaultActions(
-                        isWatchlisted = true,
-                        onToggleWatchlist = { toggledId = it }
-                    )
+                    watchlistActions =
+                        defaultActions(
+                            isWatchlisted = true,
+                            onToggleWatchlist = { toggledId = it }
+                        )
                 )
             }
         }

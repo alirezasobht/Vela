@@ -9,4 +9,3 @@ interface PriceRepository {
         includeMarketData: Boolean
     ): DataResult<Map<String, SimplePrice>>
 }
-

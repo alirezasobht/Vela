@@ -7,7 +7,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CoinDtoMapperKtTest {
-
     private fun aCoinDto(
         id: String = "bitcoin",
         symbol: String = "btc",

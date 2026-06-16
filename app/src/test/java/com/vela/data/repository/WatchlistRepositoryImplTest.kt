@@ -15,41 +15,44 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WatchlistRepositoryImplTest {
-
     private val dao: WatchlistDao = mockk()
     private val repository = WatchlistRepositoryImpl(dao)
 
     @Test
-    fun `toggleWatchlist inserts when not watchlisted`() = runTest {
-        every { dao.isWatchlisted("bitcoin") } returns flowOf(false)
-        coEvery { dao.insert(any()) } just runs
+    fun `toggleWatchlist inserts when not watchlisted`() =
+        runTest {
+            every { dao.isWatchlisted("bitcoin") } returns flowOf(false)
+            coEvery { dao.insert(any()) } just runs
 
-        repository.toggleWatchlist("bitcoin")
+            repository.toggleWatchlist("bitcoin")
 
-        coVerify { dao.insert(WatchlistEntity("bitcoin")) }
-        coVerify(exactly = 0) { dao.delete(any()) }
-    }
-
-    @Test
-    fun `toggleWatchlist deletes when already watchlisted`() = runTest {
-        every { dao.isWatchlisted("bitcoin") } returns flowOf(true)
-        coEvery { dao.delete(any()) } just runs
-
-        repository.toggleWatchlist("bitcoin")
-
-        coVerify { dao.delete("bitcoin") }
-        coVerify(exactly = 0) { dao.insert(any()) }
-    }
-
-    @Test
-    fun `observeWatchlist maps entities to coin ids`() = runTest {
-        every { dao.observeAll() } returns flowOf(
-            listOf(WatchlistEntity("bitcoin"), WatchlistEntity("ethereum"))
-        )
-
-        repository.observeWatchlist().test {
-            assertEquals(listOf("bitcoin", "ethereum"), awaitItem())
-            awaitComplete()
+            coVerify { dao.insert(WatchlistEntity("bitcoin")) }
+            coVerify(exactly = 0) { dao.delete(any()) }
         }
-    }
+
+    @Test
+    fun `toggleWatchlist deletes when already watchlisted`() =
+        runTest {
+            every { dao.isWatchlisted("bitcoin") } returns flowOf(true)
+            coEvery { dao.delete(any()) } just runs
+
+            repository.toggleWatchlist("bitcoin")
+
+            coVerify { dao.delete("bitcoin") }
+            coVerify(exactly = 0) { dao.insert(any()) }
+        }
+
+    @Test
+    fun `observeWatchlist maps entities to coin ids`() =
+        runTest {
+            every { dao.observeAll() } returns
+                flowOf(
+                    listOf(WatchlistEntity("bitcoin"), WatchlistEntity("ethereum"))
+                )
+
+            repository.observeWatchlist().test {
+                assertEquals(listOf("bitcoin", "ethereum"), awaitItem())
+                awaitComplete()
+            }
+        }
 }

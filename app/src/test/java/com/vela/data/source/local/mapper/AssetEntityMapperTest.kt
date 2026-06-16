@@ -6,7 +6,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AssetEntityMapperTest {
-
     // ----- sparkline CSV -----
 
     @Test
@@ -35,14 +34,15 @@ class AssetEntityMapperTest {
 
     // ----- helpers -----
 
-    private fun assetEntity(sparkline: String?) = AssetEntity(
-        id = "bitcoin",
-        symbol = "btc",
-        name = "Bitcoin",
-        image = null,
-        currentPrice = null,
-        priceChangePercent24h = null,
-        marketCapRank = null,
-        sparkline = sparkline
-    )
+    private fun assetEntity(sparkline: String?) =
+        AssetEntity(
+            id = "bitcoin",
+            symbol = "btc",
+            name = "Bitcoin",
+            image = null,
+            currentPrice = null,
+            priceChangePercent24h = null,
+            marketCapRank = null,
+            sparkline = sparkline
+        )
 }

@@ -14,5 +14,6 @@ import com.vela.data.source.local.model.WatchlistEntity
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun assetDao(): HomeAssetDao
+
     abstract fun watchlistDao(): WatchlistDao
 }

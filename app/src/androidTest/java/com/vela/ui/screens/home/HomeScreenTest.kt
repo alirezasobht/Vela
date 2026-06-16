@@ -18,26 +18,28 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class HomeScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val defaultActions = HomeActions(
-        onLimitChanged = {},
-        onRetry = {},
-        onPullToRefresh = {},
-        assetListItemActions = AssetListItemActions(
-            observePrice = { flowOf(null) },
-            observeIsWatchlisted = { flowOf(false) },
-            onToggleWatchlist = {},
-            onClick = {}
+    private val defaultActions =
+        HomeActions(
+            onLimitChanged = {},
+            onRetry = {},
+            onPullToRefresh = {},
+            assetListItemActions =
+                AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
         )
-    )
 
-    private val successState = HomeUiState.Success(
-        assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-        formattedDate = "Monday, 9 Jun"
-    )
+    private val successState =
+        HomeUiState.Success(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            formattedDate = "Monday, 9 Jun"
+        )
 
     @Test
     fun loadingState_showsProgressIndicator() {

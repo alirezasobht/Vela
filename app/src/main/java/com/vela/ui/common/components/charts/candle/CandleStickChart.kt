@@ -80,9 +80,10 @@ fun CandleStickChart(
         }
     }
 
-    val markerValueFormatter = remember(timestamps, timeRange) {
-        ohlcMarkerValueFormatter(timestamps)
-    }
+    val markerValueFormatter =
+        remember(timestamps, timeRange) {
+            ohlcMarkerValueFormatter(timestamps)
+        }
 
     CartesianChartHost(
         rememberCartesianChart(
@@ -92,14 +93,16 @@ fun CandleStickChart(
                     valueFormatter = StartAxisValueFormatter,
                     itemPlacer = VerticalAxis.ItemPlacer.count({ verticalItemsCount })
                 ),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                guideline = null,
-                valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
-            ),
-            marker = rememberOhlcChartMarker(
-                valueFormatter = markerValueFormatter,
-                showIndicator = false
-            ),
+            bottomAxis =
+                HorizontalAxis.rememberBottom(
+                    guideline = null,
+                    valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
+                ),
+            marker =
+                rememberOhlcChartMarker(
+                    valueFormatter = markerValueFormatter,
+                    showIndicator = false
+                ),
         ),
         modelProducer = modelProducer,
         modifier = modifier,
@@ -113,12 +116,13 @@ private fun rememberOhlcChartMarker(
         DefaultCartesianMarker.ValueFormatter.default(),
     showIndicator: Boolean = true,
 ): CartesianMarker {
-    val labelBackgroundShape = ShapeComponent(
-        fill = Fill(MaterialTheme.colorScheme.background),
-        shape = RoundedCornerShape(8.dp),
-        strokeFill = Fill(MaterialTheme.colorScheme.outline),
-        strokeThickness = 1.dp,
-    ).shape
+    val labelBackgroundShape =
+        ShapeComponent(
+            fill = Fill(MaterialTheme.colorScheme.background),
+            shape = RoundedCornerShape(8.dp),
+            strokeFill = Fill(MaterialTheme.colorScheme.outline),
+            strokeThickness = 1.dp,
+        ).shape
     val labelBackground =
         rememberShapeComponent(
             fill = Fill(MaterialTheme.colorScheme.background),
@@ -128,11 +132,12 @@ private fun rememberOhlcChartMarker(
         )
     val label =
         rememberTextComponent(
-            style = TextStyle(
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                fontSize = 12.sp,
-            ),
+            style =
+                TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    fontSize = 12.sp,
+                ),
             padding = Insets(8.dp, 4.dp),
             background = labelBackground,
             minWidth = TextComponent.MinWidth.fixed(40.dp),
@@ -170,16 +175,20 @@ private fun rememberOhlcChartMarker(
 // ------ Previews -------
 
 @Composable
-private fun ChartPreview(ohlcPoints: List<OhlcPoint>, timeRange: TimeRange = TimeRange.ONE_DAY) {
+private fun ChartPreview(
+    ohlcPoints: List<OhlcPoint>,
+    timeRange: TimeRange = TimeRange.ONE_DAY
+) {
     VelaTheme {
         CandleStickChart(
             model = ohlcPoints.toCandleStickModel(),
             timestamps = ohlcPoints.timestamps(),
             timeRange = timeRange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(216.dp)
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(216.dp)
+                    .padding(horizontal = 16.dp),
         )
     }
 }

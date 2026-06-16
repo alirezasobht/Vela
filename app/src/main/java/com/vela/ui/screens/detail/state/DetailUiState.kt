@@ -5,7 +5,11 @@ import com.vela.domain.model.OhlcPoint
 
 sealed interface DetailUiState {
     data object Loading : DetailUiState
-    data class Error(val appError: AppError) : DetailUiState
+
+    data class Error(
+        val appError: AppError
+    ) : DetailUiState
+
     data class Success(
         val detail: CoinDetailUiModel,
         val ohlcPoints: List<OhlcPoint> = emptyList(),

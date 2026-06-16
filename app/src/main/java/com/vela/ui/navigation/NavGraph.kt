@@ -67,7 +67,6 @@ fun DashboardNavGraph(
         startDestination = DashboardTab.Home,
         modifier = modifier
     ) {
-
         composable<DashboardTab.Home> {
             HomeRoute(
                 navigateToDetail = { coinId ->

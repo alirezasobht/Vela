@@ -6,9 +6,13 @@ import com.vela.domain.model.TimeRange
 import com.vela.domain.repository.DetailRepository
 import javax.inject.Inject
 
-class GetOhlcUseCase @Inject constructor(
-    private val repository: DetailRepository
-) {
-    suspend operator fun invoke(id: String, range: TimeRange): DataResult<List<OhlcPoint>> =
-        repository.getOhlc(id, range.days)
-}
+class GetOhlcUseCase
+    @Inject
+    constructor(
+        private val repository: DetailRepository
+    ) {
+        suspend operator fun invoke(
+            id: String,
+            range: TimeRange
+        ): DataResult<List<OhlcPoint>> = repository.getOhlc(id, range.days)
+    }

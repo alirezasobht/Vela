@@ -19,7 +19,6 @@ fun Sparkline(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-
     Canvas(modifier = modifier) {
         val validPrices = prices.filter { it.isFinite() }
         if (validPrices.size < 2) return@Canvas
@@ -39,7 +38,6 @@ fun Sparkline(
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 private fun SparklinePreview(
@@ -47,10 +45,10 @@ private fun SparklinePreview(
     color: Color = sparklineBearColor
 ) {
     VelaTheme {
-            Sparkline(
-                prices = prices,
-                color = color,
-                modifier = Modifier.size(width = 60.dp, height = 30.dp)
-            )
+        Sparkline(
+            prices = prices,
+            color = color,
+            modifier = Modifier.size(width = 60.dp, height = 30.dp)
+        )
     }
 }

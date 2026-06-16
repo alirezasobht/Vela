@@ -58,14 +58,14 @@ fun AssetListItem(
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .clickable { actions.onClick(asset.id) },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clickable { actions.onClick(asset.id) },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-
         NameAndIconCell(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -111,8 +111,12 @@ private fun WatchlistButton(
             Icon(
                 imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
                 contentDescription = stringResource(R.string.cd_watchlist),
-                tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
+                tint =
+                    if (isWatchlisted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
             )
         }
     }
@@ -128,17 +132,20 @@ private fun RowScope.NameAndIconCell(
         AsyncImage(
             model = asset.image,
             contentDescription = asset.name,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .then(
-                    if (animatedVisibilityScope != null) {
-                        Modifier.sharedElement(
-                            rememberSharedContentState(key = "coin-image-${asset.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                    } else Modifier
-                ),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (animatedVisibilityScope != null) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-image-${asset.id}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
             placeholder = rememberVectorPainter(Icons.Default.Paid),
             error = rememberVectorPainter(Icons.Default.MonetizationOn)
         )
@@ -150,12 +157,15 @@ private fun RowScope.NameAndIconCell(
                 text = asset.name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = if (animatedVisibilityScope != null) {
-                    Modifier.sharedElement(
-                        rememberSharedContentState(key = "coin-name-${asset.id}"),
-                        animatedVisibilityScope = animatedVisibilityScope
-                    )
-                } else Modifier
+                modifier =
+                    if (animatedVisibilityScope != null) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "coin-name-${asset.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    } else {
+                        Modifier
+                    }
             )
         }
         Text(
@@ -174,12 +184,13 @@ private fun AssetListItemPreview() {
     SharedTransitionWrapper {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
-            actions = AssetListItemActions(
-                observePrice = { flowOf(null) },
-                observeIsWatchlisted = { flowOf(false) },
-                onToggleWatchlist = {},
-                onClick = {}
-            )
+            actions =
+                AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
         )
     }
 }
@@ -190,12 +201,13 @@ private fun AssetListItemWatchlistedPreview() {
     SharedTransitionWrapper {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
-            actions = AssetListItemActions(
-                observePrice = { flowOf(null) },
-                observeIsWatchlisted = { flowOf(true) },
-                onToggleWatchlist = {},
-                onClick = {}
-            )
+            actions =
+                AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(true) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
         )
     }
 }
@@ -207,12 +219,13 @@ private fun AssetListItemNoWatchlistButtonPreview() {
         AssetListItem(
             asset = FakeAssetDataSource.assets.first().toUiModel(),
             showWatchlistButton = false,
-            actions = AssetListItemActions(
-                observePrice = { flowOf(null) },
-                observeIsWatchlisted = { flowOf(false) },
-                onToggleWatchlist = {},
-                onClick = {}
-            )
+            actions =
+                AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
         )
     }
 }

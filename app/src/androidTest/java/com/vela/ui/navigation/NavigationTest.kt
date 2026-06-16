@@ -23,7 +23,6 @@ import org.junit.runner.RunWith
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -45,9 +44,12 @@ class NavigationTest {
     fun homeScreen_tapCoin_navigatesToDetail() {
         // Wait for assets to load then tap Bitcoin
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
         // Back button only exists on detail screen
@@ -57,9 +59,12 @@ class NavigationTest {
     @Test
     fun detailScreen_backButton_returnsToHome() {
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
@@ -93,12 +98,17 @@ class NavigationTest {
         // Type a query to trigger search
         composeRule.onNodeWithText("Search coins…").performClick()
         composeRule
-            .onNode(androidx.compose.ui.test.hasSetTextAction())
-            .performTextInput("bitcoin")
+            .onNode(
+                androidx.compose.ui.test
+                    .hasSetTextAction()
+            ).performTextInput("bitcoin")
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
@@ -130,23 +140,29 @@ class NavigationTest {
     fun candleStickChart_tapFullScreen_navigateToFullScreenChart() {
         // go to Detail
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
 
-        //Open fullscreen chart
+        // Open fullscreen chart
         composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
         composeRule.onNodeWithContentDescription("Open fullscreen chart").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasContentDescription("Close fullscreen chart")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasContentDescription("Close fullscreen chart")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
 
-        //Close fullscreen chart
+        // Close fullscreen chart
         composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsNotDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").performClick()
@@ -164,9 +180,12 @@ class NavigationTest {
 
         // FakeWatchlistRepository pre-populates with the first 3 fake assets
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").assertIsDisplayed()
         composeRule.onNodeWithText("Ethereum").assertIsDisplayed()
@@ -177,9 +196,12 @@ class NavigationTest {
     fun watchlistTab_tapCoin_navigatesToDetail() {
         composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
@@ -189,9 +211,12 @@ class NavigationTest {
     fun toggleStarOnHome_removesAssetFromWatchlistTab() {
         // Wait for Home assets to load
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Bitcoin")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Bitcoin")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
 
         // Bitcoin is pre-watchlisted — tap its star to remove it
@@ -200,9 +225,12 @@ class NavigationTest {
         // Switch to Watchlist tab
         composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Ethereum")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Ethereum")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
 
         // Bitcoin should no longer be in the watchlist
@@ -214,9 +242,12 @@ class NavigationTest {
     fun toggleStarOnDetail_addsAssetToWatchlistTab() {
         // Navigate to a non-watchlisted coin's detail (Solana)
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Solana")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Solana")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Solana").performClick()
         composeRule.onNodeWithContentDescription("Back").assertIsDisplayed()
@@ -229,9 +260,12 @@ class NavigationTest {
         composeRule.onNodeWithTag(TestTags.navTab("watchlist")).performClick()
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(
-                androidx.compose.ui.test.hasText("Solana")
-            ).fetchSemanticsNodes().isNotEmpty()
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Solana")
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
         }
         composeRule.onNodeWithText("Solana").assertIsDisplayed()
     }

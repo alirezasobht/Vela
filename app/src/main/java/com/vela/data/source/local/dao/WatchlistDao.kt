@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WatchlistDao {
-
     @Query("SELECT * FROM watchlist")
     fun observeAll(): Flow<List<WatchlistEntity>>
 

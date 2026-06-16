@@ -6,68 +6,56 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AssetMapperTest {
-
     // ----- formatPrice -----
 
-    private fun assertPriceFormat(input: Double, expected: String) {
+    private fun assertPriceFormat(
+        input: Double,
+        expected: String
+    ) {
         assertEquals("formatPrice($input)", expected, formatPrice(input))
     }
 
     @Test
-    fun `formatPrice - large trillion value`() =
-        assertPriceFormat(1_000_000_000_000.00, "$1,000,000,000,000")
+    fun `formatPrice - large trillion value`() = assertPriceFormat(1_000_000_000_000.00, "$1,000,000,000,000")
 
     @Test
-    fun `formatPrice - rounds down at 1000`() =
-        assertPriceFormat(1_000.001, "$1,000")
+    fun `formatPrice - rounds down at 1000`() = assertPriceFormat(1_000.001, "$1,000")
 
     @Test
-    fun `formatPrice - rounds cents at 1001`() =
-        assertPriceFormat(1_001.01, "$1,001")
+    fun `formatPrice - rounds cents at 1001`() = assertPriceFormat(1_001.01, "$1,001")
 
     @Test
-    fun `formatPrice - whole number fifty thousand`() =
-        assertPriceFormat(50_000.0, "$50,000")
+    fun `formatPrice - whole number fifty thousand`() = assertPriceFormat(50_000.0, "$50,000")
 
     @Test
-    fun `formatPrice - whole number one thousand`() =
-        assertPriceFormat(1_000.0, "$1,000")
+    fun `formatPrice - whole number one thousand`() = assertPriceFormat(1_000.0, "$1,000")
 
     @Test
-    fun `formatPrice - cents below one thousand`() =
-        assertPriceFormat(999.99, "$999.99")
+    fun `formatPrice - cents below one thousand`() = assertPriceFormat(999.99, "$999.99")
 
     @Test
-    fun `formatPrice - padding zero for whole number small price`() =
-        assertPriceFormat(15.0, "$15.00")
+    fun `formatPrice - padding zero for whole number small price`() = assertPriceFormat(15.0, "$15.00")
 
     @Test
-    fun `formatPrice - padding zero for single digit cents`() =
-        assertPriceFormat(15.1, "$15.10")
+    fun `formatPrice - padding zero for single digit cents`() = assertPriceFormat(15.1, "$15.10")
 
     @Test
-    fun `formatPrice - rounding small cents`() =
-        assertPriceFormat(15.003, "$15.00")
+    fun `formatPrice - rounding small cents`() = assertPriceFormat(15.003, "$15.00")
 
     @Test
-    fun `formatPrice - leading zero cents 0-50`() =
-        assertPriceFormat(0.5, "$0.50")
+    fun `formatPrice - leading zero cents 0-50`() = assertPriceFormat(0.5, "$0.50")
 
     @Test
-    fun `formatPrice - leading zero cents 0-10`() =
-        assertPriceFormat(0.1, "$0.10")
+    fun `formatPrice - leading zero cents 0-10`() = assertPriceFormat(0.1, "$0.10")
 
     @Test
-    fun `formatPrice - high precision sub-cent 8 digits`() =
-        assertPriceFormat(0.00001234, "$0.00001234")
+    fun `formatPrice - high precision sub-cent 8 digits`() = assertPriceFormat(0.00001234, "$0.00001234")
 
     @Test
-    fun `formatPrice - high precision sub-cent 7 digits`() =
-        assertPriceFormat(0.0000123, "$0.0000123")
+    fun `formatPrice - high precision sub-cent 7 digits`() = assertPriceFormat(0.0000123, "$0.0000123")
 
     @Test
-    fun `formatPrice - high precision sub-cent 6 digits`() =
-        assertPriceFormat(0.000001, "$0.000001")
+    fun `formatPrice - high precision sub-cent 6 digits`() = assertPriceFormat(0.000001, "$0.000001")
 
     // ----- formatSignedPrice -----
 

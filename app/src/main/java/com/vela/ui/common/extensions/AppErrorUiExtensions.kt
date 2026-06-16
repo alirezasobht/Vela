@@ -11,14 +11,16 @@ import com.vela.R
 import com.vela.domain.model.AppError
 
 @Composable
-fun AppError.toMessage(): String = when (this) {
-    is AppError.NoInternet -> stringResource(R.string.error_no_internet)
-    is AppError.ServerError -> stringResource(R.string.error_server)
-    is AppError.Unknown -> stringResource(R.string.error_unknown)
-}
+fun AppError.toMessage(): String =
+    when (this) {
+        is AppError.NoInternet -> stringResource(R.string.error_no_internet)
+        is AppError.ServerError -> stringResource(R.string.error_server)
+        is AppError.Unknown -> stringResource(R.string.error_unknown)
+    }
 
-fun AppError.toIcon(): ImageVector = when (this) {
-    is AppError.NoInternet -> Icons.Default.WifiOff
-    is AppError.ServerError -> Icons.Default.CloudOff
-    is AppError.Unknown -> Icons.Default.ErrorOutline
-}
+fun AppError.toIcon(): ImageVector =
+    when (this) {
+        is AppError.NoInternet -> Icons.Default.WifiOff
+        is AppError.ServerError -> Icons.Default.CloudOff
+        is AppError.Unknown -> Icons.Default.ErrorOutline
+    }

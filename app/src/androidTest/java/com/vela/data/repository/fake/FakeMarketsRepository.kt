@@ -12,11 +12,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
-class FakeMarketsRepository @Inject constructor() : MarketsRepository {
-    override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> =
-        DataResult.Success(FakeCategoryDataSource.categories)
+class FakeMarketsRepository
+    @Inject
+    constructor() : MarketsRepository {
+        override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> = DataResult.Success(FakeCategoryDataSource.categories)
 
-
-    override fun getMarkets(category: MarketCategory, sort: MarketSort): Flow<PagingData<Asset>> =
-        flowOf(PagingData.from(FakeAssetDataSource.assets))
-}
+        override fun getMarkets(
+            category: MarketCategory,
+            sort: MarketSort
+        ): Flow<PagingData<Asset>> = flowOf(PagingData.from(FakeAssetDataSource.assets))
+    }

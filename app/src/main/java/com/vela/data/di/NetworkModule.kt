@@ -17,39 +17,47 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
     private const val BASE_URL = "https://api.coingecko.com/api/v3/"
     private const val API_KEY = "CG-eU4VnP3eypq4QueGjMdCbvnv"
 
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient =
-        OkHttpClient.Builder()
+        OkHttpClient
+            .Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("x-cg-demo-api-key", API_KEY)
-                    .build()
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            ).addInterceptor { chain ->
+                val request =
+                    chain
+                        .request()
+                        .newBuilder()
+                        .addHeader("x-cg-demo-api-key", API_KEY)
+                        .build()
                 chain.proceed(request)
-            }
-            .build()
+            }.build()
 
     @Provides
     @Singleton
     fun provideMoshi(): Moshi =
-        Moshi.Builder()
+        Moshi
+            .Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit =
-        Retrofit.Builder()
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit =
+        Retrofit
+            .Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
@@ -57,6 +65,5 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideCoinGeckoApi(retrofit: Retrofit): CoinGeckoApi =
-        retrofit.create(CoinGeckoApi::class.java)
+    fun provideCoinGeckoApi(retrofit: Retrofit): CoinGeckoApi = retrofit.create(CoinGeckoApi::class.java)
 }

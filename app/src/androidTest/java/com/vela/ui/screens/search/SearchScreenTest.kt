@@ -18,21 +18,22 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SearchScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val defaultActions = SearchActions(
-        onQueryChange = {},
-        onClearQuery = {},
-        onRetry = {},
-        assetListItemActions = AssetListItemActions(
-            observePrice = { flowOf(null) },
-            observeIsWatchlisted = { flowOf(false) },
-            onToggleWatchlist = {},
-            onClick = {}
+    private val defaultActions =
+        SearchActions(
+            onQueryChange = {},
+            onClearQuery = {},
+            onRetry = {},
+            assetListItemActions =
+                AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
+                )
         )
-    )
 
     @Test
     fun emptyState_showsHintText() {
@@ -67,9 +68,10 @@ class SearchScreenTest {
         composeRule.setContent {
             SharedTransitionWrapper {
                 SearchScreen(
-                    uiState = SearchUiState.Results(
-                        assets = FakeAssetDataSource.assets.map { it.toUiModel() }
-                    ),
+                    uiState =
+                        SearchUiState.Results(
+                            assets = FakeAssetDataSource.assets.map { it.toUiModel() }
+                        ),
                     query = "bitcoin",
                     searchActions = defaultActions
                 )
@@ -142,10 +144,11 @@ class SearchScreenTest {
         composeRule.setContent {
             SharedTransitionWrapper {
                 SearchScreen(
-                    uiState = SearchUiState.Results(
-                        assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-                        nonBlockingError = AppError.NoInternet
-                    ),
+                    uiState =
+                        SearchUiState.Results(
+                            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+                            nonBlockingError = AppError.NoInternet
+                        ),
                     query = "bitcoin",
                     searchActions = defaultActions
                 )

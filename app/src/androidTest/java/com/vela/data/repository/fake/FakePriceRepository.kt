@@ -5,10 +5,11 @@ import com.vela.domain.model.SimplePrice
 import com.vela.domain.repository.PriceRepository
 import javax.inject.Inject
 
-class FakePriceRepository @Inject constructor() : PriceRepository {
-    override suspend fun getPrices(
-        ids: List<String>,
-        includeMarketData: Boolean
-    ): DataResult<Map<String, SimplePrice>> =
-        DataResult.Success(emptyMap())
-}
+class FakePriceRepository
+    @Inject
+    constructor() : PriceRepository {
+        override suspend fun getPrices(
+            ids: List<String>,
+            includeMarketData: Boolean
+        ): DataResult<Map<String, SimplePrice>> = DataResult.Success(emptyMap())
+    }

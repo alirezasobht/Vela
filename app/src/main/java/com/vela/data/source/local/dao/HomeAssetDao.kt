@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface HomeAssetDao {
-
     @Query("SELECT * FROM assets ORDER BY marketCapRank ASC LIMIT :limit")
     fun observeAll(limit: Int): Flow<List<AssetEntity>>
 

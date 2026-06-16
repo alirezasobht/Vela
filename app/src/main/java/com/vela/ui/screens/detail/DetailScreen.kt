@@ -97,14 +97,15 @@ fun DetailRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isWatchlisted by viewModel.isWatchlisted.collectAsStateWithLifecycle()
 
-    val detailActions = DetailActions(
-        onBack = onBack,
-        onRetry = viewModel::retry,
-        onRangeSelected = viewModel::onRangeSelected,
-        onToggleFullScreen = viewModel::toggleChartFullScreen,
-        onToggleWatchlist = viewModel::toggleWatchlist,
-        observePrice = viewModel::observePrice
-    )
+    val detailActions =
+        DetailActions(
+            onBack = onBack,
+            onRetry = viewModel::retry,
+            onRangeSelected = viewModel::onRangeSelected,
+            onToggleFullScreen = viewModel::toggleChartFullScreen,
+            onToggleWatchlist = viewModel::toggleWatchlist,
+            observePrice = viewModel::observePrice
+        )
 
     DetailScreen(
         uiState = uiState,
@@ -130,8 +131,9 @@ internal fun DetailScreen(
     val headerModel = initialAsset ?: (uiState as? DetailUiState.Success)?.detail
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier =
+            modifier
+                .fillMaxSize()
     ) {
         HeaderSection(
             name = headerModel?.name ?: "",
@@ -146,17 +148,19 @@ internal fun DetailScreen(
 
         when (uiState) {
             is DetailUiState.Loading -> FullScreenLoader()
-            is DetailUiState.Error -> FullScreenError(
-                appError = uiState.appError,
-                onRetry = detailActions.onRetry
-            )
-            is DetailUiState.Success -> SuccessState(
-                uiState = uiState,
-                selectedRange = selectedRange,
-                isChartFullScreen = isChartFullScreen,
-                detailActions = detailActions,
-                orientationController = orientationController
-            )
+            is DetailUiState.Error ->
+                FullScreenError(
+                    appError = uiState.appError,
+                    onRetry = detailActions.onRetry
+                )
+            is DetailUiState.Success ->
+                SuccessState(
+                    uiState = uiState,
+                    selectedRange = selectedRange,
+                    isChartFullScreen = isChartFullScreen,
+                    detailActions = detailActions,
+                    orientationController = orientationController
+                )
         }
     }
 }
@@ -191,7 +195,9 @@ private fun SuccessState(
         if (isChartFullScreen) {
             val restoreOrientation = orientationController.lockLandscape()
             onDispose(restoreOrientation)
-        } else onDispose { }
+        } else {
+            onDispose { }
+        }
     }
 
     AnimatedContent(
@@ -210,11 +216,12 @@ private fun SuccessState(
                 onRangeSelected = detailActions.onRangeSelected,
                 isFullScreen = true,
                 onToggleFullScreen = detailActions.onToggleFullScreen,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .systemBarsPadding()
-                    .layoutId("chart")
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .systemBarsPadding()
+                        .layoutId("chart")
             )
         } else {
             PullToRefreshBox(
@@ -223,9 +230,10 @@ private fun SuccessState(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
                 ) {
                     NonBlockingErrorBanner(error = uiState.nonBlockingError)
 
@@ -244,11 +252,12 @@ private fun SuccessState(
                         isFullScreen = false,
                         onToggleFullScreen = detailActions.onToggleFullScreen,
                         onRangeSelected = detailActions.onRangeSelected,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(216.dp)
-                            .padding(horizontal = 16.dp)
-                            .layoutId("chart"),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(216.dp)
+                                .padding(horizontal = 16.dp)
+                                .layoutId("chart"),
                     )
 
                     StatsSection(
@@ -282,9 +291,10 @@ private fun HeaderSection(
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -299,17 +309,20 @@ private fun HeaderSection(
             AsyncImage(
                 model = image,
                 contentDescription = name,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .then(
-                        if (animatedVisibilityScope != null) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "coin-image-$coinId"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                        } else Modifier
-                    ),
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .then(
+                            if (animatedVisibilityScope != null) {
+                                Modifier.sharedElement(
+                                    rememberSharedContentState(key = "coin-image-$coinId"),
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            } else {
+                                Modifier
+                            }
+                        ),
                 placeholder = rememberVectorPainter(Icons.Default.Paid),
                 error = rememberVectorPainter(Icons.Default.MonetizationOn)
             )
@@ -321,12 +334,15 @@ private fun HeaderSection(
                     text = name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = if (animatedVisibilityScope != null) {
-                        Modifier.sharedElement(
-                            rememberSharedContentState(key = "coin-name-$coinId"),
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                    } else Modifier
+                    modifier =
+                        if (animatedVisibilityScope != null) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-name-$coinId"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        } else {
+                            Modifier
+                        }
                 )
             }
             Row(
@@ -343,12 +359,12 @@ private fun HeaderSection(
                         text = "#$it",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                        modifier =
+                            Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(4.dp)
+                                ).padding(horizontal = 4.dp, vertical = 1.dp)
                     )
                 }
             }
@@ -358,8 +374,12 @@ private fun HeaderSection(
             Icon(
                 imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
                 contentDescription = stringResource(R.string.cd_watchlist),
-                tint = if (isWatchlisted) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
+                tint =
+                    if (isWatchlisted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
             )
         }
     }
@@ -413,9 +433,10 @@ private fun StatRow(
 ) {
     Column(modifier = modifier) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -452,48 +473,49 @@ private fun DetailScreenPreview(
             selectedRange = TimeRange.ONE_DAY,
             isChartFullScreen = isChartFullScreen,
             isWatchlisted = isWatchlisted,
-            detailActions = DetailActions(
-                onBack = {},
-                onRetry = {},
-                onRangeSelected = {},
-                onToggleFullScreen = {},
-                onToggleWatchlist = {},
-                observePrice = { flowOf(null) }
-            )
+            detailActions =
+                DetailActions(
+                    onBack = {},
+                    onRetry = {},
+                    onRangeSelected = {},
+                    onToggleFullScreen = {},
+                    onToggleWatchlist = {},
+                    observePrice = { flowOf(null) }
+                )
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenLoadingPreview() =
-    DetailScreenPreview(uiState = DetailUiState.Loading)
+private fun DetailScreenLoadingPreview() = DetailScreenPreview(uiState = DetailUiState.Loading)
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailScreenErrorPreview() =
-    DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
+private fun DetailScreenErrorPreview() = DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
 
 @Preview(showBackground = true)
 @Composable
 private fun DetailScreenSuccessPreview() =
     DetailScreenPreview(
-        uiState = DetailUiState.Success(
-            detail = FakeDetailDataSource.detail.toUiModel(),
-            isChartLoading = false,
-            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-        )
+        uiState =
+            DetailUiState.Success(
+                detail = FakeDetailDataSource.detail.toUiModel(),
+                isChartLoading = false,
+                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
+            )
     )
 
 @Preview(showBackground = true)
 @Composable
 private fun DetailScreenSuccessWatchlistedPreview() =
     DetailScreenPreview(
-        uiState = DetailUiState.Success(
-            detail = FakeDetailDataSource.detail.toUiModel(),
-            isChartLoading = false,
-            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-        ),
+        uiState =
+            DetailUiState.Success(
+                detail = FakeDetailDataSource.detail.toUiModel(),
+                isChartLoading = false,
+                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
+            ),
         isWatchlisted = true
     )
 
@@ -501,23 +523,25 @@ private fun DetailScreenSuccessWatchlistedPreview() =
 @Composable
 private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
     DetailScreenPreview(
-        uiState = DetailUiState.Success(
-            detail = FakeDetailDataSource.detail.toUiModel(),
-            isChartLoading = false,
-            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
-            nonBlockingError = AppError.NoInternet
-        )
+        uiState =
+            DetailUiState.Success(
+                detail = FakeDetailDataSource.detail.toUiModel(),
+                isChartLoading = false,
+                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+                nonBlockingError = AppError.NoInternet
+            )
     )
 
 @LandscapePreview(showBackground = true)
 @Composable
 private fun FullScreenChartPreview() =
     DetailScreenPreview(
-        uiState = DetailUiState.Success(
-            detail = FakeDetailDataSource.detail.toUiModel(),
-            isChartLoading = false,
-            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
-        ),
+        uiState =
+            DetailUiState.Success(
+                detail = FakeDetailDataSource.detail.toUiModel(),
+                isChartLoading = false,
+                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+            ),
         isChartFullScreen = true
     )
 
