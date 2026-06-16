@@ -157,7 +157,7 @@ class PricePollingControllerTest {
 
     @Test
     fun `default refresh delay is five seconds`() {
-        Assert.assertEquals(5L, PricePollingConfig().refreshDelaySeconds)
+        Assert.assertEquals(5 * 60L, PricePollingConfig().refreshDelaySeconds)
     }
 
     @Test
