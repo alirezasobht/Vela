@@ -1,3 +1,4 @@
+# This workflow runs automated tests and Ktlinting for pull requests targeting the dev branch.
 name: Dev PR Approval
 
 on:
@@ -18,8 +19,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dev-pr-approval:
-    name: Dev PR Approval
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -38,8 +39,28 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run local unit tests
+      - name: Run unit tests
         run: ./gradlew test --no-daemon --stacktrace
+
+  android-tests:
+    name: Android Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
 
       - name: Enable KVM for Android Emulator
         run: |
@@ -56,3 +77,26 @@ jobs:
           profile: pixel_7
           disable-animations: true
           script: ./gradlew connectedAndroidTest --no-daemon --stacktrace
+
+  ktlint-check:
+    name: Ktlint Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Run ktlintCheck
+        run: ./gradlew ktlintCheck --no-daemon --stacktrace
