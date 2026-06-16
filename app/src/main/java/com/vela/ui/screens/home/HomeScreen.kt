@@ -44,18 +44,18 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     navigateToDetail: (String) -> Unit
 ) {
-
     ScreenVisibilityObserver(viewModel::onScreenVisible)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pullRefreshing by viewModel.pullRefreshing.collectAsStateWithLifecycle()
 
-    val homeActions = HomeActions(
-        onLimitChanged = viewModel::onLimitChanged,
-        onRetry = viewModel::retry,
-        onPullToRefresh = viewModel::pullToRefresh,
-        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
-    )
+    val homeActions =
+        HomeActions(
+            onLimitChanged = viewModel::onLimitChanged,
+            onRetry = viewModel::retry,
+            onPullToRefresh = viewModel::pullToRefresh,
+            assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
+        )
 
     HomeScreen(
         modifier = modifier,
@@ -78,13 +78,14 @@ internal fun HomeScreen(
     when (uiState) {
         is HomeUiState.Loading -> FullScreenLoader(modifier = modifier)
         is HomeUiState.Error -> FullScreenError(appError = uiState.appError, onRetry = homeActions.onRetry, modifier = modifier)
-        is HomeUiState.Success -> SuccessState(
-            uiState = uiState,
-            pullRefreshing = pullRefreshing,
-            selectedLimit = selectedLimit,
-            homeActions = homeActions,
-            modifier = modifier
-        )
+        is HomeUiState.Success ->
+            SuccessState(
+                uiState = uiState,
+                pullRefreshing = pullRefreshing,
+                selectedLimit = selectedLimit,
+                homeActions = homeActions,
+                modifier = modifier
+            )
     }
 }
 
@@ -153,51 +154,57 @@ private fun HomeScreenPreview(uiState: HomeUiState) {
             uiState = uiState,
             pullRefreshing = false,
             selectedLimit = 25,
-            homeActions = HomeActions(
-                onLimitChanged = {},
-                onRetry = {},
-                onPullToRefresh = {},
-                assetListItemActions = AssetListItemActions(
-                    observePrice = { flowOf(null) },
-                    observeIsWatchlisted = { flowOf(false) },
-                    onToggleWatchlist = {},
-                    onClick = {}
+            homeActions =
+                HomeActions(
+                    onLimitChanged = {},
+                    onRetry = {},
+                    onPullToRefresh = {},
+                    assetListItemActions =
+                        AssetListItemActions(
+                            observePrice = { flowOf(null) },
+                            observeIsWatchlisted = { flowOf(false) },
+                            onToggleWatchlist = {},
+                            onClick = {}
+                        )
                 )
-            )
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeScreenLoadingPreview() = HomeScreenPreview(
-    uiState = HomeUiState.Loading
-)
-
-@Preview(showBackground = true)
-@Composable
-private fun HomeScreenSuccessPreview() = HomeScreenPreview(
-    HomeUiState.Success(
-        assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-        formattedDate = "Monday, 12 Feb"
+private fun HomeScreenLoadingPreview() =
+    HomeScreenPreview(
+        uiState = HomeUiState.Loading
     )
-)
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeScreenSuccessWithErrorPreview() = HomeScreenPreview(
-    HomeUiState.Success(
-        assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-        nonBlockingError = AppError.NoInternet,
-        formattedDate = "Monday, 12 Feb"
+private fun HomeScreenSuccessPreview() =
+    HomeScreenPreview(
+        HomeUiState.Success(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            formattedDate = "Monday, 12 Feb"
+        )
     )
-)
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeScreenErrorPreview() = HomeScreenPreview(
-    HomeUiState.Error(AppError.NoInternet)
-)
+private fun HomeScreenSuccessWithErrorPreview() =
+    HomeScreenPreview(
+        HomeUiState.Success(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            nonBlockingError = AppError.NoInternet,
+            formattedDate = "Monday, 12 Feb"
+        )
+    )
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenErrorPreview() =
+    HomeScreenPreview(
+        HomeUiState.Error(AppError.NoInternet)
+    )
 
 @Preview(showBackground = true)
 @Composable

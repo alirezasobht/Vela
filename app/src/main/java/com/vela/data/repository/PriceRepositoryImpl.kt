@@ -8,19 +8,21 @@ import com.vela.domain.model.SimplePrice
 import com.vela.domain.repository.PriceRepository
 import javax.inject.Inject
 
-class PriceRepositoryImpl @Inject constructor(
-    private val api: CoinGeckoApi
-) : PriceRepository {
-
-    override suspend fun getPrices(
-        ids: List<String>,
-        includeMarketData: Boolean
-    ): DataResult<Map<String, SimplePrice>> =
-        safeApiCall {
-            api.getSimplePrices(
-                ids = ids.joinToString(","),
-                includeMarketCap = includeMarketData,
-                includeVolume = includeMarketData
-            ).mapValues { it.value.toDomain() }
-        }
-}
+class PriceRepositoryImpl
+    @Inject
+    constructor(
+        private val api: CoinGeckoApi
+    ) : PriceRepository {
+        override suspend fun getPrices(
+            ids: List<String>,
+            includeMarketData: Boolean
+        ): DataResult<Map<String, SimplePrice>> =
+            safeApiCall {
+                api
+                    .getSimplePrices(
+                        ids = ids.joinToString(","),
+                        includeMarketCap = includeMarketData,
+                        includeVolume = includeMarketData
+                    ).mapValues { it.value.toDomain() }
+            }
+    }

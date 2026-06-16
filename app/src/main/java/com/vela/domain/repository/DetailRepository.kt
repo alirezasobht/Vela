@@ -6,5 +6,9 @@ import com.vela.domain.model.OhlcPoint
 
 interface DetailRepository {
     suspend fun getCoinDetail(id: String): DataResult<CoinDetail>
-    suspend fun getOhlc(id: String, days: Int): DataResult<List<OhlcPoint>>
+
+    suspend fun getOhlc(
+        id: String,
+        days: Int
+    ): DataResult<List<OhlcPoint>>
 }

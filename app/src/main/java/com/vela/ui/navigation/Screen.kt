@@ -18,7 +18,9 @@ sealed interface Screen {
     data object Dashboard : Screen
 
     @Serializable
-    data class CoinDetail(val coinId: String) : Screen
+    data class CoinDetail(
+        val coinId: String
+    ) : Screen
 }
 
 @Serializable
@@ -27,7 +29,6 @@ sealed class DashboardTab(
     @Transient val icon: ImageVector = Icons.Default.Home,
     @Transient val testTag: String = TestTags.navTab("home")
 ) {
-
     companion object {
         @Transient
         val tabs: List<DashboardTab> = listOf(Home, Markets, Watchlist, Search, Alerts)

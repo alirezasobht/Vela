@@ -6,25 +6,26 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-internal fun ohlcMarkerValueFormatter(
-    timestamps: List<Long>
-): DefaultCartesianMarker.ValueFormatter =
+internal fun ohlcMarkerValueFormatter(timestamps: List<Long>): DefaultCartesianMarker.ValueFormatter =
     DefaultCartesianMarker.ValueFormatter { _, targets ->
-        val target = targets.firstOrNull() as? CandlestickCartesianLayerMarkerTarget
-            ?: return@ValueFormatter ""
+        val target =
+            targets.firstOrNull() as? CandlestickCartesianLayerMarkerTarget
+                ?: return@ValueFormatter ""
         val index = target.x.toInt()
         val timestamp = timestamps.getOrNull(index)
 
-        val dateStr = timestamp?.let {
-            val instant = if (it > 10_000_000_000L) {
-                Instant.ofEpochMilli(it)
-            } else {
-                Instant.ofEpochSecond(it)
-            }
-            DateTimeFormatter.ofPattern("MMM d, HH:mm")
-                .format(instant.atZone(ZoneId.systemDefault()))
-        } ?: ""
-
+        val dateStr =
+            timestamp?.let {
+                val instant =
+                    if (it > 10_000_000_000L) {
+                        Instant.ofEpochMilli(it)
+                    } else {
+                        Instant.ofEpochSecond(it)
+                    }
+                DateTimeFormatter
+                    .ofPattern("MMM d, HH:mm")
+                    .format(instant.atZone(ZoneId.systemDefault()))
+            } ?: ""
 
         buildString {
             if (dateStr.isNotEmpty()) appendLine(dateStr)
@@ -35,8 +36,9 @@ internal fun ohlcMarkerValueFormatter(
         }
     }
 
-private fun formatMarkerPrice(value: Double): String = when {
-    value >= 1000 -> "%,.0f".format(value)
-    value >= 1 -> "%.2f".format(value)
-    else -> "%.6f".format(value)
-}
+private fun formatMarkerPrice(value: Double): String =
+    when {
+        value >= 1000 -> "%,.0f".format(value)
+        value >= 1 -> "%.2f".format(value)
+        else -> "%.6f".format(value)
+    }

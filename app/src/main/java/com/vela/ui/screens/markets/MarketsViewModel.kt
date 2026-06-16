@@ -44,120 +44,127 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MarketsViewModel @Inject constructor(
-    private val getMarkets: GetMarketsUseCase,
-    private val getCategories: GetMarketCategoriesUseCase,
-    private val assetPreviewCache: AssetPreviewCache,
-    private val getPrices: GetPricesOnlyUseCase,
-    private val pricePolling: PricePollingController,
-    private val watchlistController: WatchlistControllerImpl
-) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate, WatchlistController by watchlistController {
+class MarketsViewModel
+    @Inject
+    constructor(
+        private val getMarkets: GetMarketsUseCase,
+        private val getCategories: GetMarketCategoriesUseCase,
+        private val assetPreviewCache: AssetPreviewCache,
+        private val getPrices: GetPricesOnlyUseCase,
+        private val pricePolling: PricePollingController,
+        private val watchlistController: WatchlistControllerImpl
+    ) : ViewModel(),
+        PricePolling by pricePolling,
+        PricePollingDelegate,
+        WatchlistController by watchlistController {
+        private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
+        val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
-    val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
+        private var getCategoriesJob: Job? = null
+        private val categoriesLoaded = MutableStateFlow(false)
+        private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
+        val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
-    private var getCategoriesJob: Job? = null
-    private val _categoriesLoaded = MutableStateFlow(false)
-    private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
-    val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
+        private val loadedIds = MutableStateFlow<List<String>>(emptyList())
 
-    private val _loadedIds = MutableStateFlow<List<String>>(emptyList())
+        var selectedCategory by mutableStateOf(MarketCategory.ALL)
+            private set
 
-    var selectedCategory by mutableStateOf(MarketCategory.ALL)
-        private set
+        var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
+            private set
 
-    var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
-        private set
+        override fun getIds(): List<String> = loadedIds.value
 
-    override fun getIds(): List<String> = _loadedIds.value
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value as? MarketsUiState.Success ?: return
-        _uiState.value = current.copy(nonBlockingError = error)
-    }
-
-    override fun onCleared() {
-        pricePolling.cancel()
-        super.onCleared()
-    }
-
-    val pagingFlow: Flow<PagingData<AssetUiModel>> = snapshotFlow {
-        Pair(selectedCategory, selectedSort)
-    }
-        .flatMapLatest { (category, sort) ->
-            getMarkets(category, sort).map { pagingData ->
-                pagingData.map { asset ->
-                    _loadedIds.update { current -> (current + asset.id).distinct() }
-                    assetPreviewCache.put(asset)
-                    asset.toUiModel()
-                }
-            }
+        override fun onPriceError(error: AppError?) {
+            val current = _uiState.value as? MarketsUiState.Success ?: return
+            _uiState.value = current.copy(nonBlockingError = error)
         }
-        .cachedIn(viewModelScope)
 
-    init {
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
-        watchlistController.bind(viewModelScope)
-        fetchCategories()
-    }
+        override fun onCleared() {
+            pricePolling.cancel()
+            super.onCleared()
+        }
 
-    fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
-        AssetListItemActions(
-            observePrice = ::observePrice,
-            observeIsWatchlisted = ::observeIsWatchlisted,
-            onToggleWatchlist = ::toggleWatchlist,
-            onClick = onClick
-        )
+        val pagingFlow: Flow<PagingData<AssetUiModel>> =
+            snapshotFlow {
+                Pair(selectedCategory, selectedSort)
+            }.flatMapLatest { (category, sort) ->
+                getMarkets(category, sort).map { pagingData ->
+                    pagingData.map { asset ->
+                        loadedIds.update { current -> (current + asset.id).distinct() }
+                        assetPreviewCache.put(asset)
+                        asset.toUiModel()
+                    }
+                }
+            }.cachedIn(viewModelScope)
 
-    fun retry() {
-        getCategoriesJob?.cancel()
-        if (!_categoriesLoaded.value) fetchCategories()
-    }
-
-    fun onCategorySelected(category: MarketCategory) {
-        if (selectedCategory == category) return
-        selectedCategory = category
-        _loadedIds.value = emptyList()
-    }
-
-    fun onSortSelected(sort: MarketSort) {
-        if (selectedSort == sort) return
-        selectedSort = sort
-        _loadedIds.value = emptyList()
-    }
-
-    fun onLoadStateChanged(loadState: CombinedLoadStates) {
-        val refresh = loadState.refresh
-        val append = loadState.append
-        val currentSuccess = _uiState.value as? MarketsUiState.Success
-
-        _uiState.value = when (refresh) {
-            is LoadState.Loading -> MarketsUiState.Loading
-            is LoadState.Error -> MarketsUiState.Error(refresh.error.toAppError())
-            else -> MarketsUiState.Success(
-                isLoadingMore = append is LoadState.Loading,
-                nonBlockingError = (append as? LoadState.Error)?.error?.toAppError()
-                    ?: currentSuccess?.nonBlockingError
+        init {
+            pricePolling.bind(
+                scope = viewModelScope,
+                getPrices = getPrices,
+                delegate = this
             )
+            watchlistController.bind(viewModelScope)
+            fetchCategories()
         }
-    }
 
-    private fun fetchCategories() {
-        getCategoriesJob = viewModelScope.launch {
-            when (val result = getCategories()) {
-                is DataResult.Success -> loadCategories(result.data)
-                is DataResult.Error -> { /* silent — keep [ALL] */
+        fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
+            AssetListItemActions(
+                observePrice = ::observePrice,
+                observeIsWatchlisted = ::observeIsWatchlisted,
+                onToggleWatchlist = ::toggleWatchlist,
+                onClick = onClick
+            )
+
+        fun retry() {
+            getCategoriesJob?.cancel()
+            if (!categoriesLoaded.value) fetchCategories()
+        }
+
+        fun onCategorySelected(category: MarketCategory) {
+            if (selectedCategory == category) return
+            selectedCategory = category
+            loadedIds.value = emptyList()
+        }
+
+        fun onSortSelected(sort: MarketSort) {
+            if (selectedSort == sort) return
+            selectedSort = sort
+            loadedIds.value = emptyList()
+        }
+
+        fun onLoadStateChanged(loadState: CombinedLoadStates) {
+            val refresh = loadState.refresh
+            val append = loadState.append
+            val currentSuccess = _uiState.value as? MarketsUiState.Success
+
+            _uiState.value =
+                when (refresh) {
+                    is LoadState.Loading -> MarketsUiState.Loading
+                    is LoadState.Error -> MarketsUiState.Error(refresh.error.toAppError())
+                    else ->
+                        MarketsUiState.Success(
+                            isLoadingMore = append is LoadState.Loading,
+                            nonBlockingError =
+                                (append as? LoadState.Error)?.error?.toAppError()
+                                    ?: currentSuccess?.nonBlockingError
+                        )
                 }
-            }
+        }
+
+        private fun fetchCategories() {
+            getCategoriesJob =
+                viewModelScope.launch {
+                    when (val result = getCategories()) {
+                        is DataResult.Success -> loadCategories(result.data)
+                        is DataResult.Error -> { // silent — keep [ALL]
+                        }
+                    }
+                }
+        }
+
+        private fun loadCategories(categories: List<MarketCategory>) {
+            categoriesLoaded.value = true
+            _categories.value = categories
         }
     }
-
-    private fun loadCategories(categories: List<MarketCategory>) {
-        _categoriesLoaded.value = true
-        _categories.value = categories
-    }
-}

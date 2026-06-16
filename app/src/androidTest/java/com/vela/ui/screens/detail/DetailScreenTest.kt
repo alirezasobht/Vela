@@ -28,25 +28,26 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @OptIn(ExperimentalSharedTransitionApi::class)
 class DetailScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val defaultActions = DetailActions(
-        onBack = {},
-        onRetry = {},
-        onRangeSelected = {},
-        onToggleFullScreen = {},
-        observePrice = { flowOf(null) },
-        onToggleWatchlist = {}
-    )
+    private val defaultActions =
+        DetailActions(
+            onBack = {},
+            onRetry = {},
+            onRangeSelected = {},
+            onToggleFullScreen = {},
+            observePrice = { flowOf(null) },
+            onToggleWatchlist = {}
+        )
     private val testOrientationController = FullScreenOrientationController { {} }
 
-    private val successState = DetailUiState.Success(
-        detail = FakeDetailDataSource.detail.toUiModel(),
-        isChartLoading = false,
-        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-    )
+    private val successState =
+        DetailUiState.Success(
+            detail = FakeDetailDataSource.detail.toUiModel(),
+            isChartLoading = false,
+            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
+        )
 
     private fun setDetailScreen(
         uiState: DetailUiState,
@@ -143,7 +144,6 @@ class DetailScreenTest {
 
     @Test
     fun candleStickChart_toggleFullScreen() {
-
         composeRule.setContent {
             var currentIsFullScreen by remember { mutableStateOf(false) }
             SharedTransitionWrapper {
@@ -153,9 +153,10 @@ class DetailScreenTest {
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = currentIsFullScreen,
                     isWatchlisted = false,
-                    detailActions = defaultActions.copy(
-                        onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
-                    ),
+                    detailActions =
+                        defaultActions.copy(
+                            onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
+                        ),
                     orientationController = testOrientationController
                 )
             }

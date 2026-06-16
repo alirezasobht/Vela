@@ -10,7 +10,6 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CoinGeckoApi {
-
     @GET("coins/markets")
     suspend fun getMarkets(
         @Query("vs_currency") currency: String = "usd",

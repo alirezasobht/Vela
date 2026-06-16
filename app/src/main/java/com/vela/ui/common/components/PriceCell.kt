@@ -33,9 +33,10 @@ fun PriceCell(
 
     val price = simplePrice?.price ?: initialPrice
     val priceChange = simplePrice?.priceChange ?: initialPriceChange
-    val color = simplePrice?.let {
-        if (it.isPositive) sparklineBullColor else sparklineBearColor
-    } ?: initialColor
+    val color =
+        simplePrice?.let {
+            if (it.isPositive) sparklineBullColor else sparklineBearColor
+        } ?: initialColor
 
     Column(
         modifier = modifier,

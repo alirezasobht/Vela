@@ -23,62 +23,69 @@ import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
-class WatchlistViewModel @Inject constructor(
-    private val getWatchlistAssets: GetWatchlistAssetsUseCase,
-    private val getPrices: GetPricesOnlyUseCase,
-    private val assetPreviewCache: AssetPreviewCache,
-    private val pricePolling: PricePollingController,
-    private val watchlistController: WatchlistControllerImpl
-) : ViewModel(), PricePolling by pricePolling, PricePollingDelegate, WatchlistController by watchlistController {
+class WatchlistViewModel
+    @Inject
+    constructor(
+        private val getWatchlistAssets: GetWatchlistAssetsUseCase,
+        private val getPrices: GetPricesOnlyUseCase,
+        private val assetPreviewCache: AssetPreviewCache,
+        private val pricePolling: PricePollingController,
+        private val watchlistController: WatchlistControllerImpl
+    ) : ViewModel(),
+        PricePolling by pricePolling,
+        PricePollingDelegate,
+        WatchlistController by watchlistController {
+        private val _uiState = MutableStateFlow<WatchlistUiState>(WatchlistUiState.Loading)
+        val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow<WatchlistUiState>(WatchlistUiState.Loading)
-    val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
+        override fun getIds(): List<String> = (_uiState.value as? WatchlistUiState.Success)?.assets?.map { it.id } ?: emptyList()
 
-    override fun getIds(): List<String> = (_uiState.value as? WatchlistUiState.Success)?.assets?.map { it.id } ?: emptyList()
+        override fun onPriceError(error: AppError?) {
+            val current = _uiState.value
+            if (current is WatchlistUiState.Success) {
+                _uiState.value = current.copy(nonBlockingError = error)
+            }
+        }
 
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value
-        if (current is WatchlistUiState.Success) {
-            _uiState.value = current.copy(nonBlockingError = error)
+        override fun onCleared() {
+            pricePolling.cancel()
+            super.onCleared()
+        }
+
+        init {
+            pricePolling.bind(
+                scope = viewModelScope,
+                getPrices = getPrices,
+                delegate = this
+            )
+            watchlistController.bind(viewModelScope)
+            observeWatchlist()
+        }
+
+        fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
+            AssetListItemActions(
+                observePrice = ::observePrice,
+                observeIsWatchlisted = ::observeIsWatchlisted,
+                onToggleWatchlist = ::toggleWatchlist,
+                onClick = onClick
+            )
+
+        private fun observeWatchlist() {
+            getWatchlistAssets()
+                .onEach { result ->
+                    _uiState.value =
+                        when (result) {
+                            is DataResult.Success -> {
+                                val assets = result.data
+                                assets.forEach { assetPreviewCache.put(it) }
+                                if (assets.isEmpty()) {
+                                    WatchlistUiState.Empty
+                                } else {
+                                    WatchlistUiState.Success(assets.map { it.toUiModel() })
+                                }
+                            }
+                            is DataResult.Error -> WatchlistUiState.Empty
+                        }
+                }.launchIn(viewModelScope)
         }
     }
-
-    override fun onCleared() {
-        pricePolling.cancel()
-        super.onCleared()
-    }
-
-    init {
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
-        watchlistController.bind(viewModelScope)
-        observeWatchlist()
-    }
-
-    fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions =
-        AssetListItemActions(
-            observePrice = ::observePrice,
-            observeIsWatchlisted = ::observeIsWatchlisted,
-            onToggleWatchlist = ::toggleWatchlist,
-            onClick = onClick
-        )
-
-    private fun observeWatchlist() {
-        getWatchlistAssets()
-            .onEach { result ->
-                _uiState.value = when (result) {
-                    is DataResult.Success -> {
-                        val assets = result.data
-                        assets.forEach { assetPreviewCache.put(it) }
-                        if (assets.isEmpty()) WatchlistUiState.Empty
-                        else WatchlistUiState.Success(assets.map { it.toUiModel() })
-                    }
-                    is DataResult.Error -> WatchlistUiState.Empty
-                }
-            }
-            .launchIn(viewModelScope)
-    }
-}

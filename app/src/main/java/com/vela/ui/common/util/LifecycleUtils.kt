@@ -9,7 +9,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 
 @Composable
 fun ScreenVisibilityObserver(onScreenVisible: (Boolean) -> Unit) {
-
     val lastState = remember { mutableStateOf<Boolean?>(null) }
 
     fun updateState(isVisible: Boolean) {

@@ -10,17 +10,21 @@ import com.vela.domain.model.OhlcPoint
 import com.vela.domain.repository.DetailRepository
 import javax.inject.Inject
 
-class DetailRepositoryImpl @Inject constructor(
-    private val api: CoinGeckoApi
-) : DetailRepository {
+class DetailRepositoryImpl
+    @Inject
+    constructor(
+        private val api: CoinGeckoApi
+    ) : DetailRepository {
+        override suspend fun getCoinDetail(id: String): DataResult<CoinDetail> =
+            safeApiCall {
+                api.getCoinDetail(id = id).first().toDomain()
+            }
 
-    override suspend fun getCoinDetail(id: String): DataResult<CoinDetail> =
-        safeApiCall {
-            api.getCoinDetail(id = id).first().toDomain()
-        }
-
-    override suspend fun getOhlc(id: String, days: Int): DataResult<List<OhlcPoint>> =
-        safeApiCall {
-            api.getOhlc(id = id, days = days).map { it.toOhlcPoint() }
-        }
-}
+        override suspend fun getOhlc(
+            id: String,
+            days: Int
+        ): DataResult<List<OhlcPoint>> =
+            safeApiCall {
+                api.getOhlc(id = id, days = days).map { it.toOhlcPoint() }
+            }
+    }

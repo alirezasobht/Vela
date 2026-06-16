@@ -5,7 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CoinDetailMapperTest {
-
     // ----- priceChange24h sign formatting -----
 
     @Test
@@ -45,16 +44,17 @@ class CoinDetailMapperTest {
 
     @Test
     fun `all nullable fields null produce em dash not empty string or crash`() {
-        val model = coinDetail(
-            currentPrice = null,
-            priceChange24h = null,
-            priceChangePercent24h = null,
-            marketCap = null,
-            totalVolume = null,
-            circulatingSupply = null,
-            ath = null,
-            atl = null
-        ).toUiModel()
+        val model =
+            coinDetail(
+                currentPrice = null,
+                priceChange24h = null,
+                priceChangePercent24h = null,
+                marketCap = null,
+                totalVolume = null,
+                circulatingSupply = null,
+                ath = null,
+                atl = null
+            ).toUiModel()
         val dash = "\u2014"
         assertEquals(dash, model.currentPrice)
         assertEquals(dash, model.priceChange24h)

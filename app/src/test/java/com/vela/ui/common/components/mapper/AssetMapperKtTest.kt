@@ -7,7 +7,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AssetMapperKtTest {
-
     private fun anAsset(
         currentPrice: Double = 100.0,
         priceChangePercent24h: Double = 1.0,

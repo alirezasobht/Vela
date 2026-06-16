@@ -42,9 +42,10 @@ fun WatchlistRoute(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val watchlistActions = WatchlistActions(
-        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
-    )
+    val watchlistActions =
+        WatchlistActions(
+            assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
+        )
 
     WatchlistScreen(
         uiState = uiState,
@@ -65,10 +66,11 @@ internal fun WatchlistScreen(
         when (uiState) {
             is WatchlistUiState.Loading -> LoadingState()
             is WatchlistUiState.Empty -> EmptyState()
-            is WatchlistUiState.Success -> SuccessState(
-                uiState = uiState,
-                watchlistActions = watchlistActions
-            )
+            is WatchlistUiState.Success ->
+                SuccessState(
+                    uiState = uiState,
+                    watchlistActions = watchlistActions
+                )
         }
     }
 }
@@ -122,14 +124,16 @@ private fun WatchlistPreview(uiState: WatchlistUiState) {
     SharedTransitionWrapper {
         WatchlistScreen(
             uiState = uiState,
-            watchlistActions = WatchlistActions(
-                assetListItemActions = AssetListItemActions(
-                    observePrice = { flowOf(null) },
-                    observeIsWatchlisted = { flowOf(false) },
-                    onToggleWatchlist = {},
-                    onClick = {}
+            watchlistActions =
+                WatchlistActions(
+                    assetListItemActions =
+                        AssetListItemActions(
+                            observePrice = { flowOf(null) },
+                            observeIsWatchlisted = { flowOf(false) },
+                            onToggleWatchlist = {},
+                            onClick = {}
+                        )
                 )
-            )
         )
     }
 }
@@ -150,9 +154,10 @@ private fun WatchlistEmptyPreview() {
 @Composable
 private fun WatchlistSuccessPreview() {
     WatchlistPreview(
-        uiState = WatchlistUiState.Success(
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() }
-        )
+        uiState =
+            WatchlistUiState.Success(
+                assets = FakeAssetDataSource.assets.map { it.toUiModel() }
+            )
     )
 }
 
@@ -160,9 +165,10 @@ private fun WatchlistSuccessPreview() {
 @Composable
 private fun WatchlistNonBlockingErrorPreview() {
     WatchlistPreview(
-        uiState = WatchlistUiState.Success(
-            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            nonBlockingError = AppError.NoInternet
-        )
+        uiState =
+            WatchlistUiState.Success(
+                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+                nonBlockingError = AppError.NoInternet
+            )
     )
 }

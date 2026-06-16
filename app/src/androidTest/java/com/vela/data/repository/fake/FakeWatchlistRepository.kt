@@ -8,25 +8,25 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-class FakeWatchlistRepository @Inject constructor() : WatchlistRepository {
+class FakeWatchlistRepository
+    @Inject
+    constructor() : WatchlistRepository {
+        private val watchlist =
+            MutableStateFlow(
+                FakeAssetDataSource.assets.filterIndexed { index, _ -> index < 3 }.map { it.id }
+            )
 
-    private val watchlist = MutableStateFlow(
-        FakeAssetDataSource.assets.filterIndexed { index, _ -> index < 3 }.map { it.id }
-    )
+        override fun observeWatchlist(): Flow<List<String>> = watchlist.map { it.toList() }
 
-    override fun observeWatchlist(): Flow<List<String>> =
-        watchlist.map { it.toList() }
+        override fun isWatchlisted(coinId: String): Flow<Boolean> = watchlist.map { it.contains(coinId) }
 
-    override fun isWatchlisted(coinId: String): Flow<Boolean> =
-        watchlist.map { it.contains(coinId) }
-
-    override suspend fun toggleWatchlist(coinId: String) {
-        watchlist.update { current ->
-            if (current.contains(coinId)) {
-                current - coinId
-            } else {
-                current + coinId
+        override suspend fun toggleWatchlist(coinId: String) {
+            watchlist.update { current ->
+                if (current.contains(coinId)) {
+                    current - coinId
+                } else {
+                    current + coinId
+                }
             }
         }
     }
-}

@@ -8,7 +8,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CoinDtoMapperTest {
-
     // ----- CoinDto.toEntity - sparkline -----
 
     @Test
@@ -50,14 +49,15 @@ class CoinDtoMapperTest {
 
     // ----- helpers -----
 
-    private fun coinDto(sparkline: SparklineDto?) = CoinDto(
-        id = "bitcoin",
-        symbol = "btc",
-        name = "Bitcoin",
-        image = null,
-        currentPrice = null,
-        priceChangePercent24h = null,
-        marketCapRank = null,
-        sparkline = sparkline
-    )
+    private fun coinDto(sparkline: SparklineDto?) =
+        CoinDto(
+            id = "bitcoin",
+            symbol = "btc",
+            name = "Bitcoin",
+            image = null,
+            currentPrice = null,
+            priceChangePercent24h = null,
+            marketCapRank = null,
+            sparkline = sparkline
+        )
 }
