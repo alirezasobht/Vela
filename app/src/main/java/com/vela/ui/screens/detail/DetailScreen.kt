@@ -2,43 +2,22 @@ package com.vela.ui.screens.detail
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarOutline
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -48,23 +27,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
-import com.vela.domain.model.Alert
 import com.vela.domain.model.AppError
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
@@ -73,8 +44,6 @@ import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.LandscapePreview
-import com.vela.ui.common.util.LocalAnimatedVisibilityScope
-import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.common.util.rememberFullScreenOrientationController
@@ -162,11 +131,7 @@ internal fun DetailScreen(
 ) {
     val headerModel = initialAsset ?: (uiState as? DetailUiState.Success)?.detail
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-    ) {
+    Column(modifier = modifier.fillMaxSize()) {
         HeaderSection(
             name = headerModel?.name ?: "",
             symbol = headerModel?.symbol ?: "",
@@ -185,6 +150,7 @@ internal fun DetailScreen(
                     appError = uiState.appError,
                     onRetry = detailActions.onRetry
                 )
+
             is DetailUiState.Success ->
                 SuccessState(
                     uiState = uiState,
@@ -310,334 +276,18 @@ private fun SuccessState(
                             onTabSelected = detailActions.onTabSelected
                         )
 
-                        when (uiState.selectedTab) {
-                            DetailTab.STATS ->
-                                StatsSection(
-                                    marketCap = marketCap,
-                                    totalVolume = totalVolume,
-                                    circulatingSupply = detail.circulatingSupply,
-                                    ath = detail.ath,
-                                    atl = detail.atl,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                            DetailTab.ALERTS ->
-                                AlertsSection(
-                                    alerts = uiState.alerts,
-                                    onEditAlert = detailActions.onEditAlert
-                                )
-                        }
+                        TabsSection(
+                            selectedTab = uiState.selectedTab,
+                            alerts = uiState.alerts,
+                            detail = detail,
+                            marketCap = marketCap,
+                            totalVolume = totalVolume,
+                            onEditAlert = detailActions.onEditAlert
+                        )
                     }
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DetailTabRow(
-    selectedTab: DetailTab,
-    onTabSelected: (DetailTab) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PrimaryTabRow(
-        selectedTabIndex = selectedTab.ordinal,
-        modifier = modifier
-    ) {
-        DetailTab.entries.forEach { tab ->
-            Tab(
-                selected = selectedTab == tab,
-                onClick = { onTabSelected(tab) },
-                text = {
-                    Text(
-                        text =
-                            when (tab) {
-                                DetailTab.STATS -> stringResource(R.string.label_tab_stats)
-                                DetailTab.ALERTS -> stringResource(R.string.label_tab_alerts)
-                            }
-                    )
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun AlertsSection(
-    alerts: List<Alert>,
-    onEditAlert: (Long?) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        if (alerts.isEmpty()) {
-            Text(
-                text = stringResource(R.string.label_alerts_empty_title),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-        } else {
-            alerts.forEach { alert ->
-                AlertRow(
-                    alert = alert,
-                    onClick = { onEditAlert(alert.id) }
-                )
-            }
-        }
-        Button(
-            onClick = { onEditAlert(null) },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = stringResource(R.string.action_create_alert),
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AlertRow(
-    alert: Alert,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "${alert.type.name} ${alert.direction.name}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = alert.targetValue.toString(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (alert.isTriggered) {
-                Text(
-                    text = stringResource(R.string.label_alert_triggered),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp)
-                            ).padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-            }
-        }
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant,
-            thickness = 0.5.dp
-        )
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun HeaderSection(
-    name: String,
-    symbol: String,
-    image: String?,
-    marketCapRank: Int?,
-    coinId: String,
-    isWatchlisted: Boolean,
-    onBack: () -> Unit,
-    onToggleWatchlist: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val sharedTransitionScope = LocalSharedTransitionScope.current ?: return
-    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
-
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.cd_back)
-            )
-        }
-
-        with(sharedTransitionScope) {
-            AsyncImage(
-                model = image,
-                contentDescription = name,
-                modifier =
-                    Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (animatedVisibilityScope != null) {
-                                Modifier.sharedElement(
-                                    rememberSharedContentState(key = "coin-image-$coinId"),
-                                    animatedVisibilityScope = animatedVisibilityScope
-                                )
-                            } else {
-                                Modifier
-                            }
-                        ),
-                placeholder = rememberVectorPainter(Icons.Default.Paid),
-                error = rememberVectorPainter(Icons.Default.MonetizationOn)
-            )
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            with(sharedTransitionScope) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier =
-                        if (animatedVisibilityScope != null) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "coin-name-$coinId"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                        } else {
-                            Modifier
-                        }
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = symbol,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                marketCapRank?.let {
-                    Text(
-                        text = "#$it",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier =
-                            Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(4.dp)
-                                ).padding(horizontal = 4.dp, vertical = 1.dp)
-                    )
-                }
-            }
-        }
-
-        IconButton(onClick = onToggleWatchlist) {
-            Icon(
-                imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
-                contentDescription = stringResource(R.string.cd_watchlist),
-                tint =
-                    if (isWatchlisted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-            )
-        }
-    }
-}
-
-@Composable
-private fun PriceSection(
-    price: String,
-    priceChange24h: String,
-    priceChangePercent: String,
-    priceColor: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = price,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "$priceChange24h  \u00b7  $priceChangePercent",
-            style = MaterialTheme.typography.bodyMedium,
-            color = priceColor
-        )
-    }
-}
-
-@Composable
-private fun StatsSection(
-    marketCap: String,
-    totalVolume: String,
-    circulatingSupply: String,
-    ath: String,
-    atl: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        StatRow(label = stringResource(R.string.label_market_cap), value = marketCap)
-        StatRow(label = stringResource(R.string.label_24h_volume), value = totalVolume)
-        StatRow(label = stringResource(R.string.label_circulating_supply), value = circulatingSupply)
-        StatRow(label = stringResource(R.string.label_ath), value = ath)
-        StatRow(label = stringResource(R.string.label_atl), value = atl)
-    }
-}
-
-@Composable
-private fun StatRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant,
-            thickness = 0.5.dp
-        )
     }
 }
 
@@ -711,19 +361,6 @@ private fun DetailScreenSuccessAlertsTabPreview() =
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenSuccessWatchlistedPreview() =
-    DetailScreenPreview(
-        uiState =
-            DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                isChartLoading = false,
-                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-            ),
-        isWatchlisted = true
-    )
-
-@Preview(showBackground = true, apiLevel = 34)
-@Composable
 private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
     DetailScreenPreview(
         uiState =
@@ -747,39 +384,3 @@ private fun FullScreenChartPreview() =
             ),
         isChartFullScreen = true
     )
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Preview(showBackground = true, apiLevel = 34)
-@Composable
-private fun HeaderSectionPreview() {
-    SharedTransitionWrapper {
-        HeaderSection(
-            name = "Bitcoin",
-            symbol = "BTC",
-            image = null,
-            marketCapRank = 1,
-            coinId = "bitcoin",
-            isWatchlisted = false,
-            onBack = {},
-            onToggleWatchlist = {}
-        )
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Preview(showBackground = true, apiLevel = 34)
-@Composable
-private fun HeaderSectionWatchlistedPreview() {
-    SharedTransitionWrapper {
-        HeaderSection(
-            name = "Bitcoin",
-            symbol = "BTC",
-            image = null,
-            marketCapRank = 1,
-            coinId = "bitcoin",
-            isWatchlisted = true,
-            onBack = {},
-            onToggleWatchlist = {}
-        )
-    }
-}
