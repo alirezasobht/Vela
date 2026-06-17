@@ -3,6 +3,7 @@ package com.vela.data.di
 import android.content.Context
 import androidx.room.Room
 import com.vela.data.source.local.AppDatabase
+import com.vela.data.source.local.dao.AlertDao
 import com.vela.data.source.local.dao.HomeAssetDao
 import com.vela.data.source.local.dao.WatchlistDao
 import dagger.Module
@@ -35,4 +36,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideWatchlistDao(database: AppDatabase): WatchlistDao = database.watchlistDao()
+
+    @Provides
+    @Singleton
+    fun provideAlertDao(database: AppDatabase): AlertDao = database.alertDao()
 }

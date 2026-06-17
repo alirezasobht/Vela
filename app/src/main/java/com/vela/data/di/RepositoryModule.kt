@@ -1,11 +1,13 @@
 package com.vela.data.di
 
+import com.vela.data.repository.AlertRepositoryImpl
 import com.vela.data.repository.AssetRepositoryImpl
 import com.vela.data.repository.DetailRepositoryImpl
 import com.vela.data.repository.MarketsRepositoryImpl
 import com.vela.data.repository.PriceRepositoryImpl
 import com.vela.data.repository.SearchRepositoryImpl
 import com.vela.data.repository.WatchlistRepositoryImpl
+import com.vela.domain.repository.AlertRepository
 import com.vela.domain.repository.AssetRepository
 import com.vela.domain.repository.DetailRepository
 import com.vela.domain.repository.MarketsRepository
@@ -44,4 +46,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindWatchlistRepository(impl: WatchlistRepositoryImpl): WatchlistRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAlertRepository(impl: AlertRepositoryImpl): AlertRepository
 }
