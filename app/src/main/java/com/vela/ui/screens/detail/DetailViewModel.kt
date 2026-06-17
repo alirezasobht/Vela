@@ -21,14 +21,17 @@ import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
+import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,8 +52,8 @@ class DetailViewModel
     ) : ViewModel(),
         PricePolling by pricePolling,
         PricePollingDelegate {
+        val coinId: String
         val initialHeader: CoinDetailUiModel?
-        private val coinId: String
 
         private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
         val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -62,7 +65,13 @@ class DetailViewModel
         var isChartFullScreen by mutableStateOf(false)
             private set
 
-        var isWatchlisted: StateFlow<Boolean>
+        val isWatchlisted: StateFlow<Boolean>
+
+        // emits alertId (null = create, non-null = edit)
+        private val _alertFormEvent = MutableSharedFlow<Long?>(extraBufferCapacity = 1)
+        val alertFormEvent = _alertFormEvent.asSharedFlow()
+
+        var isAlertFormVisible by mutableStateOf(false)
             private set
 
         override fun getIds(): List<String> = listOf(coinId)
@@ -115,6 +124,22 @@ class DetailViewModel
 
         fun toggleChartFullScreen() {
             isChartFullScreen = !isChartFullScreen
+        }
+
+        fun onTabSelected(tab: DetailTab) {
+            val current = _uiState.value as? DetailUiState.Success ?: return
+            _uiState.value = current.copy(selectedTab = tab)
+        }
+
+        // null = create, non-null = edit
+        fun openAlertEdit(id: Long? = null) {
+            if (isChartFullScreen) return
+            isAlertFormVisible = true
+            _alertFormEvent.tryEmit(id)
+        }
+
+        fun dismissAlertEdit() {
+            isAlertFormVisible = false
         }
 
         private fun loadDetail(isRefresh: Boolean = false) {
