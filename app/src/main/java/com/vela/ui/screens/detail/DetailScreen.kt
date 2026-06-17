@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,21 +25,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +64,7 @@ import com.vela.R
 import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
+import com.vela.domain.model.Alert
 import com.vela.domain.model.AppError
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
@@ -68,8 +78,10 @@ import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.common.util.rememberFullScreenOrientationController
+import com.vela.ui.screens.alerts.AlertEditRoute
 import com.vela.ui.screens.detail.chart.OhlcChartSection
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
+import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
@@ -84,6 +96,9 @@ internal data class DetailActions(
     val onRangeSelected: (TimeRange) -> Unit,
     val onToggleFullScreen: () -> Unit,
     val onToggleWatchlist: () -> Unit,
+    val onTabSelected: (DetailTab) -> Unit,
+    val onEditAlert: (Long?) -> Unit,
+    val onDismissAlertEdit: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>
 )
 
@@ -97,6 +112,14 @@ fun DetailRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isWatchlisted by viewModel.isWatchlisted.collectAsStateWithLifecycle()
 
+    var editingAlertId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.alertFormEvent.collect { id ->
+            editingAlertId = id
+        }
+    }
+
     val detailActions =
         DetailActions(
             onBack = onBack,
@@ -104,6 +127,9 @@ fun DetailRoute(
             onRangeSelected = viewModel::onRangeSelected,
             onToggleFullScreen = viewModel::toggleChartFullScreen,
             onToggleWatchlist = viewModel::toggleWatchlist,
+            onTabSelected = viewModel::onTabSelected,
+            onEditAlert = viewModel::openAlertEdit,
+            onDismissAlertEdit = viewModel::dismissAlertEdit,
             observePrice = viewModel::observePrice
         )
 
@@ -113,6 +139,9 @@ fun DetailRoute(
         selectedRange = viewModel.selectedRange,
         isChartFullScreen = viewModel.isChartFullScreen,
         isWatchlisted = isWatchlisted,
+        isAlertFormVisible = viewModel.isAlertFormVisible,
+        editingAlertId = editingAlertId,
+        coinId = viewModel.coinId,
         detailActions = detailActions
     )
 }
@@ -124,6 +153,9 @@ internal fun DetailScreen(
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
     isWatchlisted: Boolean,
+    isAlertFormVisible: Boolean,
+    editingAlertId: Long?,
+    coinId: String,
     detailActions: DetailActions,
     modifier: Modifier = Modifier,
     orientationController: FullScreenOrientationController = rememberFullScreenOrientationController()
@@ -158,6 +190,9 @@ internal fun DetailScreen(
                     uiState = uiState,
                     selectedRange = selectedRange,
                     isChartFullScreen = isChartFullScreen,
+                    isAlertFormVisible = isAlertFormVisible,
+                    editingAlertId = editingAlertId,
+                    coinId = coinId,
                     detailActions = detailActions,
                     orientationController = orientationController
                 )
@@ -171,6 +206,9 @@ private fun SuccessState(
     uiState: DetailUiState.Success,
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
+    isAlertFormVisible: Boolean,
+    editingAlertId: Long?,
+    coinId: String,
     detailActions: DetailActions,
     orientationController: FullScreenOrientationController,
     modifier: Modifier = Modifier
@@ -260,17 +298,162 @@ private fun SuccessState(
                                 .layoutId("chart"),
                     )
 
-                    StatsSection(
-                        marketCap = marketCap,
-                        totalVolume = totalVolume,
-                        circulatingSupply = detail.circulatingSupply,
-                        ath = detail.ath,
-                        atl = detail.atl,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    if (isAlertFormVisible) {
+                        AlertEditRoute(
+                            coinId = coinId,
+                            alertId = editingAlertId,
+                            onDismiss = detailActions.onDismissAlertEdit
+                        )
+                    } else {
+                        DetailTabRow(
+                            selectedTab = uiState.selectedTab,
+                            onTabSelected = detailActions.onTabSelected
+                        )
+
+                        when (uiState.selectedTab) {
+                            DetailTab.STATS ->
+                                StatsSection(
+                                    marketCap = marketCap,
+                                    totalVolume = totalVolume,
+                                    circulatingSupply = detail.circulatingSupply,
+                                    ath = detail.ath,
+                                    atl = detail.atl,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            DetailTab.ALERTS ->
+                                AlertsSection(
+                                    alerts = uiState.alerts,
+                                    onEditAlert = detailActions.onEditAlert
+                                )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailTabRow(
+    selectedTab: DetailTab,
+    onTabSelected: (DetailTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PrimaryTabRow(
+        selectedTabIndex = selectedTab.ordinal,
+        modifier = modifier
+    ) {
+        DetailTab.entries.forEach { tab ->
+            Tab(
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
+                text = {
+                    Text(
+                        text =
+                            when (tab) {
+                                DetailTab.STATS -> stringResource(R.string.label_tab_stats)
+                                DetailTab.ALERTS -> stringResource(R.string.label_tab_alerts)
+                            }
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlertsSection(
+    alerts: List<Alert>,
+    onEditAlert: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (alerts.isEmpty()) {
+            Text(
+                text = stringResource(R.string.label_alerts_empty_title),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+        } else {
+            alerts.forEach { alert ->
+                AlertRow(
+                    alert = alert,
+                    onClick = { onEditAlert(alert.id) }
+                )
+            }
+        }
+        Button(
+            onClick = { onEditAlert(null) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = stringResource(R.string.action_create_alert),
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlertRow(
+    alert: Alert,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "${alert.type.name} ${alert.direction.name}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = alert.targetValue.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (alert.isTriggered) {
+                Text(
+                    text = stringResource(R.string.label_alert_triggered),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ).padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant,
+            thickness = 0.5.dp
+        )
     }
 }
 
@@ -464,7 +647,8 @@ private fun StatRow(
 private fun DetailScreenPreview(
     uiState: DetailUiState,
     isChartFullScreen: Boolean = false,
-    isWatchlisted: Boolean = false
+    isWatchlisted: Boolean = false,
+    isAlertFormVisible: Boolean = false
 ) {
     SharedTransitionWrapper {
         DetailScreen(
@@ -473,6 +657,9 @@ private fun DetailScreenPreview(
             selectedRange = TimeRange.ONE_DAY,
             isChartFullScreen = isChartFullScreen,
             isWatchlisted = isWatchlisted,
+            isAlertFormVisible = isAlertFormVisible,
+            editingAlertId = null,
+            coinId = "bitcoin",
             detailActions =
                 DetailActions(
                     onBack = {},
@@ -480,21 +667,24 @@ private fun DetailScreenPreview(
                     onRangeSelected = {},
                     onToggleFullScreen = {},
                     onToggleWatchlist = {},
+                    onTabSelected = {},
+                    onEditAlert = {},
+                    onDismissAlertEdit = {},
                     observePrice = { flowOf(null) }
                 )
         )
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenLoadingPreview() = DetailScreenPreview(uiState = DetailUiState.Loading)
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenErrorPreview() = DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessPreview() =
     DetailScreenPreview(
@@ -506,7 +696,20 @@ private fun DetailScreenSuccessPreview() =
             )
     )
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
+@Composable
+private fun DetailScreenSuccessAlertsTabPreview() =
+    DetailScreenPreview(
+        uiState =
+            DetailUiState.Success(
+                detail = FakeDetailDataSource.detail.toUiModel(),
+                isChartLoading = false,
+                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+                selectedTab = DetailTab.ALERTS
+            )
+    )
+
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessWatchlistedPreview() =
     DetailScreenPreview(
@@ -519,7 +722,7 @@ private fun DetailScreenSuccessWatchlistedPreview() =
         isWatchlisted = true
     )
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
     DetailScreenPreview(
@@ -546,7 +749,7 @@ private fun FullScreenChartPreview() =
     )
 
 @OptIn(ExperimentalSharedTransitionApi::class)
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun HeaderSectionPreview() {
     SharedTransitionWrapper {
@@ -564,7 +767,7 @@ private fun HeaderSectionPreview() {
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
-@Preview(showBackground = true)
+@Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun HeaderSectionWatchlistedPreview() {
     SharedTransitionWrapper {
