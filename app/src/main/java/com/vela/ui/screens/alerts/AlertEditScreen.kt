@@ -123,7 +123,7 @@ internal fun AlertEditContent(
 
         ConfirmButton(
             editBtnResId = uiState.editBtnResId,
-            enabled = uiState.isConfirmEnabled,
+            enabled = uiState.isSubmitEnabled,
             isLoading = uiState.isLoading,
             onClick = actions.onConfirm
         )
@@ -256,10 +256,7 @@ private fun ConfirmButton(
 // ----- Previews -----
 
 @Composable
-private fun AlertEditContentPreview(
-    uiState: AlertEditUiState,
-    isEditMode: Boolean = false
-) {
+private fun AlertEditContentPreview(uiState: AlertEditUiState) {
     VelaTheme {
         AlertEditContent(
             uiState = uiState,
@@ -277,11 +274,10 @@ private fun AlertEditContentPreview(
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentEmptyPreview() = AlertEditContentPreview(
-    uiState = AlertEditUiState(
-        editBtnResId = R.string.action_create_alert
+private fun AlertEditContentEmptyPreview() =
+    AlertEditContentPreview(
+        uiState = AlertEditUiState(editBtnResId = R.string.action_create_alert)
     )
-)
 
 @Preview(showBackground = true)
 @Composable
@@ -292,7 +288,7 @@ private fun AlertEditContentEnabledPreview() =
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
-                isConfirmEnabled = true,
+                isSubmitEnabled = true,
                 editBtnResId = R.string.action_create_alert,
                 isValueInputEnabled = true
             )
@@ -307,11 +303,10 @@ private fun AlertEditContentEditModePreview() =
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
-                isConfirmEnabled = true,
+                isSubmitEnabled = true,
                 editBtnResId = R.string.action_edit_alert,
                 isValueInputEnabled = true
-            ),
-        isEditMode = true
+            )
     )
 
 @Preview(showBackground = true)
@@ -323,7 +318,7 @@ private fun AlertEditContentLoadingPreview() =
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
-                isConfirmEnabled = true,
+                isSubmitEnabled = true,
                 isLoading = true,
                 editBtnResId = R.string.action_create_alert,
                 isValueInputEnabled = true

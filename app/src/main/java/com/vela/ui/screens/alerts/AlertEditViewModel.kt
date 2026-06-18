@@ -11,6 +11,7 @@ import com.vela.domain.model.DataResult
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.domain.usecase.ValidateAlertUseCase
 import com.vela.ui.base.AssetPreviewCache
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -32,6 +33,7 @@ class AlertEditViewModel
         private val getPricesOnly: GetPricesOnlyUseCase,
         private val editAlert: EditAlertUseCase,
         private val getAlertById: GetAlertByIdUseCase,
+        private val validateAlert: ValidateAlertUseCase,
         @Assisted val coinId: String,
         @Assisted val alertId: Long?
     ) : ViewModel() {
@@ -43,15 +45,17 @@ class AlertEditViewModel
             ): AlertEditViewModel
         }
 
-    private val isEditMode: Boolean = alertId != null
+        private val isEditMode: Boolean = alertId != null
 
         private val asset: Asset? = assetPreviewCache.get(coinId)
 
-    private val _uiState = MutableStateFlow(
-        AlertEditUiState(
-            editBtnResId = if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert,
-        )
-    )
+        private val _uiState =
+            MutableStateFlow(
+                AlertEditUiState(
+                    editBtnResId =
+                        if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert
+                )
+            )
         val uiState: StateFlow<AlertEditUiState> = _uiState.asStateFlow()
 
         private val _dismissEvent = Channel<Unit>(Channel.BUFFERED)
@@ -68,15 +72,15 @@ class AlertEditViewModel
         }
 
         fun onTypeSelected(type: AlertType) {
-            _uiState.update { it.copy(type = type).withConfirmEnabled() }
+            _uiState.update { it.copy(type = type).withSubmitEnabled() }
         }
 
         fun onDirectionSelected(direction: AlertDirection) {
-            _uiState.update { it.copy(direction = direction).withConfirmEnabled() }
+            _uiState.update { it.copy(direction = direction).withSubmitEnabled() }
         }
 
         fun onValueChanged(value: String) {
-            _uiState.update { it.copy(value = value).withConfirmEnabled() }
+            _uiState.update { it.copy(value = value).withSubmitEnabled() }
         }
 
         fun onConfirm() {
@@ -114,7 +118,7 @@ class AlertEditViewModel
                         .copy(
                             value = price?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
                             isValueInputEnabled = true
-                        ).withConfirmEnabled()
+                        ).withSubmitEnabled()
                 }
             }
         }
@@ -134,7 +138,7 @@ class AlertEditViewModel
                                         .stripTrailingZeros()
                                         .toPlainString(),
                                 isValueInputEnabled = true
-                            ).withConfirmEnabled()
+                            ).withSubmitEnabled()
                     }
                 } else {
                     _dismissEvent.send(Unit)
@@ -142,11 +146,5 @@ class AlertEditViewModel
             }
         }
 
-        private fun AlertEditUiState.withConfirmEnabled() =
-            copy(
-                isConfirmEnabled =
-                    type != null &&
-                        direction != null &&
-                        value.toDoubleOrNull() != null
-            )
+        private fun AlertEditUiState.withSubmitEnabled() = copy(isSubmitEnabled = validateAlert(type, direction, value))
     }

@@ -8,8 +8,8 @@ data class AlertEditUiState(
     val type: AlertType? = null,
     val direction: AlertDirection? = null,
     val value: String = "",
-    val isConfirmEnabled: Boolean = false,
+    val isSubmitEnabled: Boolean = false,
     val isLoading: Boolean = false,
     val isValueInputEnabled: Boolean = false,
-    @StringRes val editBtnResId: Int,
+    @StringRes val editBtnResId: Int
 )
