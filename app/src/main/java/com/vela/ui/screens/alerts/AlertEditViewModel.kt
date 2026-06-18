@@ -49,6 +49,9 @@ class AlertEditViewModel
 
         private val asset: Asset? = assetPreviewCache.get(coinId)
 
+        private var currentPrice: Double? = null
+        private var originalAlert: Alert? = null
+
         private val _uiState =
             MutableStateFlow(
                 AlertEditUiState(
@@ -112,11 +115,11 @@ class AlertEditViewModel
         private fun fetchInitialPrice() {
             viewModelScope.launch {
                 val result = getPricesOnly(listOf(coinId))
-                val price = (result as? DataResult.Success)?.data?.get(coinId)?.price
+                currentPrice = (result as? DataResult.Success)?.data?.get(coinId)?.price
                 _uiState.update {
                     it
                         .copy(
-                            value = price?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
+                            value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
                             isValueInputEnabled = true
                         ).withSubmitEnabled()
                 }
@@ -127,6 +130,9 @@ class AlertEditViewModel
             viewModelScope.launch {
                 val alert = alertId?.let { getAlertById(it) }
                 if (alert != null) {
+                    originalAlert = alert
+                    val priceResult = getPricesOnly(listOf(coinId))
+                    currentPrice = (priceResult as? DataResult.Success)?.data?.get(coinId)?.price
                     _uiState.update {
                         it
                             .copy(
@@ -146,5 +152,15 @@ class AlertEditViewModel
             }
         }
 
-        private fun AlertEditUiState.withSubmitEnabled() = copy(isSubmitEnabled = validateAlert(type, direction, value))
+        private fun AlertEditUiState.withSubmitEnabled() =
+            copy(
+                isSubmitEnabled =
+                    validateAlert(
+                        type = type,
+                        direction = direction,
+                        value = value,
+                        currentPrice = currentPrice,
+                        originalAlert = originalAlert
+                    )
+            )
     }
