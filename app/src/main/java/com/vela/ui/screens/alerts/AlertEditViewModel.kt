@@ -2,6 +2,7 @@ package com.vela.ui.screens.alerts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vela.R
 import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
@@ -42,11 +43,15 @@ class AlertEditViewModel
             ): AlertEditViewModel
         }
 
-        val isEditMode: Boolean = alertId != null
+    private val isEditMode: Boolean = alertId != null
 
         private val asset: Asset? = assetPreviewCache.get(coinId)
 
-        private val _uiState = MutableStateFlow(AlertEditUiState())
+    private val _uiState = MutableStateFlow(
+        AlertEditUiState(
+            editBtnResId = if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert,
+        )
+    )
         val uiState: StateFlow<AlertEditUiState> = _uiState.asStateFlow()
 
         private val _dismissEvent = Channel<Unit>(Channel.BUFFERED)

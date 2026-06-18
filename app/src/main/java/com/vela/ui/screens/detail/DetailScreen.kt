@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -263,6 +264,8 @@ private fun SuccessState(
                                 .padding(horizontal = 16.dp)
                                 .layoutId("chart"),
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (isAlertFormVisible) {
                         AlertEditRoute(

@@ -1,5 +1,6 @@
 package com.vela.ui.screens.alerts
 
+import androidx.annotation.StringRes
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 
@@ -9,5 +10,6 @@ data class AlertEditUiState(
     val value: String = "",
     val isConfirmEnabled: Boolean = false,
     val isLoading: Boolean = false,
-    val isValueInputEnabled: Boolean = false
+    val isValueInputEnabled: Boolean = false,
+    @StringRes val editBtnResId: Int,
 )
