@@ -1,5 +1,6 @@
 package com.vela.ui.screens.alerts
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +41,8 @@ internal data class AlertEditActions(
     val onTypeSelected: (AlertType) -> Unit,
     val onDirectionSelected: (AlertDirection) -> Unit,
     val onValueChanged: (String) -> Unit,
-    val onConfirm: () -> Unit
+    val onConfirm: () -> Unit,
+    val onCancel: () -> Unit
 )
 
 // ----- Route -----
@@ -67,7 +70,8 @@ fun AlertEditRoute(
             onTypeSelected = viewModel::onTypeSelected,
             onDirectionSelected = viewModel::onDirectionSelected,
             onValueChanged = viewModel::onValueChanged,
-            onConfirm = viewModel::onConfirm
+            onConfirm = viewModel::onConfirm,
+            onCancel = onDismiss
         )
 
     AlertEditContent(
@@ -118,10 +122,20 @@ internal fun AlertEditContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         ConfirmButton(
+            editBtnResId = uiState.editBtnResId,
             enabled = uiState.isConfirmEnabled,
             isLoading = uiState.isLoading,
             onClick = actions.onConfirm
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = actions.onCancel,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = stringResource(R.string.action_cancel))
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -214,6 +228,7 @@ private fun ValueInput(
 
 @Composable
 private fun ConfirmButton(
+    @StringRes editBtnResId: Int,
     enabled: Boolean,
     isLoading: Boolean,
     onClick: () -> Unit,
@@ -232,7 +247,7 @@ private fun ConfirmButton(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text(text = stringResource(R.string.action_create_alert))
+                Text(text = stringResource(editBtnResId))
             }
         }
     }
@@ -241,7 +256,10 @@ private fun ConfirmButton(
 // ----- Previews -----
 
 @Composable
-private fun AlertEditContentPreview(uiState: AlertEditUiState) {
+private fun AlertEditContentPreview(
+    uiState: AlertEditUiState,
+    isEditMode: Boolean = false
+) {
     VelaTheme {
         AlertEditContent(
             uiState = uiState,
@@ -250,7 +268,8 @@ private fun AlertEditContentPreview(uiState: AlertEditUiState) {
                     onTypeSelected = {},
                     onDirectionSelected = {},
                     onValueChanged = {},
-                    onConfirm = {}
+                    onConfirm = {},
+                    onCancel = {}
                 )
         )
     }
@@ -258,7 +277,11 @@ private fun AlertEditContentPreview(uiState: AlertEditUiState) {
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentEmptyPreview() = AlertEditContentPreview(uiState = AlertEditUiState())
+private fun AlertEditContentEmptyPreview() = AlertEditContentPreview(
+    uiState = AlertEditUiState(
+        editBtnResId = R.string.action_create_alert
+    )
+)
 
 @Preview(showBackground = true)
 @Composable
@@ -270,8 +293,25 @@ private fun AlertEditContentEnabledPreview() =
                 direction = AlertDirection.ABOVE,
                 value = "70000",
                 isConfirmEnabled = true,
+                editBtnResId = R.string.action_create_alert,
                 isValueInputEnabled = true
             )
+    )
+
+@Preview(showBackground = true)
+@Composable
+private fun AlertEditContentEditModePreview() =
+    AlertEditContentPreview(
+        uiState =
+            AlertEditUiState(
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                value = "70000",
+                isConfirmEnabled = true,
+                editBtnResId = R.string.action_edit_alert,
+                isValueInputEnabled = true
+            ),
+        isEditMode = true
     )
 
 @Preview(showBackground = true)
@@ -285,6 +325,7 @@ private fun AlertEditContentLoadingPreview() =
                 value = "70000",
                 isConfirmEnabled = true,
                 isLoading = true,
+                editBtnResId = R.string.action_create_alert,
                 isValueInputEnabled = true
             )
     )

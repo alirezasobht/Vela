@@ -8,6 +8,7 @@
     <string name="error_server">Server error, please try again</string>
     <string name="error_unknown">Something went wrong</string>
     <string name="action_retry">Try Again</string>
+    <string name="action_cancel">Cancel</string>
 
     <string name="nav_home">Home</string>
     <string name="nav_markets">Markets</string>
@@ -49,6 +50,7 @@
     <string name="hint_alert_price_value">Target price</string>
     <string name="hint_alert_percent_value">Target % change</string>
     <string name="action_create_alert">Add Alert</string>
+    <string name="action_edit_alert">Edit Alert</string>
     <string name="label_alerts_empty_title">No alerts yet</string>
     <string name="label_alerts_empty_subtitle">Tap the bell on any coin to set a price alert</string>
     <string name="label_alert_triggered">Triggered</string>
