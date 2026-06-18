@@ -14,6 +14,7 @@ import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.IsWatchlistedUseCase
+import com.vela.domain.usecase.ObserveAlertsByCoinIdUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePolling
@@ -33,6 +34,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,6 +51,7 @@ class DetailViewModel
         private val pricePolling: PricePollingController,
         private val isWatchlistedUseCase: IsWatchlistedUseCase,
         private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
+        private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
         savedStateHandle: SavedStateHandle
     ) : ViewModel(),
         PricePolling by pricePolling,
@@ -67,7 +71,6 @@ class DetailViewModel
 
         val isWatchlisted: StateFlow<Boolean>
 
-        // emits alertId (null = create, non-null = edit)
         private val _alertFormEvent = MutableSharedFlow<Long?>(extraBufferCapacity = 1)
         val alertFormEvent = _alertFormEvent.asSharedFlow()
 
@@ -131,7 +134,6 @@ class DetailViewModel
             _uiState.value = current.copy(selectedTab = tab)
         }
 
-        // null = create, non-null = edit
         fun openAlertEdit(id: Long? = null) {
             if (isChartFullScreen) return
             isAlertFormVisible = true
@@ -140,6 +142,14 @@ class DetailViewModel
 
         fun dismissAlertEdit() {
             isAlertFormVisible = false
+        }
+
+        private fun observeAlerts() {
+            observeAlertsByCoinId(coinId)
+                .onEach { alerts ->
+                    val current = _uiState.value as? DetailUiState.Success ?: return@onEach
+                    _uiState.value = current.copy(alerts = alerts)
+                }.launchIn(viewModelScope)
         }
 
         private fun loadDetail(isRefresh: Boolean = false) {
@@ -158,6 +168,7 @@ class DetailViewModel
                                 isChartLoading = true
                             )
                         loadOhlc(selectedRange)
+                        observeAlerts()
                     }
                     is DataResult.Error -> {
                         val current = _uiState.value

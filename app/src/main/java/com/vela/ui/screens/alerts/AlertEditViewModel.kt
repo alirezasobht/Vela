@@ -7,6 +7,8 @@ import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.EditAlertUseCase
+import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.AssetPreviewCache
 import dagger.assisted.Assisted
@@ -27,6 +29,8 @@ class AlertEditViewModel
     constructor(
         assetPreviewCache: AssetPreviewCache,
         private val getPricesOnly: GetPricesOnlyUseCase,
+        private val editAlert: EditAlertUseCase,
+        private val getAlertById: GetAlertByIdUseCase,
         @Assisted val coinId: String,
         @Assisted val alertId: Long?
     ) : ViewModel() {
@@ -38,7 +42,6 @@ class AlertEditViewModel
             ): AlertEditViewModel
         }
 
-        // null = create, non-null = edit
         val isEditMode: Boolean = alertId != null
 
         private val asset: Asset? = assetPreviewCache.get(coinId)
@@ -81,30 +84,17 @@ class AlertEditViewModel
             _uiState.update { it.copy(isLoading = true) }
 
             viewModelScope.launch {
-                if (isEditMode) {
-                    updateAlert(
-                        Alert(
-                            id = alertId!!,
-                            coinId = coinId,
-                            coinName = cachedAsset.name,
-                            coinSymbol = cachedAsset.symbol,
-                            type = type,
-                            direction = direction,
-                            targetValue = targetValue
-                        )
+                editAlert(
+                    Alert(
+                        id = alertId ?: 0L,
+                        coinId = coinId,
+                        coinName = cachedAsset.name,
+                        coinSymbol = cachedAsset.symbol,
+                        type = type,
+                        direction = direction,
+                        targetValue = targetValue
                     )
-                } else {
-                    createAlert(
-                        Alert(
-                            coinId = coinId,
-                            coinName = cachedAsset.name,
-                            coinSymbol = cachedAsset.symbol,
-                            type = type,
-                            direction = direction,
-                            targetValue = targetValue
-                        )
-                    )
-                }
+                )
                 _uiState.update { it.copy(isLoading = false) }
                 _dismissEvent.send(Unit)
             }
@@ -125,16 +115,26 @@ class AlertEditViewModel
         }
 
         private fun loadAlert() {
-            // TODO: load existing alert from Room in data layer step
-            _uiState.update { it.copy(isValueInputEnabled = true) }
-        }
-
-        private fun createAlert(alert: Alert) {
-            // TODO: wire to Room in data layer step
-        }
-
-        private fun updateAlert(alert: Alert) {
-            // TODO: wire to Room in data layer step
+            viewModelScope.launch {
+                val alert = alertId?.let { getAlertById(it) }
+                if (alert != null) {
+                    _uiState.update {
+                        it
+                            .copy(
+                                type = alert.type,
+                                direction = alert.direction,
+                                value =
+                                    alert.targetValue
+                                        .toBigDecimal()
+                                        .stripTrailingZeros()
+                                        .toPlainString(),
+                                isValueInputEnabled = true
+                            ).withConfirmEnabled()
+                    }
+                } else {
+                    _dismissEvent.send(Unit)
+                }
+            }
         }
 
         private fun AlertEditUiState.withConfirmEnabled() =
