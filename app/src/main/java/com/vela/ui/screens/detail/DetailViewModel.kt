@@ -154,8 +154,7 @@ class DetailViewModel
                 .onEach { alerts ->
                     val current = _uiState.value as? DetailUiState.Success ?: return@onEach
                     _uiState.value = current.copy(alerts = alerts)
-                }
-                .launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
         }
 
         private fun loadDetail(isRefresh: Boolean = false) {

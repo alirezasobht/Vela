@@ -51,11 +51,14 @@ internal data class AlertEditActions(
 fun AlertEditRoute(
     coinId: String,
     alertId: Long?,
+    formSessionId: Int,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel =
-        hiltViewModel<AlertEditViewModel, AlertEditViewModel.Factory> { factory ->
+        hiltViewModel<AlertEditViewModel, AlertEditViewModel.Factory>(
+            key = formSessionId.toString()
+        ) { factory ->
             factory.create(coinId = coinId, alertId = alertId)
         }
 
