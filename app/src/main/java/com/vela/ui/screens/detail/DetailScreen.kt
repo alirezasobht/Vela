@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -273,13 +272,12 @@ private fun SuccessState(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (isAlertFormVisible) {
-                        key(formSessionId) {
-                            AlertEditRoute(
-                                coinId = coinId,
-                                alertId = editingAlertId,
-                                onDismiss = detailActions.onDismissAlertEdit
-                            )
-                        }
+                        AlertEditRoute(
+                            coinId = coinId,
+                            alertId = editingAlertId,
+                            formSessionId = formSessionId,
+                            onDismiss = detailActions.onDismissAlertEdit
+                        )
                     } else {
                         DetailTabRow(
                             selectedTab = uiState.selectedTab,
