@@ -1,6 +1,7 @@
 package com.vela.ui.screens.detail
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
@@ -77,6 +78,9 @@ class DetailViewModel
         var isAlertFormVisible by mutableStateOf(false)
             private set
 
+        var formSessionId by mutableIntStateOf(0)
+            private set
+
         override fun getIds(): List<String> = listOf(coinId)
 
         override fun onPriceError(error: AppError?) {
@@ -136,6 +140,7 @@ class DetailViewModel
 
         fun openAlertEdit(id: Long? = null) {
             if (isChartFullScreen) return
+            formSessionId++
             isAlertFormVisible = true
             _alertFormEvent.tryEmit(id)
         }
@@ -149,7 +154,8 @@ class DetailViewModel
                 .onEach { alerts ->
                     val current = _uiState.value as? DetailUiState.Success ?: return@onEach
                     _uiState.value = current.copy(alerts = alerts)
-                }.launchIn(viewModelScope)
+                }
+                .launchIn(viewModelScope)
         }
 
         private fun loadDetail(isRefresh: Boolean = false) {
