@@ -18,6 +18,7 @@ import com.vela.domain.model.AppError
 import com.vela.domain.model.TimeRange
 import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.SharedTransitionWrapper
+import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toUiModel
 import kotlinx.coroutines.flow.flowOf
@@ -56,6 +57,7 @@ class DetailScreenTest {
     private fun setDetailScreen(
         uiState: DetailUiState,
         isChartFullScreen: Boolean = false,
+        isAlertFormVisible: Boolean = false,
         actions: DetailActions = defaultActions
     ) {
         composeRule.setContent {
@@ -66,7 +68,7 @@ class DetailScreenTest {
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = isChartFullScreen,
                     isWatchlisted = false,
-                    isAlertFormVisible = false,
+                    isAlertFormVisible = isAlertFormVisible,
                     formSessionId = 0,
                     editingAlertId = null,
                     coinId = "bitcoin",
@@ -76,6 +78,8 @@ class DetailScreenTest {
             }
         }
     }
+
+    // ----- existing tests -----
 
     @Test
     fun loadingState_showsNoContent() {
@@ -121,7 +125,6 @@ class DetailScreenTest {
     @Test
     fun successState_showsMarketCapRankBadge() {
         setDetailScreen(successState)
-        // FakeDetailDataSource.detail has marketCapRank = 27
         composeRule.onNodeWithText("#27").assertIsDisplayed()
     }
 
@@ -174,16 +177,47 @@ class DetailScreenTest {
             }
         }
 
-        // Open Fullscreen
         composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
         composeRule.onNodeWithContentDescription("Open fullscreen chart").performClick()
 
-        // Close Fullscreen
         composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsNotDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").performClick()
 
-        // Back to Initial
         composeRule.onNodeWithContentDescription("Open fullscreen chart").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Close fullscreen chart").assertIsNotDisplayed()
+    }
+
+    // ----- alerts tab tests -----
+
+    @Test
+    fun successState_showsStatsTabByDefault() {
+        setDetailScreen(successState)
+        composeRule.onNodeWithText("Stats").assertIsDisplayed()
+        composeRule.onNodeWithText("Alerts").assertIsDisplayed()
+        // Stats content visible by default
+        composeRule.onNodeWithText("Market Cap").assertIsDisplayed()
+    }
+
+    @Test
+    fun alertsTab_showsEmptyAlertsState() {
+        setDetailScreen(successState.copy(selectedTab = DetailTab.ALERTS))
+        composeRule.onNodeWithText("No alerts yet").assertIsDisplayed()
+    }
+
+    @Test
+    fun alertsTab_showsAddAlertButton() {
+        setDetailScreen(successState.copy(selectedTab = DetailTab.ALERTS))
+        composeRule.onNodeWithText("Add Alert").assertIsDisplayed()
+    }
+
+    @Test
+    fun alertsTab_tapAddAlert_invokesOnEditAlert() {
+        var tapped = false
+        setDetailScreen(
+            uiState = successState.copy(selectedTab = DetailTab.ALERTS),
+            actions = defaultActions.copy(onEditAlert = { tapped = true })
+        )
+        composeRule.onNodeWithText("Add Alert").performClick()
+        assert(tapped)
     }
 }
