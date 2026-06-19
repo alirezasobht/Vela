@@ -215,6 +215,18 @@ private fun ValueInput(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
+        prefix =
+            if (type == AlertType.PRICE) {
+                { Text(text = "$") }
+            } else {
+                null
+            },
+        suffix =
+            if (type == AlertType.PERCENT) {
+                { Text(text = "%") }
+            } else {
+                null
+            },
         placeholder = {
             Text(
                 text =
@@ -291,6 +303,21 @@ private fun AlertEditContentEnabledPreview() =
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
+                isSubmitEnabled = true,
+                editBtnResId = R.string.action_create_alert,
+                isValueInputEnabled = true
+            )
+    )
+
+@Preview(showBackground = true)
+@Composable
+private fun AlertEditContentPercentPreview() =
+    AlertEditContentPreview(
+        uiState =
+            AlertEditUiState(
+                type = AlertType.PERCENT,
+                direction = AlertDirection.ABOVE,
+                value = "5",
                 isSubmitEnabled = true,
                 editBtnResId = R.string.action_create_alert,
                 isValueInputEnabled = true
