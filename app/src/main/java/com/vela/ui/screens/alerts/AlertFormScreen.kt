@@ -37,7 +37,7 @@ import com.vela.ui.theme.VelaTheme
 
 // ----- Actions -----
 
-internal data class AlertEditActions(
+internal data class AlertFormActions(
     val onTypeSelected: (AlertType) -> Unit,
     val onDirectionSelected: (AlertDirection) -> Unit,
     val onValueChanged: (String) -> Unit,
@@ -48,7 +48,7 @@ internal data class AlertEditActions(
 // ----- Route -----
 
 @Composable
-fun AlertEditRoute(
+fun AlertFormRoute(
     coinId: String,
     alertId: Long?,
     formSessionId: Int,
@@ -56,7 +56,7 @@ fun AlertEditRoute(
     modifier: Modifier = Modifier
 ) {
     val viewModel =
-        hiltViewModel<AlertEditViewModel, AlertEditViewModel.Factory>(
+        hiltViewModel<AlertFormViewModel, AlertFormViewModel.Factory>(
             key = formSessionId.toString()
         ) { factory ->
             factory.create(coinId = coinId, alertId = alertId)
@@ -69,7 +69,7 @@ fun AlertEditRoute(
     }
 
     val actions =
-        AlertEditActions(
+        AlertFormActions(
             onTypeSelected = viewModel::onTypeSelected,
             onDirectionSelected = viewModel::onDirectionSelected,
             onValueChanged = viewModel::onValueChanged,
@@ -77,7 +77,7 @@ fun AlertEditRoute(
             onCancel = onDismiss
         )
 
-    AlertEditContent(
+    AlertFormContent(
         uiState = uiState,
         actions = actions,
         modifier = modifier
@@ -88,9 +88,9 @@ fun AlertEditRoute(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AlertEditContent(
-    uiState: AlertEditUiState,
-    actions: AlertEditActions,
+internal fun AlertFormContent(
+    uiState: AlertFormUiState,
+    actions: AlertFormActions,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -271,12 +271,12 @@ private fun ConfirmButton(
 // ----- Previews -----
 
 @Composable
-private fun AlertEditContentPreview(uiState: AlertEditUiState) {
+private fun AlertFormContentPreview(uiState: AlertFormUiState) {
     VelaTheme {
-        AlertEditContent(
+        AlertFormContent(
             uiState = uiState,
             actions =
-                AlertEditActions(
+                AlertFormActions(
                     onTypeSelected = {},
                     onDirectionSelected = {},
                     onValueChanged = {},
@@ -289,17 +289,17 @@ private fun AlertEditContentPreview(uiState: AlertEditUiState) {
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentEmptyPreview() =
-    AlertEditContentPreview(
-        uiState = AlertEditUiState(editBtnResId = R.string.action_create_alert)
+private fun AlertFormContentEmptyPreview() =
+    AlertFormContentPreview(
+        uiState = AlertFormUiState(editBtnResId = R.string.action_create_alert)
     )
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentEnabledPreview() =
-    AlertEditContentPreview(
+private fun AlertFormContentEnabledPreview() =
+    AlertFormContentPreview(
         uiState =
-            AlertEditUiState(
+            AlertFormUiState(
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
@@ -311,10 +311,10 @@ private fun AlertEditContentEnabledPreview() =
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentPercentPreview() =
-    AlertEditContentPreview(
+private fun AlertFormContentPercentPreview() =
+    AlertFormContentPreview(
         uiState =
-            AlertEditUiState(
+            AlertFormUiState(
                 type = AlertType.PERCENT,
                 direction = AlertDirection.ABOVE,
                 value = "5",
@@ -326,10 +326,10 @@ private fun AlertEditContentPercentPreview() =
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentEditModePreview() =
-    AlertEditContentPreview(
+private fun AlertFormContentEditModePreview() =
+    AlertFormContentPreview(
         uiState =
-            AlertEditUiState(
+            AlertFormUiState(
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",
@@ -341,10 +341,10 @@ private fun AlertEditContentEditModePreview() =
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertEditContentLoadingPreview() =
-    AlertEditContentPreview(
+private fun AlertFormContentLoadingPreview() =
+    AlertFormContentPreview(
         uiState =
-            AlertEditUiState(
+            AlertFormUiState(
                 type = AlertType.PRICE,
                 direction = AlertDirection.ABOVE,
                 value = "70000",

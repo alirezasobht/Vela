@@ -138,14 +138,14 @@ class DetailViewModel
             _uiState.value = current.copy(selectedTab = tab)
         }
 
-        fun openAlertEdit(id: Long? = null) {
+        fun openAlertForm(id: Long? = null) {
             if (isChartFullScreen) return
             formSessionId++
             isAlertFormVisible = true
             _alertFormEvent.tryEmit(id)
         }
 
-        fun dismissAlertEdit() {
+        fun dismissAlertForm() {
             isAlertFormVisible = false
         }
 

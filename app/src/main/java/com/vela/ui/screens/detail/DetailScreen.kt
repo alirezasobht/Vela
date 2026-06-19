@@ -48,7 +48,7 @@ import com.vela.ui.common.util.LandscapePreview
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.common.util.rememberFullScreenOrientationController
-import com.vela.ui.screens.alerts.AlertEditRoute
+import com.vela.ui.screens.alerts.AlertFormRoute
 import com.vela.ui.screens.detail.chart.OhlcChartSection
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailTab
@@ -68,7 +68,7 @@ internal data class DetailActions(
     val onToggleWatchlist: () -> Unit,
     val onTabSelected: (DetailTab) -> Unit,
     val onEditAlert: (Long?) -> Unit,
-    val onDismissAlertEdit: () -> Unit,
+    val onDismissAlertForm: () -> Unit,
     val observePrice: (String) -> Flow<SimplePriceUiModel?>
 )
 
@@ -98,8 +98,8 @@ fun DetailRoute(
             onToggleFullScreen = viewModel::toggleChartFullScreen,
             onToggleWatchlist = viewModel::toggleWatchlist,
             onTabSelected = viewModel::onTabSelected,
-            onEditAlert = viewModel::openAlertEdit,
-            onDismissAlertEdit = viewModel::dismissAlertEdit,
+            onEditAlert = viewModel::openAlertForm,
+            onDismissAlertForm = viewModel::dismissAlertForm,
             observePrice = viewModel::observePrice
         )
 
@@ -272,11 +272,11 @@ private fun SuccessState(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (isAlertFormVisible) {
-                        AlertEditRoute(
+                        AlertFormRoute(
                             coinId = coinId,
                             alertId = editingAlertId,
                             formSessionId = formSessionId,
-                            onDismiss = detailActions.onDismissAlertEdit
+                            onDismiss = detailActions.onDismissAlertForm
                         )
                     } else {
                         DetailTabRow(
@@ -328,7 +328,7 @@ private fun DetailScreenPreview(
                     onToggleWatchlist = {},
                     onTabSelected = {},
                     onEditAlert = {},
-                    onDismissAlertEdit = {},
+                    onDismissAlertForm = {},
                     observePrice = { flowOf(null) }
                 )
         )

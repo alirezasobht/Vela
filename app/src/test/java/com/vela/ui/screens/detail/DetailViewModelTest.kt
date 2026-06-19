@@ -362,7 +362,7 @@ class DetailViewModelTest {
     // ----- alerts -----
 
     @Test
-    fun `openAlertEdit increments formSessionId`() =
+    fun `openAlertForm increments formSessionId`() =
         runTest {
             coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
             coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
@@ -371,13 +371,13 @@ class DetailViewModelTest {
             dispatcher.scheduler.advanceUntilIdle()
             val before = vm.formSessionId
 
-            vm.openAlertEdit()
+            vm.openAlertForm()
 
             assertEquals(before + 1, vm.formSessionId)
         }
 
     @Test
-    fun `openAlertEdit sets isAlertFormVisible to true`() =
+    fun `openAlertForm sets isAlertFormVisible to true`() =
         runTest {
             coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
             coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
@@ -385,13 +385,13 @@ class DetailViewModelTest {
             val vm = createViewModel()
             dispatcher.scheduler.advanceUntilIdle()
 
-            vm.openAlertEdit()
+            vm.openAlertForm()
 
             assertEquals(true, vm.isAlertFormVisible)
         }
 
     @Test
-    fun `openAlertEdit emits alertFormEvent with correct id`() =
+    fun `openAlertForm emits alertFormEvent with correct id`() =
         runTest {
             coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
             coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
@@ -403,7 +403,7 @@ class DetailViewModelTest {
             val job = launch { vm.alertFormEvent.collect { emittedId = it } }
             dispatcher.scheduler.advanceUntilIdle()
 
-            vm.openAlertEdit(id = 42L)
+            vm.openAlertForm(id = 42L)
             dispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(42L, emittedId)
@@ -411,7 +411,7 @@ class DetailViewModelTest {
         }
 
     @Test
-    fun `openAlertEdit is no-op when isChartFullScreen is true`() =
+    fun `openAlertForm is no-op when isChartFullScreen is true`() =
         runTest {
             coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
             coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
@@ -421,14 +421,14 @@ class DetailViewModelTest {
 
             vm.toggleChartFullScreen()
             val sessionBefore = vm.formSessionId
-            vm.openAlertEdit()
+            vm.openAlertForm()
 
             assertEquals(false, vm.isAlertFormVisible)
             assertEquals(sessionBefore, vm.formSessionId)
         }
 
     @Test
-    fun `dismissAlertEdit sets isAlertFormVisible to false`() =
+    fun `dismissAlertForm sets isAlertFormVisible to false`() =
         runTest {
             coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
             coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
@@ -436,10 +436,10 @@ class DetailViewModelTest {
             val vm = createViewModel()
             dispatcher.scheduler.advanceUntilIdle()
 
-            vm.openAlertEdit()
+            vm.openAlertForm()
             assertEquals(true, vm.isAlertFormVisible)
 
-            vm.dismissAlertEdit()
+            vm.dismissAlertForm()
             assertEquals(false, vm.isAlertFormVisible)
         }
 
