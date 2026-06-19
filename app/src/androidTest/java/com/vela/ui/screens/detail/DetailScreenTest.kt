@@ -41,7 +41,7 @@ class DetailScreenTest {
             onToggleFullScreen = {},
             onTabSelected = {},
             onEditAlert = {},
-            onDismissAlertEdit = {},
+            onDismissAlertForm = {},
             onToggleWatchlist = {},
         )
 

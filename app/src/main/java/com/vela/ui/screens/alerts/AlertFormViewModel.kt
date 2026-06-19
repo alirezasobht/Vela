@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-@HiltViewModel(assistedFactory = AlertEditViewModel.Factory::class)
-class AlertEditViewModel
+@HiltViewModel(assistedFactory = AlertFormViewModel.Factory::class)
+class AlertFormViewModel
     @AssistedInject
     constructor(
         assetPreviewCache: AssetPreviewCache,
@@ -42,7 +42,7 @@ class AlertEditViewModel
             fun create(
                 coinId: String,
                 alertId: Long?
-            ): AlertEditViewModel
+            ): AlertFormViewModel
         }
 
         private val isEditMode: Boolean = alertId != null
@@ -54,12 +54,12 @@ class AlertEditViewModel
 
         private val _uiState =
             MutableStateFlow(
-                AlertEditUiState(
+                AlertFormUiState(
                     editBtnResId =
                         if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert
                 )
             )
-        val uiState: StateFlow<AlertEditUiState> = _uiState.asStateFlow()
+        val uiState: StateFlow<AlertFormUiState> = _uiState.asStateFlow()
 
         private val _dismissEvent = Channel<Unit>(Channel.BUFFERED)
         val dismissEvent = _dismissEvent.receiveAsFlow()
@@ -152,7 +152,7 @@ class AlertEditViewModel
             }
         }
 
-        private fun AlertEditUiState.withSubmitEnabled() =
+        private fun AlertFormUiState.withSubmitEnabled() =
             copy(
                 isSubmitEnabled =
                     validateAlert(

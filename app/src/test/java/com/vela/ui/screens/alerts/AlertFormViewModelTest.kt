@@ -29,7 +29,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AlertEditViewModelTest {
+class AlertFormViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private val assetPreviewCache: AssetPreviewCache = mockk()
@@ -50,8 +50,8 @@ class AlertEditViewModelTest {
             sparkline = null
         )
 
-    private fun createViewModel(alertId: Long? = null): AlertEditViewModel =
-        AlertEditViewModel(
+    private fun createViewModel(alertId: Long? = null): AlertFormViewModel =
+        AlertFormViewModel(
             assetPreviewCache = assetPreviewCache,
             getPricesOnly = getPricesOnly,
             editAlert = editAlert,
