@@ -11,6 +11,7 @@ import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.IsWatchlistedUseCase
+import com.vela.domain.usecase.ObserveAlertsByCoinIdUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
@@ -46,6 +47,7 @@ class DetailViewModelTest {
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
     private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk()
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
+    private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase = mockk()
 
     private fun createViewModel(): DetailViewModel {
         val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
@@ -57,6 +59,7 @@ class DetailViewModelTest {
             pricePolling = PricePollingController(config),
             isWatchlistedUseCase = isWatchlistedUseCase,
             toggleWatchlistUseCase = toggleWatchlistUseCase,
+            observeAlertsByCoinId = observeAlertsByCoinId,
             savedStateHandle = handle
         )
     }
@@ -66,6 +69,7 @@ class DetailViewModelTest {
         Dispatchers.setMain(dispatcher)
         every { assetPreviewCache.get(any()) } returns null
         every { isWatchlistedUseCase.invoke(any()) } returns flowOf(false)
+        every { observeAlertsByCoinId.invoke(any()) } returns flowOf(emptyList())
     }
 
     @After

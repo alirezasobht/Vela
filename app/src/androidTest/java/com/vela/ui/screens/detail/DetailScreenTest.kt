@@ -36,10 +36,14 @@ class DetailScreenTest {
             onBack = {},
             onRetry = {},
             onRangeSelected = {},
-            onToggleFullScreen = {},
             observePrice = { flowOf(null) },
-            onToggleWatchlist = {}
+            onToggleFullScreen = {},
+            onTabSelected = {},
+            onEditAlert = {},
+            onDismissAlertEdit = {},
+            onToggleWatchlist = {},
         )
+
     private val testOrientationController = FullScreenOrientationController { {} }
 
     private val successState =
@@ -62,6 +66,10 @@ class DetailScreenTest {
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = isChartFullScreen,
                     isWatchlisted = false,
+                    isAlertFormVisible = false,
+                    formSessionId = 0,
+                    editingAlertId = null,
+                    coinId = "bitcoin",
                     detailActions = actions,
                     orientationController = testOrientationController
                 )
@@ -153,6 +161,10 @@ class DetailScreenTest {
                     selectedRange = TimeRange.ONE_DAY,
                     isChartFullScreen = currentIsFullScreen,
                     isWatchlisted = false,
+                    isAlertFormVisible = false,
+                    formSessionId = 0,
+                    editingAlertId = null,
+                    coinId = "bitcoin",
                     detailActions =
                         defaultActions.copy(
                             onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
