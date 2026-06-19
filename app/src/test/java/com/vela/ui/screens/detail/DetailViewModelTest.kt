@@ -1,6 +1,9 @@
 package com.vela.ui.screens.detail
 
 import androidx.lifecycle.SavedStateHandle
+import com.vela.domain.model.Alert
+import com.vela.domain.model.AlertDirection
+import com.vela.domain.model.AlertType
 import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.CoinDetail
@@ -23,6 +26,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -353,6 +357,120 @@ class DetailViewModelTest {
             vm.onRangeSelected(TimeRange.ONE_YEAR)
 
             assertEquals(TimeRange.ONE_YEAR, vm.selectedRange)
+        }
+
+    // ----- alerts -----
+
+    @Test
+    fun `openAlertEdit increments formSessionId`() =
+        runTest {
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+            val before = vm.formSessionId
+
+            vm.openAlertEdit()
+
+            assertEquals(before + 1, vm.formSessionId)
+        }
+
+    @Test
+    fun `openAlertEdit sets isAlertFormVisible to true`() =
+        runTest {
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            vm.openAlertEdit()
+
+            assertEquals(true, vm.isAlertFormVisible)
+        }
+
+    @Test
+    fun `openAlertEdit emits alertFormEvent with correct id`() =
+        runTest {
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            var emittedId: Long? = -99L
+            val job = launch { vm.alertFormEvent.collect { emittedId = it } }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            vm.openAlertEdit(id = 42L)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(42L, emittedId)
+            job.cancel()
+        }
+
+    @Test
+    fun `openAlertEdit is no-op when isChartFullScreen is true`() =
+        runTest {
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            vm.toggleChartFullScreen()
+            val sessionBefore = vm.formSessionId
+            vm.openAlertEdit()
+
+            assertEquals(false, vm.isAlertFormVisible)
+            assertEquals(sessionBefore, vm.formSessionId)
+        }
+
+    @Test
+    fun `dismissAlertEdit sets isAlertFormVisible to false`() =
+        runTest {
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            vm.openAlertEdit()
+            assertEquals(true, vm.isAlertFormVisible)
+
+            vm.dismissAlertEdit()
+            assertEquals(false, vm.isAlertFormVisible)
+        }
+
+    @Test
+    fun `observeAlerts updates Success state alerts on change`() =
+        runTest {
+            val alertsFlow = MutableStateFlow<List<Alert>>(emptyList())
+            every { observeAlertsByCoinId.invoke(any()) } returns alertsFlow
+
+            coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+            coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+            val vm = createViewModel()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(emptyList<Alert>(), (vm.uiState.value as DetailUiState.Success).alerts)
+
+            val alert =
+                Alert(
+                    id = 1L,
+                    coinId = "bitcoin",
+                    coinName = "Bitcoin",
+                    coinSymbol = "btc",
+                    type = AlertType.PRICE,
+                    direction = AlertDirection.ABOVE,
+                    targetValue = 80_000.0
+                )
+            alertsFlow.value = listOf(alert)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(alert), (vm.uiState.value as DetailUiState.Success).alerts)
         }
 
     // ----- helpers -----
