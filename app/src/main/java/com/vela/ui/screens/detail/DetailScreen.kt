@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -110,6 +111,7 @@ fun DetailRoute(
         isChartFullScreen = viewModel.isChartFullScreen,
         isWatchlisted = isWatchlisted,
         isAlertFormVisible = viewModel.isAlertFormVisible,
+        formSessionId = viewModel.formSessionId,
         editingAlertId = editingAlertId,
         coinId = viewModel.coinId,
         detailActions = detailActions
@@ -124,6 +126,7 @@ internal fun DetailScreen(
     isChartFullScreen: Boolean,
     isWatchlisted: Boolean,
     isAlertFormVisible: Boolean,
+    formSessionId: Int,
     editingAlertId: Long?,
     coinId: String,
     detailActions: DetailActions,
@@ -158,6 +161,7 @@ internal fun DetailScreen(
                     selectedRange = selectedRange,
                     isChartFullScreen = isChartFullScreen,
                     isAlertFormVisible = isAlertFormVisible,
+                    formSessionId = formSessionId,
                     editingAlertId = editingAlertId,
                     coinId = coinId,
                     detailActions = detailActions,
@@ -174,6 +178,7 @@ private fun SuccessState(
     selectedRange: TimeRange,
     isChartFullScreen: Boolean,
     isAlertFormVisible: Boolean,
+    formSessionId: Int,
     editingAlertId: Long?,
     coinId: String,
     detailActions: DetailActions,
@@ -268,11 +273,13 @@ private fun SuccessState(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (isAlertFormVisible) {
-                        AlertEditRoute(
-                            coinId = coinId,
-                            alertId = editingAlertId,
-                            onDismiss = detailActions.onDismissAlertEdit
-                        )
+                        key(formSessionId) {
+                            AlertEditRoute(
+                                coinId = coinId,
+                                alertId = editingAlertId,
+                                onDismiss = detailActions.onDismissAlertEdit
+                            )
+                        }
                     } else {
                         DetailTabRow(
                             selectedTab = uiState.selectedTab,
@@ -311,6 +318,7 @@ private fun DetailScreenPreview(
             isChartFullScreen = isChartFullScreen,
             isWatchlisted = isWatchlisted,
             isAlertFormVisible = isAlertFormVisible,
+            formSessionId = 0,
             editingAlertId = null,
             coinId = "bitcoin",
             detailActions =
