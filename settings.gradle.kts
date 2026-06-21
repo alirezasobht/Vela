@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Vela"
 include(":app")
+include(":ktlint-rules")
