@@ -2,7 +2,6 @@
     <string name="app_name">Vela</string>
     <string name="title_markets">Markets</string>
     <string name="title_watchlist">Watchlist</string>
-    <string name="title_alerts">Alerts</string>
 
     <string name="error_no_internet">No internet connection</string>
     <string name="error_server">Server error, please try again</string>
@@ -21,7 +20,6 @@
     <string name="label_search_empty">Start typing to search</string>
     <string name="label_no_results">No results for "%s"</string>
 
-    <string name="label_explore">Explore</string>
     <string name="title_category">Category</string>
     <string name="title_sort_by">Sort by</string>
     <string name="label_sort_market_cap">Market Cap</string>
@@ -29,7 +27,6 @@
 
     <string name="cd_back">Back</string>
     <string name="cd_watchlist">Watchlist</string>
-    <string name="cd_alert">Set alert</string>
     <string name="label_market_cap">Market Cap</string>
     <string name="label_24h_volume">24h Volume</string>
     <string name="label_circulating_supply">Circulating Supply</string>
@@ -38,21 +35,18 @@
     <string name="label_no_chart_data">No chart data available</string>
     <string name="cd_fullscreen_chart_open">Open fullscreen chart</string>
     <string name="cd_fullscreen_chart_close">Close fullscreen chart</string>
-    <string name="cd_exit_fullscreen_chart">Exit fullscreen chart</string>
     <string name="label_watchlist_empty_title">No coins yet</string>
     <string name="label_watchlist_empty_subtitle">Tap the star on any coin to add it here</string>
 
-    <string name="title_create_alert">Create Alert</string>
     <string name="label_alert_type_price">Price</string>
-    <string name="label_alert_type_percent">% Change</string>
+    <string name="label_alert_type_percent">%% Change</string>
     <string name="label_alert_direction_above">Above</string>
     <string name="label_alert_direction_below">Below</string>
     <string name="hint_alert_price_value">Target price</string>
-    <string name="hint_alert_percent_value">Target % change</string>
+    <string name="hint_alert_percent_value">Target %% change</string>
     <string name="action_create_alert">Add Alert</string>
     <string name="action_edit_alert">Edit Alert</string>
     <string name="label_alerts_empty_title">No alerts yet</string>
-    <string name="label_alerts_empty_subtitle">Tap the bell on any coin to set a price alert</string>
     <string name="label_alert_triggered">Triggered</string>
     <string name="label_tab_stats">Stats</string>
     <string name="label_tab_alerts">Alerts</string>

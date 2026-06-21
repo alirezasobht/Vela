@@ -5,9 +5,11 @@ import com.vela.domain.model.DataResult
 import com.vela.domain.repository.AssetRepository
 import com.vela.domain.repository.WatchlistRepository
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.transformLatest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GetWatchlistAssetsUseCase @Inject constructor(
     private val watchlistRepository: WatchlistRepository,
     private val assetRepository: AssetRepository

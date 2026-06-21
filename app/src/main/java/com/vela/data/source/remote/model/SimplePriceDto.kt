@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class SimplePriceDto(
-    @Json(name = "usd") val usd: Double?,
-    @Json(name = "usd_24h_change") val usdChange: Double?,
-    @Json(name = "usd_market_cap") val usdMarketCap: Double?,
-    @Json(name = "usd_24h_vol") val usdVolume: Double?
+    @param:Json(name = "usd") val usd: Double?,
+    @param:Json(name = "usd_24h_change") val usdChange: Double?,
+    @param:Json(name = "usd_market_cap") val usdMarketCap: Double?,
+    @param:Json(name = "usd_24h_vol") val usdVolume: Double?
 )

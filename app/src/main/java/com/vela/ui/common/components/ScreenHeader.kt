@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
@@ -118,7 +118,7 @@ private fun ScreenHeaderWithRow2ControlsPreview() {
                     onClick = {},
                     label = { Text("Market Cap") },
                     leadingIcon = {
-                        Icon(Icons.Default.Sort, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null)
                     }
                 )
             }
@@ -150,7 +150,7 @@ private fun ScreenHeaderBothRowsPreview() {
                     onClick = {},
                     label = { Text("Market Cap") },
                     leadingIcon = {
-                        Icon(Icons.Default.Sort, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null)
                     }
                 )
             }

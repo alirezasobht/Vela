@@ -22,11 +22,11 @@ import kotlinx.coroutines.flow.flowOf
 @Composable
 fun PriceCell(
     id: String,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
+    modifier: Modifier = Modifier,
     initialPrice: String = "",
     initialPriceChange: String = "",
     initialColor: Color = sparklineBullColor,
-    observePrice: (String) -> Flow<SimplePriceUiModel?>,
-    modifier: Modifier = Modifier
 ) {
     val priceFlow = remember(id) { observePrice(id) }
     val simplePrice by priceFlow.collectAsStateWithLifecycle(initialValue = null)

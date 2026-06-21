@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.flowOf
 fun AssetLazyList(
     assets: List<AssetUiModel>,
     actions: AssetListItemActions,
-    showWatchlistButton: Boolean = true,
     modifier: Modifier = Modifier,
+    showWatchlistButton: Boolean = true,
 ) {
     LazyColumn(modifier = modifier) {
         itemsIndexed(

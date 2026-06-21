@@ -51,8 +51,8 @@ import kotlinx.coroutines.flow.flowOf
 fun AssetListItem(
     asset: AssetUiModel,
     actions: AssetListItemActions,
-    showWatchlistButton: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showWatchlistButton: Boolean = true
 ) {
     val sharedTransitionScope = LocalSharedTransitionScope.current ?: return
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current

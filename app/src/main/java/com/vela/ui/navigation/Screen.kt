@@ -2,11 +2,11 @@ package com.vela.ui.navigation
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.vela.R
 import com.vela.ui.common.util.TestTags
@@ -23,7 +23,7 @@ sealed interface Screen {
 
 @Serializable
 sealed class DashboardTab(
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     @Transient val icon: ImageVector = Icons.Default.Home,
     @Transient val testTag: String = TestTags.navTab("home")
 ) {
@@ -36,7 +36,7 @@ sealed class DashboardTab(
     data object Home : DashboardTab(R.string.nav_home, Icons.Default.Home, TestTags.navTab("home"))
 
     @Serializable
-    data object Markets : DashboardTab(R.string.nav_markets, Icons.Default.TrendingUp, TestTags.navTab("markets"))
+    data object Markets : DashboardTab(R.string.nav_markets, Icons.AutoMirrored.Filled.TrendingUp, TestTags.navTab("markets"))
 
     @Serializable
     data object Watchlist : DashboardTab(R.string.nav_watchlist, Icons.Default.Star, TestTags.navTab("watchlist"))
