@@ -10,16 +10,13 @@ internal fun interface FullScreenOrientationController {
     fun lockLandscape(): () -> Unit
 }
 
-private class ActivityFullScreenOrientationController(
-    private val activity: Activity?
-) : FullScreenOrientationController {
+private class ActivityFullScreenOrientationController(private val activity: Activity?) : FullScreenOrientationController {
     override fun lockLandscape(): () -> Unit {
         val originalOrientation = activity?.requestedOrientation
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
         return {
-            activity?.requestedOrientation =
-                originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.requestedOrientation = originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 }

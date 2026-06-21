@@ -44,14 +44,10 @@ interface CoinGeckoApi {
     ): List<List<Double>>
 
     @GET("search")
-    suspend fun search(
-        @Query("query") query: String
-    ): SearchResponseDto
+    suspend fun search(@Query("query") query: String): SearchResponseDto
 
     @GET("coins/categories")
-    suspend fun getCategories(
-        @Query("order") order: String = "market_cap_desc"
-    ): List<CategoryDto>
+    suspend fun getCategories(@Query("order") order: String = "market_cap_desc"): List<CategoryDto>
 
     @GET("simple/price")
     suspend fun getSimplePrices(

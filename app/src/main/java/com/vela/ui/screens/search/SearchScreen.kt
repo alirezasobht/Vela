@@ -66,13 +66,12 @@ fun SearchRoute(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val searchActions =
-        SearchActions(
-            onQueryChange = viewModel::onQueryChange,
-            onClearQuery = viewModel::onClearQuery,
-            onRetry = viewModel::retry,
-            assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
-        )
+    val searchActions = SearchActions(
+        onQueryChange = viewModel::onQueryChange,
+        onClearQuery = viewModel::onClearQuery,
+        onRetry = viewModel::retry,
+        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
+    )
 
     SearchScreen(
         uiState = uiState,
@@ -90,18 +89,16 @@ internal fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier =
-            modifier
-                .fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
     ) {
         SearchBar(
             query = query,
             onQueryChange = searchActions.onQueryChange,
             onClearQuery = searchActions.onClearQuery,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
         when (uiState) {
@@ -156,21 +153,19 @@ private fun SearchBar(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions =
-            KeyboardActions(
-                onSearch = {
-                    keyboardController?.hide()
-                }
-            ),
+        keyboardActions = KeyboardActions(
+            onSearch = {
+                keyboardController?.hide()
+            }
+        ),
         shape = MaterialTheme.shapes.extraLarge,
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
-            )
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent
+        )
     )
 }
 
@@ -196,30 +191,28 @@ private fun ResultsState(
 ) {
     // hide the keyboard if scroll
     val keyboardController = LocalSoftwareKeyboardController.current
-    val nestedScrollConnection =
-        remember {
-            object : NestedScrollConnection {
-                override fun onPreScroll(
-                    available: Offset,
-                    source: NestedScrollSource
-                ): Offset {
-                    if (source == NestedScrollSource.UserInput && (available.y < -5 || available.y > 5)) {
-                        keyboardController?.hide()
-                    }
-                    return Offset.Zero
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (source == NestedScrollSource.UserInput && (available.y < -5 || available.y > 5)) {
+                    keyboardController?.hide()
                 }
+                return Offset.Zero
             }
         }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         NonBlockingErrorBanner(error = uiState.nonBlockingError)
         AssetLazyList(
             assets = uiState.assets,
             actions = searchActions.assetListItemActions,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection) // Attach the spy here
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection) // Attach the spy here
         )
     }
 }
@@ -252,19 +245,17 @@ private fun SearchScreenPreview(
         SearchScreen(
             uiState = uiState,
             query = query,
-            searchActions =
-                SearchActions(
-                    onQueryChange = {},
-                    onClearQuery = {},
-                    onRetry = {},
-                    assetListItemActions =
-                        AssetListItemActions(
-                            observePrice = { flowOf(null) },
-                            observeIsWatchlisted = { flowOf(false) },
-                            onToggleWatchlist = {},
-                            onClick = {}
-                        )
+            searchActions = SearchActions(
+                onQueryChange = {},
+                onClearQuery = {},
+                onRetry = {},
+                assetListItemActions = AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
                 )
+            )
         )
     }
 }
@@ -289,10 +280,9 @@ private fun SearchScreenLoadingPreview() {
 @Composable
 private fun SearchScreenResultsPreview() {
     SearchScreenPreview(
-        uiState =
-            SearchUiState.Results(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() }
-            ),
+        uiState = SearchUiState.Results(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() }
+        ),
         query = "bitcoin"
     )
 }
@@ -301,11 +291,10 @@ private fun SearchScreenResultsPreview() {
 @Composable
 private fun SearchScreenResultsWithErrorPreview() {
     SearchScreenPreview(
-        uiState =
-            SearchUiState.Results(
-                assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-                nonBlockingError = AppError.NoInternet
-            ),
+        uiState = SearchUiState.Results(
+            assets = FakeAssetDataSource.assets.map { it.toUiModel() },
+            nonBlockingError = AppError.NoInternet
+        ),
         query = "bitcoin"
     )
 }

@@ -5,10 +5,6 @@ import com.vela.domain.model.SimplePrice
 import com.vela.domain.repository.PriceRepository
 import javax.inject.Inject
 
-class GetPricesAndMarketDataUseCase
-    @Inject
-    constructor(
-        private val repository: PriceRepository
-    ) : GetPricesUseCase {
-        override suspend operator fun invoke(ids: List<String>): DataResult<Map<String, SimplePrice>> = repository.getPrices(ids, includeMarketData = true)
-    }
+class GetPricesAndMarketDataUseCase @Inject constructor(private val repository: PriceRepository) : GetPricesUseCase {
+    override suspend operator fun invoke(ids: List<String>): DataResult<Map<String, SimplePrice>> = repository.getPrices(ids, includeMarketData = true)
+}

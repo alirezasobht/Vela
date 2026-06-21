@@ -53,10 +53,9 @@ internal fun AlertsSection(
         }
         Button(
             onClick = { onEditAlert(null) },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
@@ -78,16 +77,14 @@ private fun AlertRow(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
         Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -108,12 +105,12 @@ private fun AlertRow(
                     text = stringResource(R.string.label_alert_triggered),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp)
-                            ).padding(horizontal = 6.dp, vertical = 2.dp)
+                    modifier = Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
         }
@@ -129,29 +126,28 @@ private fun AlertRow(
 private fun AlertsSectionPreview() {
     VelaTheme {
         AlertsSection(
-            alerts =
-                listOf(
-                    Alert(
-                        id = 1,
-                        coinId = "bitcoin",
-                        coinName = "Bitcoin",
-                        coinSymbol = "btc",
-                        type = AlertType.PRICE,
-                        direction = AlertDirection.ABOVE,
-                        targetValue = 70000.0,
-                        isTriggered = false
-                    ),
-                    Alert(
-                        id = 2,
-                        coinId = "bitcoin",
-                        coinName = "Bitcoin",
-                        coinSymbol = "btc",
-                        type = AlertType.PERCENT,
-                        direction = AlertDirection.BELOW,
-                        targetValue = 5.0,
-                        isTriggered = true
-                    )
+            alerts = listOf(
+                Alert(
+                    id = 1,
+                    coinId = "bitcoin",
+                    coinName = "Bitcoin",
+                    coinSymbol = "btc",
+                    type = AlertType.PRICE,
+                    direction = AlertDirection.ABOVE,
+                    targetValue = 70000.0,
+                    isTriggered = false
                 ),
+                Alert(
+                    id = 2,
+                    coinId = "bitcoin",
+                    coinName = "Bitcoin",
+                    coinSymbol = "btc",
+                    type = AlertType.PERCENT,
+                    direction = AlertDirection.BELOW,
+                    targetValue = 5.0,
+                    isTriggered = true
+                )
+            ),
             onEditAlert = {}
         )
     }

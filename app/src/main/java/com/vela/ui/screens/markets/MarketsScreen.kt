@@ -87,16 +87,15 @@ fun MarketsRoute(
         viewModel.onLoadStateChanged(pagingItems.loadState)
     }
 
-    val marketAction =
-        MarketActions(
-            onCategorySelected = viewModel::onCategorySelected,
-            onSortSelected = viewModel::onSortSelected,
-            onRetry = {
-                pagingItems.retry()
-                viewModel.retry()
-            },
-            assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
-        )
+    val marketAction = MarketActions(
+        onCategorySelected = viewModel::onCategorySelected,
+        onSortSelected = viewModel::onSortSelected,
+        onRetry = {
+            pagingItems.retry()
+            viewModel.retry()
+        },
+        assetListItemActions = viewModel.assetListItemActions(onClick = navigateToDetail)
+    )
 
     MarketsScreen(
         uiState = uiState,
@@ -153,6 +152,7 @@ internal fun MarketsScreen(
 
         when (uiState) {
             is MarketsUiState.Loading -> FullScreenLoader(modifier = Modifier.weight(1f))
+
             is MarketsUiState.Error ->
                 FullScreenError(
                     appError = uiState.appError,
@@ -244,10 +244,9 @@ private fun PagedAssetList(
         if (isLoadingMore) {
             item {
                 Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -315,23 +314,21 @@ private fun BottomSheetItem(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color =
-                if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
         )
         if (selected) {
             Icon(
@@ -348,11 +345,10 @@ private fun BottomSheetItem(
 }
 
 @Composable
-private fun MarketSort.toDisplayName(): String =
-    when (this) {
-        MarketSort.MARKET_CAP -> stringResource(R.string.label_sort_market_cap)
-        MarketSort.VOLUME -> stringResource(R.string.label_sort_volume)
-    }
+private fun MarketSort.toDisplayName(): String = when (this) {
+    MarketSort.MARKET_CAP -> stringResource(R.string.label_sort_market_cap)
+    MarketSort.VOLUME -> stringResource(R.string.label_sort_volume)
+}
 
 // ---- Previews ----
 
@@ -361,10 +357,9 @@ private fun MarketsScreenPreview(
     uiState: MarketsUiState,
     categories: List<MarketCategory> = FakeCategoryDataSource.categories
 ) {
-    val pagingItems =
-        remember {
-            MutableStateFlow(PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() }))
-        }.collectAsLazyPagingItems()
+    val pagingItems = remember {
+        MutableStateFlow(PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() }))
+    }.collectAsLazyPagingItems()
 
     SharedTransitionWrapper {
         MarketsScreen(
@@ -374,19 +369,17 @@ private fun MarketsScreenPreview(
             selectedCategory = MarketCategory.ALL,
             selectedSort = MarketSort.MARKET_CAP,
             sorts = MarketSort.entries,
-            marketAction =
-                MarketActions(
-                    onCategorySelected = {},
-                    onSortSelected = {},
-                    onRetry = {},
-                    assetListItemActions =
-                        AssetListItemActions(
-                            observePrice = { flowOf(null) },
-                            observeIsWatchlisted = { flowOf(false) },
-                            onToggleWatchlist = {},
-                            onClick = {}
-                        )
+            marketAction = MarketActions(
+                onCategorySelected = {},
+                onSortSelected = {},
+                onRetry = {},
+                assetListItemActions = AssetListItemActions(
+                    observePrice = { flowOf(null) },
+                    observeIsWatchlisted = { flowOf(false) },
+                    onToggleWatchlist = {},
+                    onClick = {}
                 )
+            )
         )
     }
 }

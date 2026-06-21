@@ -52,10 +52,9 @@ internal fun HeaderSection(
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 8.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -70,20 +69,19 @@ internal fun HeaderSection(
             AsyncImage(
                 model = image,
                 contentDescription = name,
-                modifier =
-                    Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (animatedVisibilityScope != null) {
-                                Modifier.sharedElement(
-                                    rememberSharedContentState(key = "coin-image-$coinId"),
-                                    animatedVisibilityScope = animatedVisibilityScope
-                                )
-                            } else {
-                                Modifier
-                            }
-                        ),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (animatedVisibilityScope != null) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-image-$coinId"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
                 placeholder = rememberVectorPainter(Icons.Default.Paid),
                 error = rememberVectorPainter(Icons.Default.MonetizationOn)
             )
@@ -95,15 +93,14 @@ internal fun HeaderSection(
                     text = name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    modifier =
-                        if (animatedVisibilityScope != null) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "coin-name-$coinId"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                        } else {
-                            Modifier
-                        }
+                    modifier = if (animatedVisibilityScope != null) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "coin-name-$coinId"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    } else {
+                        Modifier
+                    }
                 )
             }
             Row(
@@ -120,12 +117,12 @@ internal fun HeaderSection(
                         text = "#$it",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier =
-                            Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(4.dp)
-                                ).padding(horizontal = 4.dp, vertical = 1.dp)
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
                     )
                 }
             }
@@ -135,12 +132,11 @@ internal fun HeaderSection(
             Icon(
                 imageVector = if (isWatchlisted) Icons.Default.Star else Icons.Default.StarOutline,
                 contentDescription = stringResource(R.string.cd_watchlist),
-                tint =
-                    if (isWatchlisted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                tint = if (isWatchlisted) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
     }

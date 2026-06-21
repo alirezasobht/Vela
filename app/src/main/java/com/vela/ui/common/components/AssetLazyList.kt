@@ -49,13 +49,12 @@ private fun AssetLazyListPreview() {
     SharedTransitionWrapper {
         AssetLazyList(
             assets = FakeAssetDataSource.assets.map { it.toUiModel() },
-            actions =
-                AssetListItemActions(
-                    observePrice = { flowOf(null) },
-                    observeIsWatchlisted = { flowOf(false) },
-                    onToggleWatchlist = {},
-                    onClick = {}
-                )
+            actions = AssetListItemActions(
+                observePrice = { flowOf(null) },
+                observeIsWatchlisted = { flowOf(false) },
+                onToggleWatchlist = {},
+                onClick = {}
+            )
         )
     }
 }

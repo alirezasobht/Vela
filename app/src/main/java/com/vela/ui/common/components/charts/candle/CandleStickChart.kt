@@ -80,29 +80,25 @@ fun CandleStickChart(
         }
     }
 
-    val markerValueFormatter =
-        remember(timestamps, timeRange) {
-            ohlcMarkerValueFormatter(timestamps)
-        }
+    val markerValueFormatter = remember(timestamps, timeRange) {
+        ohlcMarkerValueFormatter(timestamps)
+    }
 
     CartesianChartHost(
         rememberCartesianChart(
             rememberCandlestickCartesianLayer(rangeProvider = RangeProvider),
-            startAxis =
-                VerticalAxis.rememberStart(
-                    valueFormatter = StartAxisValueFormatter,
-                    itemPlacer = VerticalAxis.ItemPlacer.count({ verticalItemsCount })
-                ),
-            bottomAxis =
-                HorizontalAxis.rememberBottom(
-                    guideline = null,
-                    valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
-                ),
-            marker =
-                rememberOhlcChartMarker(
-                    valueFormatter = markerValueFormatter,
-                    showIndicator = false
-                ),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = StartAxisValueFormatter,
+                itemPlacer = VerticalAxis.ItemPlacer.count({ verticalItemsCount })
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                guideline = null,
+                valueFormatter = remember(timeRange) { bottomAxisValueFormatter(timeRange) }
+            ),
+            marker = rememberOhlcChartMarker(
+                valueFormatter = markerValueFormatter,
+                showIndicator = false
+            ),
         ),
         modelProducer = modelProducer,
         modifier = modifier,
@@ -112,61 +108,53 @@ fun CandleStickChart(
 
 @Composable
 private fun rememberOhlcChartMarker(
-    valueFormatter: DefaultCartesianMarker.ValueFormatter =
-        DefaultCartesianMarker.ValueFormatter.default(),
+    valueFormatter: DefaultCartesianMarker.ValueFormatter = DefaultCartesianMarker.ValueFormatter.default(),
     showIndicator: Boolean = true,
 ): CartesianMarker {
-    val labelBackgroundShape =
-        ShapeComponent(
-            fill = Fill(MaterialTheme.colorScheme.background),
-            shape = RoundedCornerShape(8.dp),
-            strokeFill = Fill(MaterialTheme.colorScheme.outline),
-            strokeThickness = 1.dp,
-        ).shape
-    val labelBackground =
-        rememberShapeComponent(
-            fill = Fill(MaterialTheme.colorScheme.background),
-            shape = labelBackgroundShape,
-            strokeFill = Fill(MaterialTheme.colorScheme.outline),
-            strokeThickness = 1.dp,
-        )
-    val label =
-        rememberTextComponent(
-            style =
-                TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    fontSize = 12.sp,
-                ),
-            padding = Insets(8.dp, 4.dp),
-            background = labelBackground,
-            minWidth = TextComponent.MinWidth.fixed(40.dp),
-            lineCount = 5, // date + O + H + L + C
-        )
-    val indicatorFrontComponent =
-        rememberShapeComponent(Fill(MaterialTheme.colorScheme.surface), CircleShape)
+    val labelBackgroundShape = ShapeComponent(
+        fill = Fill(MaterialTheme.colorScheme.background),
+        shape = RoundedCornerShape(8.dp),
+        strokeFill = Fill(MaterialTheme.colorScheme.outline),
+        strokeThickness = 1.dp,
+    ).shape
+    val labelBackground = rememberShapeComponent(
+        fill = Fill(MaterialTheme.colorScheme.background),
+        shape = labelBackgroundShape,
+        strokeFill = Fill(MaterialTheme.colorScheme.outline),
+        strokeThickness = 1.dp,
+    )
+    val label = rememberTextComponent(
+        style = TextStyle(
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            fontSize = 12.sp,
+        ),
+        padding = Insets(8.dp, 4.dp),
+        background = labelBackground,
+        minWidth = TextComponent.MinWidth.fixed(40.dp),
+        lineCount = 5, // date + O + H + L + C
+    )
+    val indicatorFrontComponent = rememberShapeComponent(Fill(MaterialTheme.colorScheme.surface), CircleShape)
     val guideline = rememberAxisGuidelineComponent()
     return rememberDefaultCartesianMarker(
         label = label,
         valueFormatter = valueFormatter,
         labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
-        indicator =
-            if (showIndicator) {
-                { color ->
-                    LayeredComponent(
-                        back = ShapeComponent(Fill(color.copy(alpha = 0.15f)), CircleShape),
-                        front =
-                            LayeredComponent(
-                                back = ShapeComponent(fill = Fill(color), shape = CircleShape),
-                                front = indicatorFrontComponent,
-                                padding = Insets(5.dp),
-                            ),
-                        padding = Insets(10.dp),
-                    )
-                }
-            } else {
-                null
-            },
+        indicator = if (showIndicator) {
+            { color ->
+                LayeredComponent(
+                    back = ShapeComponent(Fill(color.copy(alpha = 0.15f)), CircleShape),
+                    front = LayeredComponent(
+                        back = ShapeComponent(fill = Fill(color), shape = CircleShape),
+                        front = indicatorFrontComponent,
+                        padding = Insets(5.dp),
+                    ),
+                    padding = Insets(10.dp),
+                )
+            }
+        } else {
+            null
+        },
         indicatorSize = 36.dp,
         guideline = guideline,
     )
@@ -184,11 +172,10 @@ private fun ChartPreview(
             model = ohlcPoints.toCandleStickModel(),
             timestamps = ohlcPoints.timestamps(),
             timeRange = timeRange,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(216.dp)
-                    .padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(216.dp)
+                .padding(horizontal = 16.dp),
         )
     }
 }

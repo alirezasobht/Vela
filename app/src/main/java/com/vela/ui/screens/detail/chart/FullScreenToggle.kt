@@ -27,13 +27,12 @@ internal fun FullScreenToggle(
     isFullScreen: Boolean = false
 ) {
     Box(
-        modifier =
-            modifier
-                .padding(4.dp)
-                .background(
-                    color = Color.Black.copy(alpha = 0.35f),
-                    shape = RoundedCornerShape(6.dp)
-                )
+        modifier = modifier
+            .padding(4.dp)
+            .background(
+                color = Color.Black.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(6.dp)
+            )
     ) {
         IconButton(
             onClick = onClick,

@@ -5,16 +5,12 @@ import com.vela.domain.model.Asset
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.repository.MarketsRepository
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
-class GetMarketsUseCase
-    @Inject
-    constructor(
-        private val repository: MarketsRepository
-    ) {
-        operator fun invoke(
-            category: MarketCategory,
-            sort: MarketSort
-        ): Flow<PagingData<Asset>> = repository.getMarkets(category, sort)
-    }
+class GetMarketsUseCase @Inject constructor(private val repository: MarketsRepository) {
+    operator fun invoke(
+        category: MarketCategory,
+        sort: MarketSort
+    ): Flow<PagingData<Asset>> = repository.getMarkets(category, sort)
+}

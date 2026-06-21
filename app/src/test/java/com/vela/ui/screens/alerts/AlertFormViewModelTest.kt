@@ -38,28 +38,26 @@ class AlertFormViewModelTest {
     private val getAlertById: GetAlertByIdUseCase = mockk()
     private val validateAlert: ValidateAlertUseCase = ValidateAlertUseCase()
 
-    private val asset =
-        Asset(
-            id = "bitcoin",
-            symbol = "btc",
-            name = "Bitcoin",
-            image = null,
-            currentPrice = 60_000.0,
-            priceChangePercent24h = 1.0,
-            marketCapRank = 1,
-            sparkline = null
-        )
+    private val asset = Asset(
+        id = "bitcoin",
+        symbol = "btc",
+        name = "Bitcoin",
+        image = null,
+        currentPrice = 60_000.0,
+        priceChangePercent24h = 1.0,
+        marketCapRank = 1,
+        sparkline = null
+    )
 
-    private fun createViewModel(alertId: Long? = null): AlertFormViewModel =
-        AlertFormViewModel(
-            assetPreviewCache = assetPreviewCache,
-            getPricesOnly = getPricesOnly,
-            editAlert = editAlert,
-            getAlertById = getAlertById,
-            validateAlert = validateAlert,
-            coinId = "bitcoin",
-            alertId = alertId
-        )
+    private fun createViewModel(alertId: Long? = null): AlertFormViewModel = AlertFormViewModel(
+        assetPreviewCache = assetPreviewCache,
+        getPricesOnly = getPricesOnly,
+        editAlert = editAlert,
+        getAlertById = getAlertById,
+        validateAlert = validateAlert,
+        coinId = "bitcoin",
+        alertId = alertId
+    )
 
     @Before
     fun setUp() {
@@ -75,230 +73,216 @@ class AlertFormViewModelTest {
     // ----- asset null -----
 
     @Test
-    fun `asset null emits dismiss immediately`() =
-        runTest {
-            every { assetPreviewCache.get("bitcoin") } returns null
+    fun `asset null emits dismiss immediately`() = runTest {
+        every { assetPreviewCache.get("bitcoin") } returns null
 
-            val vm = createViewModel()
-            var dismissed = false
-            val job = launch { vm.dismissEvent.collect { dismissed = true } }
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
+        var dismissed = false
+        val job = launch { vm.dismissEvent.collect { dismissed = true } }
+        dispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(true, dismissed)
-            job.cancel()
-        }
+        assertEquals(true, dismissed)
+        job.cancel()
+    }
 
     // ----- create mode -----
 
     @Test
-    fun `create mode fetchInitialPrice pre-populates value and enables input`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns
-                DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 67_420.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+    fun `create mode fetchInitialPrice pre-populates value and enables input`() = runTest {
+        coEvery { getPricesOnly(any()) } returns
+            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 67_420.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
 
-            val vm = createViewModel(alertId = null)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            val state = vm.uiState.value
-            assertEquals("67420", state.value)
-            assertEquals(true, state.isValueInputEnabled)
-        }
-
-    @Test
-    fun `create mode null price leaves value empty and input still enabled`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
-
-            val vm = createViewModel(alertId = null)
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val state = vm.uiState.value
-            assertEquals("", state.value)
-            assertEquals(true, state.isValueInputEnabled)
-        }
+        val state = vm.uiState.value
+        assertEquals("67420", state.value)
+        assertEquals(true, state.isValueInputEnabled)
+    }
 
     @Test
-    fun `create mode editBtnResId is action_create_alert`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `create mode null price leaves value empty and input still enabled`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel(alertId = null)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(R.string.action_create_alert, vm.uiState.value.editBtnResId)
-        }
+        val state = vm.uiState.value
+        assertEquals("", state.value)
+        assertEquals(true, state.isValueInputEnabled)
+    }
+
+    @Test
+    fun `create mode editBtnResId is action_create_alert`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(R.string.action_create_alert, vm.uiState.value.editBtnResId)
+    }
 
     // ----- edit mode -----
 
     @Test
-    fun `edit mode loadAlert pre-populates type direction and value`() =
-        runTest {
-            val alert =
-                Alert(
-                    id = 1L,
-                    coinId = "bitcoin",
-                    coinName = "Bitcoin",
-                    coinSymbol = "btc",
-                    type = AlertType.PERCENT,
-                    direction = AlertDirection.ABOVE,
-                    targetValue = 5.0
-                )
-            coEvery { getAlertById(1L) } returns alert
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `edit mode loadAlert pre-populates type direction and value`() = runTest {
+        val alert = Alert(
+            id = 1L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PERCENT,
+            direction = AlertDirection.ABOVE,
+            targetValue = 5.0
+        )
+        coEvery { getAlertById(1L) } returns alert
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel(alertId = 1L)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            val state = vm.uiState.value
-            assertEquals(AlertType.PERCENT, state.type)
-            assertEquals(AlertDirection.ABOVE, state.direction)
-            assertEquals("5", state.value)
-            assertEquals(true, state.isValueInputEnabled)
-        }
+        val state = vm.uiState.value
+        assertEquals(AlertType.PERCENT, state.type)
+        assertEquals(AlertDirection.ABOVE, state.direction)
+        assertEquals("5", state.value)
+        assertEquals(true, state.isValueInputEnabled)
+    }
 
     @Test
-    fun `edit mode loadAlert returns null emits dismiss`() =
-        runTest {
-            coEvery { getAlertById(99L) } returns null
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `edit mode loadAlert returns null emits dismiss`() = runTest {
+        coEvery { getAlertById(99L) } returns null
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel(alertId = 99L)
-            var dismissed = false
-            val job = launch { vm.dismissEvent.collect { dismissed = true } }
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = 99L)
+        var dismissed = false
+        val job = launch { vm.dismissEvent.collect { dismissed = true } }
+        dispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(true, dismissed)
-            job.cancel()
-        }
+        assertEquals(true, dismissed)
+        job.cancel()
+    }
 
     @Test
-    fun `edit mode editBtnResId is action_edit_alert`() =
-        runTest {
-            coEvery { getAlertById(1L) } returns
-                Alert(
-                    id = 1L,
-                    coinId = "bitcoin",
-                    coinName = "Bitcoin",
-                    coinSymbol = "btc",
-                    type = AlertType.PRICE,
-                    direction = AlertDirection.ABOVE,
-                    targetValue = 70_000.0
-                )
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `edit mode editBtnResId is action_edit_alert`() = runTest {
+        coEvery { getAlertById(1L) } returns
+            Alert(
+                id = 1L,
+                coinId = "bitcoin",
+                coinName = "Bitcoin",
+                coinSymbol = "btc",
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                targetValue = 70_000.0
+            )
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel(alertId = 1L)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(R.string.action_edit_alert, vm.uiState.value.editBtnResId)
-        }
+        assertEquals(R.string.action_edit_alert, vm.uiState.value.editBtnResId)
+    }
 
     // ----- field changes -----
 
     @Test
-    fun `onTypeSelected updates type and revalidates`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `onTypeSelected updates type and revalidates`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel()
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
 
-            vm.onTypeSelected(AlertType.PERCENT)
+        vm.onTypeSelected(AlertType.PERCENT)
 
-            assertEquals(AlertType.PERCENT, vm.uiState.value.type)
-        }
-
-    @Test
-    fun `onDirectionSelected updates direction and revalidates`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
-
-            val vm = createViewModel()
-            dispatcher.scheduler.advanceUntilIdle()
-
-            vm.onDirectionSelected(AlertDirection.BELOW)
-
-            assertEquals(AlertDirection.BELOW, vm.uiState.value.direction)
-        }
+        assertEquals(AlertType.PERCENT, vm.uiState.value.type)
+    }
 
     @Test
-    fun `onValueChanged updates value and revalidates`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+    fun `onDirectionSelected updates direction and revalidates`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
 
-            val vm = createViewModel()
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
 
-            vm.onValueChanged("5")
+        vm.onDirectionSelected(AlertDirection.BELOW)
 
-            assertEquals("5", vm.uiState.value.value)
-        }
+        assertEquals(AlertDirection.BELOW, vm.uiState.value.direction)
+    }
+
+    @Test
+    fun `onValueChanged updates value and revalidates`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onValueChanged("5")
+
+        assertEquals("5", vm.uiState.value.value)
+    }
 
     // ----- onConfirm -----
 
     @Test
-    fun `onConfirm in create mode calls EditAlertUseCase with id 0`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns
-                DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+    fun `onConfirm in create mode calls EditAlertUseCase with id 0`() = runTest {
+        coEvery { getPricesOnly(any()) } returns
+            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
 
-            val vm = createViewModel(alertId = null)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            vm.onTypeSelected(AlertType.PERCENT)
-            vm.onDirectionSelected(AlertDirection.ABOVE)
-            vm.onValueChanged("5")
-            vm.onConfirm()
-            dispatcher.scheduler.advanceUntilIdle()
+        vm.onTypeSelected(AlertType.PERCENT)
+        vm.onDirectionSelected(AlertDirection.ABOVE)
+        vm.onValueChanged("5")
+        vm.onConfirm()
+        dispatcher.scheduler.advanceUntilIdle()
 
-            coVerify { editAlert(match { it.id == 0L }) }
-        }
-
-    @Test
-    fun `onConfirm in edit mode calls EditAlertUseCase with actual alertId`() =
-        runTest {
-            coEvery { getAlertById(1L) } returns
-                Alert(
-                    id = 1L,
-                    coinId = "bitcoin",
-                    coinName = "Bitcoin",
-                    coinSymbol = "btc",
-                    type = AlertType.PRICE,
-                    direction = AlertDirection.ABOVE,
-                    targetValue = 70_000.0
-                )
-            coEvery { getPricesOnly(any()) } returns
-                DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
-
-            val vm = createViewModel(alertId = 1L)
-            dispatcher.scheduler.advanceUntilIdle()
-
-            vm.onValueChanged("80000")
-            vm.onConfirm()
-            dispatcher.scheduler.advanceUntilIdle()
-
-            coVerify { editAlert(match { it.id == 1L }) }
-        }
+        coVerify { editAlert(match { it.id == 0L }) }
+    }
 
     @Test
-    fun `onConfirm sends dismiss event after success`() =
-        runTest {
-            coEvery { getPricesOnly(any()) } returns
-                DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+    fun `onConfirm in edit mode calls EditAlertUseCase with actual alertId`() = runTest {
+        coEvery { getAlertById(1L) } returns
+            Alert(
+                id = 1L,
+                coinId = "bitcoin",
+                coinName = "Bitcoin",
+                coinSymbol = "btc",
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                targetValue = 70_000.0
+            )
+        coEvery { getPricesOnly(any()) } returns
+            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
 
-            val vm = createViewModel(alertId = null)
-            dispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            vm.onTypeSelected(AlertType.PERCENT)
-            vm.onDirectionSelected(AlertDirection.ABOVE)
-            vm.onValueChanged("5")
+        vm.onValueChanged("80000")
+        vm.onConfirm()
+        dispatcher.scheduler.advanceUntilIdle()
 
-            var dismissed = false
-            val job = launch { vm.dismissEvent.collect { dismissed = true } }
+        coVerify { editAlert(match { it.id == 1L }) }
+    }
 
-            vm.onConfirm()
-            dispatcher.scheduler.advanceUntilIdle()
+    @Test
+    fun `onConfirm sends dismiss event after success`() = runTest {
+        coEvery { getPricesOnly(any()) } returns
+            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
 
-            assertEquals(true, dismissed)
-            job.cancel()
-        }
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onTypeSelected(AlertType.PERCENT)
+        vm.onDirectionSelected(AlertDirection.ABOVE)
+        vm.onValueChanged("5")
+
+        var dismissed = false
+        val job = launch { vm.dismissEvent.collect { dismissed = true } }
+
+        vm.onConfirm()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, dismissed)
+        job.cancel()
+    }
 }

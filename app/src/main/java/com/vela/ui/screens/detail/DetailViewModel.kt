@@ -28,6 +28,7 @@ import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,182 +40,174 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
-class DetailViewModel
-    @Inject
-    constructor(
-        private val getCoinDetail: GetCoinDetailUseCase,
-        private val getOhlc: GetOhlcUseCase,
-        private val assetPreviewCache: AssetPreviewCache,
-        private val getPrices: GetPricesAndMarketDataUseCase,
-        private val pricePolling: PricePollingController,
-        private val isWatchlistedUseCase: IsWatchlistedUseCase,
-        private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
-        private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
-        savedStateHandle: SavedStateHandle
-    ) : ViewModel(),
-        PricePolling by pricePolling,
-        PricePollingDelegate {
-        val coinId: String
-        val initialHeader: CoinDetailUiModel?
+class DetailViewModel @Inject constructor(
+    private val getCoinDetail: GetCoinDetailUseCase,
+    private val getOhlc: GetOhlcUseCase,
+    private val assetPreviewCache: AssetPreviewCache,
+    private val getPrices: GetPricesAndMarketDataUseCase,
+    private val pricePolling: PricePollingController,
+    private val isWatchlistedUseCase: IsWatchlistedUseCase,
+    private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
+    private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
+    savedStateHandle: SavedStateHandle
+) : ViewModel(),
+    PricePolling by pricePolling,
+    PricePollingDelegate {
+    val coinId: String
+    val initialHeader: CoinDetailUiModel?
 
-        private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
-        val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
+    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
-        private var ohlcJob: Job? = null
-        var selectedRange by mutableStateOf(TimeRange.ONE_DAY)
-            private set
+    private var ohlcJob: Job? = null
+    var selectedRange by mutableStateOf(TimeRange.ONE_DAY)
+        private set
 
-        var isChartFullScreen by mutableStateOf(false)
-            private set
+    var isChartFullScreen by mutableStateOf(false)
+        private set
 
-        val isWatchlisted: StateFlow<Boolean>
+    val isWatchlisted: StateFlow<Boolean>
 
-        private val _alertFormEvent = MutableSharedFlow<Long?>(extraBufferCapacity = 1)
-        val alertFormEvent = _alertFormEvent.asSharedFlow()
+    private val _alertFormEvent = MutableSharedFlow<Long?>(extraBufferCapacity = 1)
+    val alertFormEvent = _alertFormEvent.asSharedFlow()
 
-        var isAlertFormVisible by mutableStateOf(false)
-            private set
+    var isAlertFormVisible by mutableStateOf(false)
+        private set
 
-        var formSessionId by mutableIntStateOf(0)
-            private set
+    var formSessionId by mutableIntStateOf(0)
+        private set
 
-        override fun getIds(): List<String> = listOf(coinId)
+    override fun getIds(): List<String> = listOf(coinId)
 
-        override fun onPriceError(error: AppError?) {
-            val current = _uiState.value as? DetailUiState.Success ?: return
-            _uiState.value = current.copy(nonBlockingError = error)
+    override fun onPriceError(error: AppError?) {
+        val current = _uiState.value as? DetailUiState.Success ?: return
+        _uiState.value = current.copy(nonBlockingError = error)
+    }
+
+    override fun onCleared() {
+        pricePolling.cancel()
+        super.onCleared()
+    }
+
+    init {
+        coinId = try {
+            savedStateHandle.toRoute<Screen.CoinDetail>().coinId
+        } catch (_: Exception) {
+            savedStateHandle.get<String>("coinId") ?: ""
         }
+        initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
 
-        override fun onCleared() {
-            pricePolling.cancel()
-            super.onCleared()
-        }
-
-        init {
-            coinId =
-                try {
-                    savedStateHandle.toRoute<Screen.CoinDetail>().coinId
-                } catch (_: Exception) {
-                    savedStateHandle.get<String>("coinId") ?: ""
-                }
-            initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
-
-            isWatchlisted =
-                isWatchlistedUseCase(coinId)
-                    .stateIn(
-                        scope = viewModelScope,
-                        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                        initialValue = false
-                    )
-
-            pricePolling.bind(
+        isWatchlisted = isWatchlistedUseCase(coinId)
+            .stateIn(
                 scope = viewModelScope,
-                getPrices = getPrices,
-                delegate = this
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = false
             )
-            loadDetail()
-        }
 
-        fun toggleWatchlist() {
-            viewModelScope.launch { toggleWatchlistUseCase(coinId) }
-        }
+        pricePolling.bind(
+            scope = viewModelScope,
+            getPrices = getPrices,
+            delegate = this
+        )
+        loadDetail()
+    }
 
-        fun retry() = loadDetail(isRefresh = _uiState.value is DetailUiState.Success)
+    fun toggleWatchlist() {
+        viewModelScope.launch { toggleWatchlistUseCase(coinId) }
+    }
 
-        fun onRangeSelected(range: TimeRange) {
-            selectedRange = range
-            loadOhlc(range)
-        }
+    fun retry() = loadDetail(isRefresh = _uiState.value is DetailUiState.Success)
 
-        fun toggleChartFullScreen() {
-            isChartFullScreen = !isChartFullScreen
-        }
+    fun onRangeSelected(range: TimeRange) {
+        selectedRange = range
+        loadOhlc(range)
+    }
 
-        fun onTabSelected(tab: DetailTab) {
+    fun toggleChartFullScreen() {
+        isChartFullScreen = !isChartFullScreen
+    }
+
+    fun onTabSelected(tab: DetailTab) {
+        val current = _uiState.value as? DetailUiState.Success ?: return
+        _uiState.value = current.copy(selectedTab = tab)
+    }
+
+    fun openAlertForm(id: Long? = null) {
+        if (isChartFullScreen) return
+        formSessionId++
+        isAlertFormVisible = true
+        _alertFormEvent.tryEmit(id)
+    }
+
+    fun dismissAlertForm() {
+        isAlertFormVisible = false
+    }
+
+    private fun observeAlerts() {
+        observeAlertsByCoinId(coinId)
+            .onEach { alerts ->
+                val current = _uiState.value as? DetailUiState.Success ?: return@onEach
+                _uiState.value = current.copy(alerts = alerts)
+            }.launchIn(viewModelScope)
+    }
+
+    private fun loadDetail(isRefresh: Boolean = false) {
+        if (isRefresh) {
             val current = _uiState.value as? DetailUiState.Success ?: return
-            _uiState.value = current.copy(selectedTab = tab)
+            _uiState.value = current.copy(isRefreshing = true, nonBlockingError = null)
+        } else {
+            _uiState.value = DetailUiState.Loading
         }
+        viewModelScope.launch {
+            when (val result = getCoinDetail(coinId)) {
+                is DataResult.Success -> {
+                    _uiState.value = DetailUiState.Success(
+                        detail = result.data.toUiModel(),
+                        isChartLoading = true
+                    )
+                    loadOhlc(selectedRange)
+                    observeAlerts()
+                }
 
-        fun openAlertForm(id: Long? = null) {
-            if (isChartFullScreen) return
-            formSessionId++
-            isAlertFormVisible = true
-            _alertFormEvent.tryEmit(id)
-        }
-
-        fun dismissAlertForm() {
-            isAlertFormVisible = false
-        }
-
-        private fun observeAlerts() {
-            observeAlertsByCoinId(coinId)
-                .onEach { alerts ->
-                    val current = _uiState.value as? DetailUiState.Success ?: return@onEach
-                    _uiState.value = current.copy(alerts = alerts)
-                }.launchIn(viewModelScope)
-        }
-
-        private fun loadDetail(isRefresh: Boolean = false) {
-            if (isRefresh) {
-                val current = _uiState.value as? DetailUiState.Success ?: return
-                _uiState.value = current.copy(isRefreshing = true, nonBlockingError = null)
-            } else {
-                _uiState.value = DetailUiState.Loading
-            }
-            viewModelScope.launch {
-                when (val result = getCoinDetail(coinId)) {
-                    is DataResult.Success -> {
-                        _uiState.value =
-                            DetailUiState.Success(
-                                detail = result.data.toUiModel(),
-                                isChartLoading = true
-                            )
-                        loadOhlc(selectedRange)
-                        observeAlerts()
-                    }
-                    is DataResult.Error -> {
-                        val current = _uiState.value
-                        if (current is DetailUiState.Success) {
-                            _uiState.value =
-                                current.copy(
-                                    isRefreshing = false,
-                                    nonBlockingError = result.appError
-                                )
-                        } else {
-                            _uiState.value = DetailUiState.Error(result.appError)
-                        }
+                is DataResult.Error -> {
+                    val current = _uiState.value
+                    if (current is DetailUiState.Success) {
+                        _uiState.value = current.copy(
+                            isRefreshing = false,
+                            nonBlockingError = result.appError
+                        )
+                    } else {
+                        _uiState.value = DetailUiState.Error(result.appError)
                     }
                 }
             }
-        }
-
-        private fun loadOhlc(range: TimeRange) {
-            val current = _uiState.value as? DetailUiState.Success ?: return
-            _uiState.value = current.copy(isChartLoading = true)
-            ohlcJob?.cancel()
-            ohlcJob =
-                viewModelScope.launch {
-                    when (val result = getOhlc(coinId, range)) {
-                        is DataResult.Success -> {
-                            val success = _uiState.value as? DetailUiState.Success ?: return@launch
-                            _uiState.value =
-                                success.copy(
-                                    ohlcPoints = result.data,
-                                    isChartLoading = false
-                                )
-                        }
-                        is DataResult.Error -> {
-                            val success = _uiState.value as? DetailUiState.Success ?: return@launch
-                            _uiState.value =
-                                success.copy(
-                                    isChartLoading = false,
-                                    nonBlockingError = result.appError
-                                )
-                        }
-                    }
-                }
         }
     }
+
+    private fun loadOhlc(range: TimeRange) {
+        val current = _uiState.value as? DetailUiState.Success ?: return
+        _uiState.value = current.copy(isChartLoading = true)
+        ohlcJob?.cancel()
+        ohlcJob = viewModelScope.launch {
+            when (val result = getOhlc(coinId, range)) {
+                is DataResult.Success -> {
+                    val success = _uiState.value as? DetailUiState.Success ?: return@launch
+                    _uiState.value = success.copy(
+                        ohlcPoints = result.data,
+                        isChartLoading = false
+                    )
+                }
+
+                is DataResult.Error -> {
+                    val success = _uiState.value as? DetailUiState.Success ?: return@launch
+                    _uiState.value = success.copy(
+                        isChartLoading = false,
+                        nonBlockingError = result.appError
+                    )
+                }
+            }
+        }
+    }
+}

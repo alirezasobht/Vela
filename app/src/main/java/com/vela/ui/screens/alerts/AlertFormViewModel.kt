@@ -26,141 +26,134 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel(assistedFactory = AlertFormViewModel.Factory::class)
-class AlertFormViewModel
-    @AssistedInject
-    constructor(
-        assetPreviewCache: AssetPreviewCache,
-        private val getPricesOnly: GetPricesOnlyUseCase,
-        private val editAlert: EditAlertUseCase,
-        private val getAlertById: GetAlertByIdUseCase,
-        private val validateAlert: ValidateAlertUseCase,
-        @Assisted val coinId: String,
-        @Assisted val alertId: Long?
-    ) : ViewModel() {
-        @AssistedFactory
-        interface Factory {
-            fun create(
-                coinId: String,
-                alertId: Long?
-            ): AlertFormViewModel
+class AlertFormViewModel @AssistedInject constructor(
+    assetPreviewCache: AssetPreviewCache,
+    private val getPricesOnly: GetPricesOnlyUseCase,
+    private val editAlert: EditAlertUseCase,
+    private val getAlertById: GetAlertByIdUseCase,
+    private val validateAlert: ValidateAlertUseCase,
+    @Assisted val coinId: String,
+    @Assisted val alertId: Long?
+) : ViewModel() {
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            coinId: String,
+            alertId: Long?
+        ): AlertFormViewModel
+    }
+
+    private val isEditMode: Boolean = alertId != null
+
+    private val asset: Asset? = assetPreviewCache.get(coinId)
+
+    private var currentPrice: Double? = null
+    private var originalAlert: Alert? = null
+
+    private val _uiState = MutableStateFlow(
+        AlertFormUiState(
+            editBtnResId = if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert
+        )
+    )
+    val uiState: StateFlow<AlertFormUiState> = _uiState.asStateFlow()
+
+    private val _dismissEvent = Channel<Unit>(Channel.BUFFERED)
+    val dismissEvent = _dismissEvent.receiveAsFlow()
+
+    init {
+        if (asset == null) {
+            viewModelScope.launch { _dismissEvent.send(Unit) }
+        } else if (isEditMode) {
+            loadAlert()
+        } else {
+            fetchInitialPrice()
         }
+    }
 
-        private val isEditMode: Boolean = alertId != null
+    fun onTypeSelected(type: AlertType) {
+        _uiState.update { it.copy(type = type).withSubmitEnabled() }
+    }
 
-        private val asset: Asset? = assetPreviewCache.get(coinId)
+    fun onDirectionSelected(direction: AlertDirection) {
+        _uiState.update { it.copy(direction = direction).withSubmitEnabled() }
+    }
 
-        private var currentPrice: Double? = null
-        private var originalAlert: Alert? = null
+    fun onValueChanged(value: String) {
+        _uiState.update { it.copy(value = value).withSubmitEnabled() }
+    }
 
-        private val _uiState =
-            MutableStateFlow(
-                AlertFormUiState(
-                    editBtnResId =
-                        if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert
+    fun onConfirm() {
+        val state = _uiState.value
+        val type = state.type ?: return
+        val direction = state.direction ?: return
+        val targetValue = state.value.toDoubleOrNull() ?: return
+        val cachedAsset = asset ?: return
+
+        _uiState.update { it.copy(isLoading = true) }
+
+        viewModelScope.launch {
+            editAlert(
+                Alert(
+                    id = alertId ?: 0L,
+                    coinId = coinId,
+                    coinName = cachedAsset.name,
+                    coinSymbol = cachedAsset.symbol,
+                    type = type,
+                    direction = direction,
+                    targetValue = targetValue
                 )
             )
-        val uiState: StateFlow<AlertFormUiState> = _uiState.asStateFlow()
+            _uiState.update { it.copy(isLoading = false) }
+            _dismissEvent.send(Unit)
+        }
+    }
 
-        private val _dismissEvent = Channel<Unit>(Channel.BUFFERED)
-        val dismissEvent = _dismissEvent.receiveAsFlow()
-
-        init {
-            if (asset == null) {
-                viewModelScope.launch { _dismissEvent.send(Unit) }
-            } else if (isEditMode) {
-                loadAlert()
-            } else {
-                fetchInitialPrice()
+    private fun fetchInitialPrice() {
+        viewModelScope.launch {
+            val result = getPricesOnly(listOf(coinId))
+            currentPrice = (result as? DataResult.Success)?.data?.get(coinId)?.price
+            _uiState.update {
+                it
+                    .copy(
+                        value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
+                        isValueInputEnabled = true
+                    ).withSubmitEnabled()
             }
         }
+    }
 
-        fun onTypeSelected(type: AlertType) {
-            _uiState.update { it.copy(type = type).withSubmitEnabled() }
-        }
-
-        fun onDirectionSelected(direction: AlertDirection) {
-            _uiState.update { it.copy(direction = direction).withSubmitEnabled() }
-        }
-
-        fun onValueChanged(value: String) {
-            _uiState.update { it.copy(value = value).withSubmitEnabled() }
-        }
-
-        fun onConfirm() {
-            val state = _uiState.value
-            val type = state.type ?: return
-            val direction = state.direction ?: return
-            val targetValue = state.value.toDoubleOrNull() ?: return
-            val cachedAsset = asset ?: return
-
-            _uiState.update { it.copy(isLoading = true) }
-
-            viewModelScope.launch {
-                editAlert(
-                    Alert(
-                        id = alertId ?: 0L,
-                        coinId = coinId,
-                        coinName = cachedAsset.name,
-                        coinSymbol = cachedAsset.symbol,
-                        type = type,
-                        direction = direction,
-                        targetValue = targetValue
-                    )
-                )
-                _uiState.update { it.copy(isLoading = false) }
-                _dismissEvent.send(Unit)
-            }
-        }
-
-        private fun fetchInitialPrice() {
-            viewModelScope.launch {
-                val result = getPricesOnly(listOf(coinId))
-                currentPrice = (result as? DataResult.Success)?.data?.get(coinId)?.price
+    private fun loadAlert() {
+        viewModelScope.launch {
+            val alert = alertId?.let { getAlertById(it) }
+            if (alert != null) {
+                originalAlert = alert
+                val priceResult = getPricesOnly(listOf(coinId))
+                currentPrice = (priceResult as? DataResult.Success)?.data?.get(coinId)?.price
                 _uiState.update {
                     it
                         .copy(
-                            value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
+                            type = alert.type,
+                            direction = alert.direction,
+                            value = alert.targetValue
+                                .toBigDecimal()
+                                .stripTrailingZeros()
+                                .toPlainString(),
                             isValueInputEnabled = true
                         ).withSubmitEnabled()
                 }
+            } else {
+                _dismissEvent.send(Unit)
             }
         }
-
-        private fun loadAlert() {
-            viewModelScope.launch {
-                val alert = alertId?.let { getAlertById(it) }
-                if (alert != null) {
-                    originalAlert = alert
-                    val priceResult = getPricesOnly(listOf(coinId))
-                    currentPrice = (priceResult as? DataResult.Success)?.data?.get(coinId)?.price
-                    _uiState.update {
-                        it
-                            .copy(
-                                type = alert.type,
-                                direction = alert.direction,
-                                value =
-                                    alert.targetValue
-                                        .toBigDecimal()
-                                        .stripTrailingZeros()
-                                        .toPlainString(),
-                                isValueInputEnabled = true
-                            ).withSubmitEnabled()
-                    }
-                } else {
-                    _dismissEvent.send(Unit)
-                }
-            }
-        }
-
-        private fun AlertFormUiState.withSubmitEnabled() =
-            copy(
-                isSubmitEnabled =
-                    validateAlert(
-                        type = type,
-                        direction = direction,
-                        value = value,
-                        currentPrice = currentPrice,
-                        originalAlert = originalAlert
-                    )
-            )
     }
+
+    private fun AlertFormUiState.withSubmitEnabled() = copy(
+        isSubmitEnabled = validateAlert(
+            type = type,
+            direction = direction,
+            value = value,
+            currentPrice = currentPrice,
+            originalAlert = originalAlert
+        )
+    )
+}

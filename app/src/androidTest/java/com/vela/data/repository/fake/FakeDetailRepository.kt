@@ -8,13 +8,11 @@ import com.vela.domain.model.OhlcPoint
 import com.vela.domain.repository.DetailRepository
 import javax.inject.Inject
 
-class FakeDetailRepository
-    @Inject
-    constructor() : DetailRepository {
-        override suspend fun getCoinDetail(coinId: String): DataResult<CoinDetail> = DataResult.Success(FakeDetailDataSource.detail)
+class FakeDetailRepository @Inject constructor() : DetailRepository {
+    override suspend fun getCoinDetail(coinId: String): DataResult<CoinDetail> = DataResult.Success(FakeDetailDataSource.detail)
 
-        override suspend fun getOhlc(
-            id: String,
-            days: Int
-        ): DataResult<List<OhlcPoint>> = DataResult.Success(FakeOhlcDataSource.bitcoinOhlc)
-    }
+    override suspend fun getOhlc(
+        id: String,
+        days: Int
+    ): DataResult<List<OhlcPoint>> = DataResult.Success(FakeOhlcDataSource.bitcoinOhlc)
+}

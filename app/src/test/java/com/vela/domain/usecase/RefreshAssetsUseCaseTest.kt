@@ -15,99 +15,90 @@ class RefreshAssetsUseCaseTest {
     private val useCase = RefreshAssetsUseCase(repository)
 
     @Test
-    fun `invoke returns success on repository success`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(any()) } returns DataResult.Success(Unit)
+    fun `invoke returns success on repository success`() = runTest {
+        coEvery { repository.fetchTopAssets(any()) } returns DataResult.Success(Unit)
 
-            val result = useCase()
+        val result = useCase()
 
-            assertEquals(true, result is DataResult.Success)
-        }
-
-    @Test
-    fun `invoke returns error on repository failure`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-
-            val result = useCase()
-
-            assertEquals(true, result is DataResult.Error)
-            assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
-        }
+        assertEquals(true, result is DataResult.Success)
+    }
 
     @Test
-    fun `invoke passes correct limit to repository`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(25) } returns DataResult.Success(Unit)
+    fun `invoke returns error on repository failure`() = runTest {
+        coEvery { repository.fetchTopAssets(any()) } returns DataResult.Error(AppError.NoInternet)
 
-            useCase(25)
+        val result = useCase()
 
-            coVerify { repository.fetchTopAssets(25) }
-        }
+        assertEquals(true, result is DataResult.Error)
+        assertEquals(AppError.NoInternet, (result as DataResult.Error).appError)
+    }
 
     @Test
-    fun `invoke uses default limit value`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(50) } returns DataResult.Success(Unit)
+    fun `invoke passes correct limit to repository`() = runTest {
+        coEvery { repository.fetchTopAssets(25) } returns DataResult.Success(Unit)
 
+        useCase(25)
+
+        coVerify { repository.fetchTopAssets(25) }
+    }
+
+    @Test
+    fun `invoke uses default limit value`() = runTest {
+        coEvery { repository.fetchTopAssets(50) } returns DataResult.Success(Unit)
+
+        useCase()
+
+        coVerify { repository.fetchTopAssets(50) }
+    }
+
+    @Test
+    fun `invoke handles zero as limit`() = runTest {
+        coEvery { repository.fetchTopAssets(0) } returns DataResult.Success(Unit)
+
+        useCase(0)
+
+        coVerify { repository.fetchTopAssets(0) }
+    }
+
+    @Test
+    fun `invoke handles negative limit`() = runTest {
+        coEvery { repository.fetchTopAssets(-1) } returns DataResult.Success(Unit)
+
+        useCase(-1)
+
+        coVerify { repository.fetchTopAssets(-1) }
+    }
+
+    @Test
+    fun `invoke handles maximum integer limit`() = runTest {
+        coEvery { repository.fetchTopAssets(Int.MAX_VALUE) } returns DataResult.Success(Unit)
+
+        useCase(Int.MAX_VALUE)
+
+        coVerify { repository.fetchTopAssets(Int.MAX_VALUE) }
+    }
+
+    @Test
+    fun `invoke repository exception bubbling`() = runTest {
+        coEvery { repository.fetchTopAssets(any()) } throws RuntimeException("Unexpected")
+
+        var exception: RuntimeException? = null
+        try {
             useCase()
-
-            coVerify { repository.fetchTopAssets(50) }
+        } catch (e: RuntimeException) {
+            exception = e
         }
+
+        assertEquals("Unexpected", exception?.message)
+    }
 
     @Test
-    fun `invoke handles zero as limit`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(0) } returns DataResult.Success(Unit)
+    fun `invoke execution on correct dispatcher`() = runTest {
+        coEvery { repository.fetchTopAssets(any()) } returns DataResult.Success(Unit)
 
-            useCase(0)
+        val result = useCase()
 
-            coVerify { repository.fetchTopAssets(0) }
-        }
-
-    @Test
-    fun `invoke handles negative limit`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(-1) } returns DataResult.Success(Unit)
-
-            useCase(-1)
-
-            coVerify { repository.fetchTopAssets(-1) }
-        }
-
-    @Test
-    fun `invoke handles maximum integer limit`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(Int.MAX_VALUE) } returns DataResult.Success(Unit)
-
-            useCase(Int.MAX_VALUE)
-
-            coVerify { repository.fetchTopAssets(Int.MAX_VALUE) }
-        }
-
-    @Test
-    fun `invoke repository exception bubbling`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(any()) } throws RuntimeException("Unexpected")
-
-            var exception: RuntimeException? = null
-            try {
-                useCase()
-            } catch (e: RuntimeException) {
-                exception = e
-            }
-
-            assertEquals("Unexpected", exception?.message)
-        }
-
-    @Test
-    fun `invoke execution on correct dispatcher`() =
-        runTest {
-            coEvery { repository.fetchTopAssets(any()) } returns DataResult.Success(Unit)
-
-            val result = useCase()
-
-            assertEquals(true, result is DataResult.Success)
-            coVerify(exactly = 1) { repository.fetchTopAssets(any()) }
-        }
+        assertEquals(true, result is DataResult.Success)
+        coVerify(exactly = 1) { repository.fetchTopAssets(any()) }
+    }
 }

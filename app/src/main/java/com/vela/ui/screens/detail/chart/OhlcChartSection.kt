@@ -58,10 +58,9 @@ fun OhlcChartSection(
                 isLandscape = true
             )
             Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             ) {
                 ChartState(
                     ohlcPoints = ohlcPoints,
@@ -81,10 +80,9 @@ fun OhlcChartSection(
                 isLandscape = false
             )
             Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 ChartState(
                     ohlcPoints = ohlcPoints,
@@ -171,11 +169,10 @@ private fun OhlcChartSectionPreview(
     VelaTheme {
         Surface {
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                        .padding(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .padding(16.dp)
             ) {
                 OhlcChartSection(
                     ohlcPoints = ohlcPoints,

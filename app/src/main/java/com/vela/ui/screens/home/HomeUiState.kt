@@ -12,7 +12,5 @@ sealed interface HomeUiState {
         val nonBlockingError: AppError? = null
     ) : HomeUiState
 
-    data class Error(
-        val appError: AppError
-    ) : HomeUiState
+    data class Error(val appError: AppError) : HomeUiState
 }
