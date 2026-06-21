@@ -17,10 +17,9 @@ fun VelaApp() {
         Surface {
             RootNavGraph(
                 rootNavController = rootNavController,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .safeDrawingPadding()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
             )
         }
     }

@@ -8,8 +8,5 @@ sealed interface WatchlistUiState {
 
     data object Empty : WatchlistUiState
 
-    data class Success(
-        val assets: List<AssetUiModel>,
-        val nonBlockingError: AppError? = null
-    ) : WatchlistUiState
+    data class Success(val assets: List<AssetUiModel>, val nonBlockingError: AppError? = null) : WatchlistUiState
 }

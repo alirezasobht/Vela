@@ -12,32 +12,25 @@ import com.vela.domain.model.DataResult
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.repository.MarketsRepository
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
-class MarketsRepositoryImpl
-    @Inject
-    constructor(
-        private val api: CoinGeckoApi
-    ) : MarketsRepository {
-        override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> =
-            safeApiCall {
-                val categories = api.getCategories().take(limit).map { it.toDomain() }
-                listOf(MarketCategory.ALL) + categories
-            }
-
-        override fun getMarkets(
-            category: MarketCategory,
-            sort: MarketSort
-        ): Flow<PagingData<Asset>> =
-            Pager(
-                config =
-                    PagingConfig(
-                        pageSize = 20,
-                        initialLoadSize = 20,
-                        prefetchDistance = 3,
-                        enablePlaceholders = false
-                    ),
-                pagingSourceFactory = { MarketsPagingSource(api, category, sort) }
-            ).flow
+class MarketsRepositoryImpl @Inject constructor(private val api: CoinGeckoApi) : MarketsRepository {
+    override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> = safeApiCall {
+        val categories = api.getCategories().take(limit).map { it.toDomain() }
+        listOf(MarketCategory.ALL) + categories
     }
+
+    override fun getMarkets(
+        category: MarketCategory,
+        sort: MarketSort
+    ): Flow<PagingData<Asset>> = Pager(
+        config = PagingConfig(
+            pageSize = 20,
+            initialLoadSize = 20,
+            prefetchDistance = 3,
+            enablePlaceholders = false
+        ),
+        pagingSourceFactory = { MarketsPagingSource(api, category, sort) }
+    ).flow
+}

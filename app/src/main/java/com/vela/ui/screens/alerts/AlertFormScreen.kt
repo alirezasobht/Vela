@@ -55,12 +55,11 @@ fun AlertFormRoute(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel =
-        hiltViewModel<AlertFormViewModel, AlertFormViewModel.Factory>(
-            key = formSessionId.toString()
-        ) { factory ->
-            factory.create(coinId = coinId, alertId = alertId)
-        }
+    val viewModel = hiltViewModel<AlertFormViewModel, AlertFormViewModel.Factory>(
+        key = formSessionId.toString()
+    ) { factory ->
+        factory.create(coinId = coinId, alertId = alertId)
+    }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -68,14 +67,13 @@ fun AlertFormRoute(
         viewModel.dismissEvent.collect { onDismiss() }
     }
 
-    val actions =
-        AlertFormActions(
-            onTypeSelected = viewModel::onTypeSelected,
-            onDirectionSelected = viewModel::onDirectionSelected,
-            onValueChanged = viewModel::onValueChanged,
-            onConfirm = viewModel::onConfirm,
-            onCancel = onDismiss
-        )
+    val actions = AlertFormActions(
+        onTypeSelected = viewModel::onTypeSelected,
+        onDirectionSelected = viewModel::onDirectionSelected,
+        onValueChanged = viewModel::onValueChanged,
+        onConfirm = viewModel::onConfirm,
+        onCancel = onDismiss
+    )
 
     AlertFormContent(
         uiState = uiState,
@@ -94,10 +92,9 @@ internal fun AlertFormContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -162,11 +159,10 @@ private fun TypeSelector(
                 onClick = { onTypeSelected(type) },
                 label = {
                     Text(
-                        text =
-                            when (type) {
-                                AlertType.PRICE -> stringResource(R.string.label_alert_type_price)
-                                AlertType.PERCENT -> stringResource(R.string.label_alert_type_percent)
-                            }
+                        text = when (type) {
+                            AlertType.PRICE -> stringResource(R.string.label_alert_type_price)
+                            AlertType.PERCENT -> stringResource(R.string.label_alert_type_percent)
+                        }
                     )
                 }
             )
@@ -190,11 +186,10 @@ private fun DirectionSelector(
                 onClick = { onDirectionSelected(direction) },
                 label = {
                     Text(
-                        text =
-                            when (direction) {
-                                AlertDirection.ABOVE -> stringResource(R.string.label_alert_direction_above)
-                                AlertDirection.BELOW -> stringResource(R.string.label_alert_direction_below)
-                            }
+                        text = when (direction) {
+                            AlertDirection.ABOVE -> stringResource(R.string.label_alert_direction_above)
+                            AlertDirection.BELOW -> stringResource(R.string.label_alert_direction_below)
+                        }
                     )
                 }
             )
@@ -215,25 +210,22 @@ private fun ValueInput(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
-        prefix =
-            if (type == AlertType.PRICE) {
-                { Text(text = "$") }
-            } else {
-                null
-            },
-        suffix =
-            if (type == AlertType.PERCENT) {
-                { Text(text = "%") }
-            } else {
-                null
-            },
+        prefix = if (type == AlertType.PRICE) {
+            { Text(text = "$") }
+        } else {
+            null
+        },
+        suffix = if (type == AlertType.PERCENT) {
+            { Text(text = "%") }
+        } else {
+            null
+        },
         placeholder = {
             Text(
-                text =
-                    when (type) {
-                        AlertType.PERCENT -> stringResource(R.string.hint_alert_percent_value)
-                        else -> stringResource(R.string.hint_alert_price_value)
-                    }
+                text = when (type) {
+                    AlertType.PERCENT -> stringResource(R.string.hint_alert_percent_value)
+                    else -> stringResource(R.string.hint_alert_price_value)
+                }
             )
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -275,82 +267,72 @@ private fun AlertFormContentPreview(uiState: AlertFormUiState) {
     VelaTheme {
         AlertFormContent(
             uiState = uiState,
-            actions =
-                AlertFormActions(
-                    onTypeSelected = {},
-                    onDirectionSelected = {},
-                    onValueChanged = {},
-                    onConfirm = {},
-                    onCancel = {}
-                )
+            actions = AlertFormActions(
+                onTypeSelected = {},
+                onDirectionSelected = {},
+                onValueChanged = {},
+                onConfirm = {},
+                onCancel = {}
+            )
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertFormContentEmptyPreview() =
-    AlertFormContentPreview(
-        uiState = AlertFormUiState(editBtnResId = R.string.action_create_alert)
-    )
+private fun AlertFormContentEmptyPreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(editBtnResId = R.string.action_create_alert)
+)
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertFormContentEnabledPreview() =
-    AlertFormContentPreview(
-        uiState =
-            AlertFormUiState(
-                type = AlertType.PRICE,
-                direction = AlertDirection.ABOVE,
-                value = "70000",
-                isSubmitEnabled = true,
-                editBtnResId = R.string.action_create_alert,
-                isValueInputEnabled = true
-            )
+private fun AlertFormContentEnabledPreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "70000",
+        isSubmitEnabled = true,
+        editBtnResId = R.string.action_create_alert,
+        isValueInputEnabled = true
     )
+)
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertFormContentPercentPreview() =
-    AlertFormContentPreview(
-        uiState =
-            AlertFormUiState(
-                type = AlertType.PERCENT,
-                direction = AlertDirection.ABOVE,
-                value = "5",
-                isSubmitEnabled = true,
-                editBtnResId = R.string.action_create_alert,
-                isValueInputEnabled = true
-            )
+private fun AlertFormContentPercentPreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(
+        type = AlertType.PERCENT,
+        direction = AlertDirection.ABOVE,
+        value = "5",
+        isSubmitEnabled = true,
+        editBtnResId = R.string.action_create_alert,
+        isValueInputEnabled = true
     )
+)
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertFormContentEditModePreview() =
-    AlertFormContentPreview(
-        uiState =
-            AlertFormUiState(
-                type = AlertType.PRICE,
-                direction = AlertDirection.ABOVE,
-                value = "70000",
-                isSubmitEnabled = true,
-                editBtnResId = R.string.action_edit_alert,
-                isValueInputEnabled = true
-            )
+private fun AlertFormContentEditModePreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "70000",
+        isSubmitEnabled = true,
+        editBtnResId = R.string.action_edit_alert,
+        isValueInputEnabled = true
     )
+)
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertFormContentLoadingPreview() =
-    AlertFormContentPreview(
-        uiState =
-            AlertFormUiState(
-                type = AlertType.PRICE,
-                direction = AlertDirection.ABOVE,
-                value = "70000",
-                isSubmitEnabled = true,
-                isLoading = true,
-                editBtnResId = R.string.action_create_alert,
-                isValueInputEnabled = true
-            )
+private fun AlertFormContentLoadingPreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "70000",
+        isSubmitEnabled = true,
+        isLoading = true,
+        editBtnResId = R.string.action_create_alert,
+        isValueInputEnabled = true
     )
+)

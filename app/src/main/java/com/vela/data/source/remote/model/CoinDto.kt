@@ -16,6 +16,4 @@ data class CoinDto(
 )
 
 @JsonClass(generateAdapter = true)
-data class SparklineDto(
-    @Json(name = "price") val price: List<Double>
-)
+data class SparklineDto(@Json(name = "price") val price: List<Double>)

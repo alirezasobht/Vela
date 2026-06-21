@@ -9,16 +9,15 @@ import org.junit.Test
 class ValidateAlertUseCaseTest {
     private val useCase = ValidateAlertUseCase()
 
-    private fun baseAlert() =
-        Alert(
-            id = 1L,
-            coinId = "bitcoin",
-            coinName = "Bitcoin",
-            coinSymbol = "btc",
-            type = AlertType.PRICE,
-            direction = AlertDirection.ABOVE,
-            targetValue = 70_000.0
-        )
+    private fun baseAlert() = Alert(
+        id = 1L,
+        coinId = "bitcoin",
+        coinName = "Bitcoin",
+        coinSymbol = "btc",
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        targetValue = 70_000.0
+    )
 
     private fun assertValid(
         type: AlertType? = AlertType.PRICE,
@@ -79,48 +78,44 @@ class ValidateAlertUseCaseTest {
     // ----- edit mode change detection -----
 
     @Test
-    fun `edit mode nothing changed returns false`() =
-        assertValid(
-            type = AlertType.PRICE,
-            direction = AlertDirection.ABOVE,
-            value = "70000",
-            currentPrice = 60_000.0,
-            originalAlert = baseAlert(),
-            expected = false
-        )
+    fun `edit mode nothing changed returns false`() = assertValid(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "70000",
+        currentPrice = 60_000.0,
+        originalAlert = baseAlert(),
+        expected = false
+    )
 
     @Test
-    fun `edit mode type changed returns true`() =
-        assertValid(
-            type = AlertType.PERCENT,
-            direction = AlertDirection.ABOVE,
-            value = "5",
-            currentPrice = null,
-            originalAlert = baseAlert(),
-            expected = true
-        )
+    fun `edit mode type changed returns true`() = assertValid(
+        type = AlertType.PERCENT,
+        direction = AlertDirection.ABOVE,
+        value = "5",
+        currentPrice = null,
+        originalAlert = baseAlert(),
+        expected = true
+    )
 
     @Test
-    fun `edit mode direction changed returns true`() =
-        assertValid(
-            type = AlertType.PRICE,
-            direction = AlertDirection.BELOW,
-            value = "60000",
-            currentPrice = 70_000.0,
-            originalAlert = baseAlert(),
-            expected = true
-        )
+    fun `edit mode direction changed returns true`() = assertValid(
+        type = AlertType.PRICE,
+        direction = AlertDirection.BELOW,
+        value = "60000",
+        currentPrice = 70_000.0,
+        originalAlert = baseAlert(),
+        expected = true
+    )
 
     @Test
-    fun `edit mode value changed returns true`() =
-        assertValid(
-            type = AlertType.PRICE,
-            direction = AlertDirection.ABOVE,
-            value = "80000",
-            currentPrice = 60_000.0,
-            originalAlert = baseAlert(),
-            expected = true
-        )
+    fun `edit mode value changed returns true`() = assertValid(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "80000",
+        currentPrice = 60_000.0,
+        originalAlert = baseAlert(),
+        expected = true
+    )
 
     @Test
     fun `edit mode all changed back to original returns false`() {
@@ -128,11 +123,10 @@ class ValidateAlertUseCaseTest {
         assertValid(
             type = original.type,
             direction = original.direction,
-            value =
-                original.targetValue
-                    .toBigDecimal()
-                    .stripTrailingZeros()
-                    .toPlainString(),
+            value = original.targetValue
+                .toBigDecimal()
+                .stripTrailingZeros()
+                .toPlainString(),
             currentPrice = 60_000.0,
             originalAlert = original,
             expected = false

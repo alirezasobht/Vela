@@ -20,54 +20,50 @@ class SearchAssetsUseCaseTest {
     // ----- search error -----
 
     @Test
-    fun `search error propagates without calling getPricesByIds`() =
-        runTest {
-            val error = DataResult.Error(AppError.NoInternet)
-            coEvery { searchRepository.search(any()) } returns error
+    fun `search error propagates without calling getPricesByIds`() = runTest {
+        val error = DataResult.Error(AppError.NoInternet)
+        coEvery { searchRepository.search(any()) } returns error
 
-            val result = useCase("bitcoin")
+        val result = useCase("bitcoin")
 
-            assertEquals(error, result)
-            coVerify(exactly = 0) { assetRepository.getAssetsByIds(any()) }
-        }
+        assertEquals(error, result)
+        coVerify(exactly = 0) { assetRepository.getAssetsByIds(any()) }
+    }
 
     // ----- search success + price fetch -----
 
     @Test
-    fun `search success and price fetch success returns full list`() =
-        runTest {
-            val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
-            val fullAssets = listOf(asset("bitcoin", price = 30_000.0), asset("ethereum", price = 2_000.0))
-            coEvery { searchRepository.search(any()) } returns DataResult.Success(searchAssets)
-            coEvery { assetRepository.getAssetsByIds(any()) } returns DataResult.Success(fullAssets)
+    fun `search success and price fetch success returns full list`() = runTest {
+        val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
+        val fullAssets = listOf(asset("bitcoin", price = 30_000.0), asset("ethereum", price = 2_000.0))
+        coEvery { searchRepository.search(any()) } returns DataResult.Success(searchAssets)
+        coEvery { assetRepository.getAssetsByIds(any()) } returns DataResult.Success(fullAssets)
 
-            val result = useCase("crypto")
+        val result = useCase("crypto")
 
-            assertEquals(DataResult.Success(fullAssets), result)
-        }
-
-    @Test
-    fun `search success and price fetch error falls back to searched assets`() =
-        runTest {
-            val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
-            coEvery { searchRepository.search(any()) } returns DataResult.Success(searchAssets)
-            coEvery { assetRepository.getAssetsByIds(any()) } returns DataResult.Error(AppError.NoInternet)
-
-            val result = useCase("crypto")
-
-            assertEquals(DataResult.Success(searchAssets), result)
-        }
+        assertEquals(DataResult.Success(fullAssets), result)
+    }
 
     @Test
-    fun `search success with empty list skips price fetch and returns empty`() =
-        runTest {
-            coEvery { searchRepository.search(any()) } returns DataResult.Success(emptyList())
+    fun `search success and price fetch error falls back to searched assets`() = runTest {
+        val searchAssets = listOf(asset("bitcoin"), asset("ethereum"))
+        coEvery { searchRepository.search(any()) } returns DataResult.Success(searchAssets)
+        coEvery { assetRepository.getAssetsByIds(any()) } returns DataResult.Error(AppError.NoInternet)
 
-            val result = useCase("unknown")
+        val result = useCase("crypto")
 
-            assertEquals(DataResult.Success(emptyList<Asset>()), result)
-            coVerify(exactly = 0) { assetRepository.getAssetsByIds(any()) }
-        }
+        assertEquals(DataResult.Success(searchAssets), result)
+    }
+
+    @Test
+    fun `search success with empty list skips price fetch and returns empty`() = runTest {
+        coEvery { searchRepository.search(any()) } returns DataResult.Success(emptyList())
+
+        val result = useCase("unknown")
+
+        assertEquals(DataResult.Success(emptyList<Asset>()), result)
+        coVerify(exactly = 0) { assetRepository.getAssetsByIds(any()) }
+    }
 
     // ----- helpers -----
 

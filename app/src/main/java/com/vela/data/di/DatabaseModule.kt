@@ -18,16 +18,13 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideAppDatabase(
-        @ApplicationContext context: Context
-    ): AppDatabase =
-        Room
-            .databaseBuilder(
-                context,
-                AppDatabase::class.java,
-                "vela.db"
-            ).fallbackToDestructiveMigration(false)
-            .build()
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase = Room
+        .databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "vela.db"
+        ).fallbackToDestructiveMigration(false)
+        .build()
 
     @Provides
     @Singleton

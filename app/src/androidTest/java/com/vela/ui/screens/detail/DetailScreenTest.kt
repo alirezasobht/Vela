@@ -32,27 +32,25 @@ class DetailScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val defaultActions =
-        DetailActions(
-            onBack = {},
-            onRetry = {},
-            onRangeSelected = {},
-            observePrice = { flowOf(null) },
-            onToggleFullScreen = {},
-            onTabSelected = {},
-            onEditAlert = {},
-            onDismissAlertForm = {},
-            onToggleWatchlist = {},
-        )
+    private val defaultActions = DetailActions(
+        onBack = {},
+        onRetry = {},
+        onRangeSelected = {},
+        observePrice = { flowOf(null) },
+        onToggleFullScreen = {},
+        onTabSelected = {},
+        onEditAlert = {},
+        onDismissAlertForm = {},
+        onToggleWatchlist = {},
+    )
 
     private val testOrientationController = FullScreenOrientationController { {} }
 
-    private val successState =
-        DetailUiState.Success(
-            detail = FakeDetailDataSource.detail.toUiModel(),
-            isChartLoading = false,
-            ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-        )
+    private val successState = DetailUiState.Success(
+        detail = FakeDetailDataSource.detail.toUiModel(),
+        isChartLoading = false,
+        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
+    )
 
     private fun setDetailScreen(
         uiState: DetailUiState,
@@ -168,10 +166,9 @@ class DetailScreenTest {
                     formSessionId = 0,
                     editingAlertId = null,
                     coinId = "bitcoin",
-                    detailActions =
-                        defaultActions.copy(
-                            onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
-                        ),
+                    detailActions = defaultActions.copy(
+                        onToggleFullScreen = { currentIsFullScreen = !currentIsFullScreen }
+                    ),
                     orientationController = testOrientationController
                 )
             }

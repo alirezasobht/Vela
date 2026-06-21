@@ -4,9 +4,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
-data class SearchResponseDto(
-    @Json(name = "coins") val coins: List<SearchCoinDto>
-)
+data class SearchResponseDto(@Json(name = "coins") val coins: List<SearchCoinDto>)
 
 @JsonClass(generateAdapter = true)
 data class SearchCoinDto(

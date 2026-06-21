@@ -6,17 +6,16 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AssetEntityMapperKtTest {
-    private fun anAssetEntity(sparkline: String? = "1.0,2.0,3.0") =
-        AssetEntity(
-            id = "bitcoin",
-            symbol = "btc",
-            name = "Bitcoin",
-            image = "https://example.com/btc.png",
-            currentPrice = 67420.0,
-            priceChangePercent24h = 2.4,
-            marketCapRank = 1,
-            sparkline = sparkline
-        )
+    private fun anAssetEntity(sparkline: String? = "1.0,2.0,3.0") = AssetEntity(
+        id = "bitcoin",
+        symbol = "btc",
+        name = "Bitcoin",
+        image = "https://example.com/btc.png",
+        currentPrice = 67420.0,
+        priceChangePercent24h = 2.4,
+        marketCapRank = 1,
+        sparkline = sparkline
+    )
 
     @Test
     fun `Basic field mapping`() {

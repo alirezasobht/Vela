@@ -8,14 +8,9 @@ sealed interface SearchUiState {
 
     data object Loading : SearchUiState
 
-    data class Results(
-        val assets: List<AssetUiModel>,
-        val nonBlockingError: AppError? = null
-    ) : SearchUiState
+    data class Results(val assets: List<AssetUiModel>, val nonBlockingError: AppError? = null) : SearchUiState
 
     data object NoResults : SearchUiState
 
-    data class Error(
-        val appError: AppError
-    ) : SearchUiState
+    data class Error(val appError: AppError) : SearchUiState
 }

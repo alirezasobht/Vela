@@ -25,26 +25,23 @@ class MarketsScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val defaultActions =
-        MarketActions(
-            onCategorySelected = {},
-            onSortSelected = {},
-            onRetry = {},
-            assetListItemActions =
-                AssetListItemActions(
-                    observePrice = { flowOf(null) },
-                    observeIsWatchlisted = { flowOf(false) },
-                    onToggleWatchlist = {},
-                    onClick = {}
-                )
+    private val defaultActions = MarketActions(
+        onCategorySelected = {},
+        onSortSelected = {},
+        onRetry = {},
+        assetListItemActions = AssetListItemActions(
+            observePrice = { flowOf(null) },
+            observeIsWatchlisted = { flowOf(false) },
+            onToggleWatchlist = {},
+            onClick = {}
         )
+    )
 
     private val fakePagingItems
         @androidx.compose.runtime.Composable
-        get() =
-            flowOf(
-                PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() })
-            ).collectAsLazyPagingItems()
+        get() = flowOf(
+            PagingData.from(FakeAssetDataSource.assets.map { it.toUiModel() })
+        ).collectAsLazyPagingItems()
 
     @Test
     fun loadingState_showsProgressIndicator() {

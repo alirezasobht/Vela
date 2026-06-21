@@ -17,6 +17,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -29,7 +30,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -42,28 +42,26 @@ class HomeViewModelTest {
     private val pricePolling: PricePollingController = mockk(relaxed = true)
     private val watchlistController: WatchlistControllerImpl = mockk(relaxed = true)
 
-    private fun anAsset(id: String = "bitcoin") =
-        Asset(
-            id = id,
-            symbol = "btc",
-            name = "Bitcoin",
-            image = null,
-            currentPrice = 67420.0,
-            priceChangePercent24h = 2.4,
-            marketCapRank = 1,
-            sparkline = listOf(1.0, 2.0, 3.0)
-        )
+    private fun anAsset(id: String = "bitcoin") = Asset(
+        id = id,
+        symbol = "btc",
+        name = "Bitcoin",
+        image = null,
+        currentPrice = 67420.0,
+        priceChangePercent24h = 2.4,
+        marketCapRank = 1,
+        sparkline = listOf(1.0, 2.0, 3.0)
+    )
 
-    private fun createViewModel() =
-        HomeViewModel(
-            getTopAssets = getTopAssets,
-            refreshAssets = refreshAssets,
-            getToday = getToday,
-            assetPreviewCache = assetPreviewCache,
-            getPrices = getPrices,
-            pricePolling = pricePolling,
-            watchlistController = watchlistController
-        )
+    private fun createViewModel() = HomeViewModel(
+        getTopAssets = getTopAssets,
+        refreshAssets = refreshAssets,
+        getToday = getToday,
+        assetPreviewCache = assetPreviewCache,
+        getPrices = getPrices,
+        pricePolling = pricePolling,
+        watchlistController = watchlistController
+    )
 
     @Before
     fun setup() {
@@ -86,463 +84,433 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `Successful asset data mapping`() =
-        runTest {
-            val assets = listOf(anAsset())
-            every { getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
+    fun `Successful asset data mapping`() = runTest {
+        val assets = listOf(anAsset())
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Success)
-            assertEquals(1, (state as HomeUiState.Success).assets.size)
-            assertEquals("bitcoin", state.assets[0].id)
-        }
-
-    @Test
-    fun `formattedDate string format validation`() =
-        runTest {
-            every { getToday() } returns LocalDate.of(2026, 5, 26)
-
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertEquals("Tuesday, 26 May", state.formattedDate)
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Success)
+        assertEquals(1, (state as HomeUiState.Success).assets.size)
+        assertEquals("bitcoin", state.assets[0].id)
+    }
 
     @Test
-    fun `No internet connection error handling`() =
-        runTest {
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+    fun `formattedDate string format validation`() = runTest {
+        every { getToday() } returns LocalDate.of(2026, 5, 26)
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Error)
-            assertEquals(AppError.NoInternet, (state as HomeUiState.Error).appError)
-        }
+        val state = viewModel.uiState.value as HomeUiState.Success
+        assertEquals("Tuesday, 26 May", state.formattedDate)
+    }
 
     @Test
-    fun `Server side error handling`() =
-        runTest {
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.ServerError)
+    fun `No internet connection error handling`() = runTest {
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Error)
-            assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
-        }
-
-    @Test
-    fun `Unknown exception message propagation`() =
-        runTest {
-            val errorMessage = "Custom error message"
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.Unknown(errorMessage))
-
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Error)
-            assertEquals(true, (state as HomeUiState.Error).appError is AppError.Unknown)
-            assertEquals(errorMessage, (state.appError as AppError.Unknown).message)
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals(AppError.NoInternet, (state as HomeUiState.Error).appError)
+    }
 
     @Test
-    fun `Empty unknown error message handling`() =
-        runTest {
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.Unknown(""))
+    fun `Server side error handling`() = runTest {
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.ServerError)
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Error)
-            assertEquals("", ((state as HomeUiState.Error).appError as AppError.Unknown).message)
-        }
-
-    @Test
-    fun `Retry logic execution flow`() =
-        runTest {
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
-
-            coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
-            every { getTopAssets(any()) } returns flowOf(DataResult.Success(listOf(anAsset())))
-
-            viewModel.retry()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
+    }
 
     @Test
-    fun `Loading state reset on retry`() =
-        runTest {
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+    fun `Unknown exception message propagation`() = runTest {
+        val errorMessage = "Custom error message"
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.Unknown(errorMessage))
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            coEvery { refreshAssets(any()) } coAnswers {
-                kotlinx.coroutines.delay(1000)
-                DataResult.Success(Unit)
-            }
-
-            viewModel.retry()
-            testDispatcher.scheduler.runCurrent()
-
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
-
-            testDispatcher.scheduler.advanceUntilIdle()
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals(true, (state as HomeUiState.Error).appError is AppError.Unknown)
+        assertEquals(errorMessage, (state.appError as AppError.Unknown).message)
+    }
 
     @Test
-    fun `Empty list success handling`() =
-        runTest {
-            every { getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
+    fun `Empty unknown error message handling`() = runTest {
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.Unknown(""))
 
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Success)
-            assertEquals(true, (state as HomeUiState.Success).assets.isEmpty())
-        }
-
-    @Test
-    fun `ViewModel initialization side effect`() =
-        runTest {
-            createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            coVerify(exactly = 1) { refreshAssets(any()) }
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals("", ((state as HomeUiState.Error).appError as AppError.Unknown).message)
+    }
 
     @Test
-    fun `Coroutine cancellation on clear`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `Retry logic execution flow`() = runTest {
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
 
-            val stateBeforeClear = viewModel.uiState.value
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
 
-            val viewModelStore = ViewModelStore()
-            viewModelStore.put("key", viewModel)
-            viewModelStore.clear()
-            testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(listOf(anAsset())))
 
-            assertEquals(stateBeforeClear, viewModel.uiState.value)
-            coVerify(exactly = 1) { refreshAssets(any()) }
-        }
+        viewModel.retry()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-    @Test
-    fun `formattedDate is refreshed on retry`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            viewModel.retry()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            verify(atLeast = 2) { getToday() }
-        }
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
+    }
 
     @Test
-    fun `onLimitChanged resets state to Loading`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
+    fun `Loading state reset on retry`() = runTest {
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
 
-            viewModel.onLimitChanged(25)
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Error)
 
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
+        coEvery { refreshAssets(any()) } coAnswers {
+            kotlinx.coroutines.delay(1000)
+            DataResult.Success(Unit)
         }
+
+        viewModel.retry()
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
 
     @Test
-    fun `onLimitChanged updates selectedLimit`() =
-        runTest {
-            val viewModel = createViewModel()
+    fun `Empty list success handling`() = runTest {
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
 
-            viewModel.onLimitChanged(25)
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(25, viewModel.selectedLimit)
-        }
-
-    @Test
-    fun `onLimitChanged triggers fresh refresh with new limit`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            viewModel.onLimitChanged(25)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            coVerify { refreshAssets(25) }
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Success)
+        assertEquals(true, (state as HomeUiState.Success).assets.isEmpty())
+    }
 
     @Test
-    fun `pullToRefresh sets pullRefreshing to true`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `ViewModel initialization side effect`() = runTest {
+        createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            viewModel.pullToRefresh()
-
-            assertEquals(true, viewModel.pullRefreshing.value)
-        }
+        coVerify(exactly = 1) { refreshAssets(any()) }
+    }
 
     @Test
-    fun `pullToRefresh resets pullRefreshing after completion`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `Coroutine cancellation on clear`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            viewModel.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
+        val stateBeforeClear = viewModel.uiState.value
 
-            assertEquals(false, viewModel.pullRefreshing.value)
-        }
+        val viewModelStore = ViewModelStore()
+        viewModelStore.put("key", viewModel)
+        viewModelStore.clear()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-    @Test
-    fun `nonBlockingError set when refresh fails after success`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
-
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-            viewModel.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertEquals(true, state is HomeUiState.Success)
-            assertEquals(AppError.NoInternet, (state as HomeUiState.Success).nonBlockingError)
-        }
+        assertEquals(stateBeforeClear, viewModel.uiState.value)
+        coVerify(exactly = 1) { refreshAssets(any()) }
+    }
 
     @Test
-    fun `nonBlockingError cleared on successful refresh`() =
-        runTest {
-            val viewModel = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `formattedDate is refreshed on retry`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-            viewModel.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.retry()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
-            viewModel.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertEquals(null, state.nonBlockingError)
-        }
+        verify(atLeast = 2) { getToday() }
+    }
 
     @Test
-    fun `Mutex concurrency exclusion`() =
-        runTest {
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `onLimitChanged resets state to Loading`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
 
-            coEvery { refreshAssets(any()) } coAnswers {
-                kotlinx.coroutines.delay(500)
-                DataResult.Success(Unit)
-            }
+        viewModel.onLimitChanged(25)
 
-            vm.pullToRefresh()
-            testDispatcher.scheduler.runCurrent()
-
-            vm.pullToRefresh()
-            testDispatcher.scheduler.runCurrent()
-
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            coVerify(exactly = 2) { refreshAssets(any()) }
-        }
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Loading)
+    }
 
     @Test
-    fun `observeAssets reactive update with preserved error`() =
-        runTest {
-            val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
-            every { getTopAssets(any()) } returns assetsFlow
-            assetsFlow.emit(DataResult.Success(listOf(anAsset())))
+    fun `onLimitChanged updates selectedLimit`() = runTest {
+        val viewModel = createViewModel()
 
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, vm.uiState.value is HomeUiState.Success)
+        viewModel.onLimitChanged(25)
 
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-            vm.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val stateWithError = vm.uiState.value as HomeUiState.Success
-            assertEquals(AppError.NoInternet, stateWithError.nonBlockingError)
-
-            assetsFlow.emit(DataResult.Success(listOf(anAsset("ethereum"))))
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val updatedState = vm.uiState.value as HomeUiState.Success
-            assertEquals("ethereum", updatedState.assets[0].id)
-            assertEquals(AppError.NoInternet, updatedState.nonBlockingError)
-        }
+        assertEquals(25, viewModel.selectedLimit)
+    }
 
     @Test
-    fun `observeAssets error mapping during initial loading`() =
-        runTest {
-            every { getTopAssets(any()) } returns flowOf(DataResult.Error(AppError.ServerError))
+    fun `onLimitChanged triggers fresh refresh with new limit`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onLimitChanged(25)
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = vm.uiState.value
-            assertEquals(true, state is HomeUiState.Error)
-            assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
-        }
+        coVerify { refreshAssets(25) }
+    }
 
     @Test
-    fun `observeAssets error suppression in Success state`() =
-        runTest {
-            val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
-            every { getTopAssets(any()) } returns assetsFlow
-            assetsFlow.emit(DataResult.Success(listOf(anAsset())))
+    fun `pullToRefresh sets pullRefreshing to true`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, vm.uiState.value is HomeUiState.Success)
+        viewModel.pullToRefresh()
 
-            assetsFlow.emit(DataResult.Error(AppError.ServerError))
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertEquals(true, vm.uiState.value is HomeUiState.Success)
-        }
+        assertEquals(true, viewModel.pullRefreshing.value)
+    }
 
     @Test
-    fun `doRefresh skip loading state if Success exists`() =
-        runTest {
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(true, vm.uiState.value is HomeUiState.Success)
+    fun `pullToRefresh resets pullRefreshing after completion`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            coEvery { refreshAssets(any()) } coAnswers {
-                kotlinx.coroutines.delay(500)
-                DataResult.Success(Unit)
-            }
+        viewModel.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            vm.pullToRefresh()
-            testDispatcher.scheduler.runCurrent()
-
-            assertEquals(true, vm.uiState.value is HomeUiState.Success)
-
-            testDispatcher.scheduler.advanceUntilIdle()
-        }
+        assertEquals(false, viewModel.pullRefreshing.value)
+    }
 
     @Test
-    fun `pullToRefresh spinner reset on unexpected exception`() =
-        runTest {
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `nonBlockingError set when refresh fails after success`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value is HomeUiState.Success)
 
-            coEvery { refreshAssets(any()) } throws RuntimeException("Unexpected error")
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+        viewModel.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            vm.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertEquals(false, vm.pullRefreshing.value)
-        }
-
-    @Test
-    fun `retry execution with modified selectedLimit`() =
-        runTest {
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            clearMocks(refreshAssets, answers = false)
-
-            vm.onLimitChanged(100)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            vm.retry()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            coVerify(atLeast = 1) { refreshAssets(100) }
-            coVerify(exactly = 0) { refreshAssets(50) }
-        }
+        val state = viewModel.uiState.value
+        assertEquals(true, state is HomeUiState.Success)
+        assertEquals(AppError.NoInternet, (state as HomeUiState.Success).nonBlockingError)
+    }
 
     @Test
-    fun `Rapid onLimitChanged calls concurrency handling`() =
-        runTest {
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
+    fun `nonBlockingError cleared on successful refresh`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            vm.onLimitChanged(25)
-            vm.onLimitChanged(50)
-            vm.onLimitChanged(100)
-            testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+        viewModel.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(100, vm.selectedLimit)
-            coVerify { refreshAssets(100) }
-        }
+        coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
+        viewModel.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-    @Test
-    fun `Success state preservation after refresh failure`() =
-        runTest {
-            val assets = listOf(anAsset())
-            every { getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
-
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
-            vm.pullToRefresh()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = vm.uiState.value as HomeUiState.Success
-            assertEquals(1, state.assets.size)
-            assertEquals(AppError.NoInternet, state.nonBlockingError)
-        }
+        val state = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(null, state.nonBlockingError)
+    }
 
     @Test
-    fun `observeAssets mapping with correct today date`() =
-        runTest {
-            every { getToday() } returns LocalDate.of(2026, 5, 26)
-            every { getTopAssets(any()) } returns flowOf(DataResult.Success(listOf(anAsset())))
+    fun `Mutex concurrency exclusion`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-            val vm = createViewModel()
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val state = vm.uiState.value as HomeUiState.Success
-            assertEquals("Tuesday, 26 May", state.formattedDate)
-            verify(atLeast = 1) { getToday() }
+        coEvery { refreshAssets(any()) } coAnswers {
+            kotlinx.coroutines.delay(500)
+            DataResult.Success(Unit)
         }
+
+        vm.pullToRefresh()
+        testDispatcher.scheduler.runCurrent()
+
+        vm.pullToRefresh()
+        testDispatcher.scheduler.runCurrent()
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { refreshAssets(any()) }
+    }
+
+    @Test
+    fun `observeAssets reactive update with preserved error`() = runTest {
+        val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
+        every { getTopAssets(any()) } returns assetsFlow
+        assetsFlow.emit(DataResult.Success(listOf(anAsset())))
+
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+        vm.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val stateWithError = vm.uiState.value as HomeUiState.Success
+        assertEquals(AppError.NoInternet, stateWithError.nonBlockingError)
+
+        assetsFlow.emit(DataResult.Success(listOf(anAsset("ethereum"))))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val updatedState = vm.uiState.value as HomeUiState.Success
+        assertEquals("ethereum", updatedState.assets[0].id)
+        assertEquals(AppError.NoInternet, updatedState.nonBlockingError)
+    }
+
+    @Test
+    fun `observeAssets error mapping during initial loading`() = runTest {
+        every { getTopAssets(any()) } returns flowOf(DataResult.Error(AppError.ServerError))
+
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(true, state is HomeUiState.Error)
+        assertEquals(AppError.ServerError, (state as HomeUiState.Error).appError)
+    }
+
+    @Test
+    fun `observeAssets error suppression in Success state`() = runTest {
+        val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
+        every { getTopAssets(any()) } returns assetsFlow
+        assetsFlow.emit(DataResult.Success(listOf(anAsset())))
+
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+
+        assetsFlow.emit(DataResult.Error(AppError.ServerError))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+    }
+
+    @Test
+    fun `doRefresh skip loading state if Success exists`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+
+        coEvery { refreshAssets(any()) } coAnswers {
+            kotlinx.coroutines.delay(500)
+            DataResult.Success(Unit)
+        }
+
+        vm.pullToRefresh()
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `pullToRefresh spinner reset on unexpected exception`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { refreshAssets(any()) } throws RuntimeException("Unexpected error")
+
+        vm.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(false, vm.pullRefreshing.value)
+    }
+
+    @Test
+    fun `retry execution with modified selectedLimit`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        clearMocks(refreshAssets, answers = false)
+
+        vm.onLimitChanged(100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.retry()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(atLeast = 1) { refreshAssets(100) }
+        coVerify(exactly = 0) { refreshAssets(50) }
+    }
+
+    @Test
+    fun `Rapid onLimitChanged calls concurrency handling`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.onLimitChanged(25)
+        vm.onLimitChanged(50)
+        vm.onLimitChanged(100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(100, vm.selectedLimit)
+        coVerify { refreshAssets(100) }
+    }
+
+    @Test
+    fun `Success state preservation after refresh failure`() = runTest {
+        val assets = listOf(anAsset())
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
+
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { refreshAssets(any()) } returns DataResult.Error(AppError.NoInternet)
+        vm.pullToRefresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value as HomeUiState.Success
+        assertEquals(1, state.assets.size)
+        assertEquals(AppError.NoInternet, state.nonBlockingError)
+    }
+
+    @Test
+    fun `observeAssets mapping with correct today date`() = runTest {
+        every { getToday() } returns LocalDate.of(2026, 5, 26)
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(listOf(anAsset())))
+
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value as HomeUiState.Success
+        assertEquals("Tuesday, 26 May", state.formattedDate)
+        verify(atLeast = 1) { getToday() }
+    }
 
     // ----- assetListItemActions -----
 
     @Test
-    fun `assetListItemActions wires onClick, observeIsWatchlisted and onToggleWatchlist correctly`() =
-        runTest {
-            every { watchlistController.observeIsWatchlisted("bitcoin") } returns flowOf(true)
+    fun `assetListItemActions wires onClick, observeIsWatchlisted and onToggleWatchlist correctly`() = runTest {
+        every { watchlistController.observeIsWatchlisted("bitcoin") } returns flowOf(true)
 
-            val vm = createViewModel()
-            var clickedId: String? = null
-            val actions = vm.assetListItemActions(onClick = { clickedId = it })
+        val vm = createViewModel()
+        var clickedId: String? = null
+        val actions = vm.assetListItemActions(onClick = { clickedId = it })
 
-            actions.onClick("bitcoin")
-            assertEquals("bitcoin", clickedId)
+        actions.onClick("bitcoin")
+        assertEquals("bitcoin", clickedId)
 
-            val isWatchlisted = actions.observeIsWatchlisted("bitcoin")
-            assertEquals(true, isWatchlisted.first())
+        val isWatchlisted = actions.observeIsWatchlisted("bitcoin")
+        assertEquals(true, isWatchlisted.first())
 
-            actions.onToggleWatchlist("bitcoin")
-            verify { watchlistController.toggleWatchlist("bitcoin") }
-        }
+        actions.onToggleWatchlist("bitcoin")
+        verify { watchlistController.toggleWatchlist("bitcoin") }
+    }
 }

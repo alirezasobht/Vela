@@ -6,13 +6,7 @@ import com.vela.ui.common.components.model.AssetUiModel
 sealed interface HomeUiState {
     data object Loading : HomeUiState
 
-    data class Success(
-        val assets: List<AssetUiModel>,
-        val formattedDate: String,
-        val nonBlockingError: AppError? = null
-    ) : HomeUiState
+    data class Success(val assets: List<AssetUiModel>, val formattedDate: String, val nonBlockingError: AppError? = null) : HomeUiState
 
-    data class Error(
-        val appError: AppError
-    ) : HomeUiState
+    data class Error(val appError: AppError) : HomeUiState
 }

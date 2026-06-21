@@ -29,11 +29,10 @@ internal fun DetailTabRow(
                 onClick = { onTabSelected(tab) },
                 text = {
                     Text(
-                        text =
-                            when (tab) {
-                                DetailTab.STATS -> stringResource(R.string.label_tab_stats)
-                                DetailTab.ALERTS -> stringResource(R.string.label_tab_alerts)
-                            }
+                        text = when (tab) {
+                            DetailTab.STATS -> stringResource(R.string.label_tab_stats)
+                            DetailTab.ALERTS -> stringResource(R.string.label_tab_alerts)
+                        }
                     )
                 }
             )

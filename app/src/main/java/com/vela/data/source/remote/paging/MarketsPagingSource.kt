@@ -8,22 +8,17 @@ import com.vela.domain.model.Asset
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 
-class MarketsPagingSource(
-    private val api: CoinGeckoApi,
-    private val category: MarketCategory,
-    private val sort: MarketSort
-) : PagingSource<Int, Asset>() {
+class MarketsPagingSource(private val api: CoinGeckoApi, private val category: MarketCategory, private val sort: MarketSort) : PagingSource<Int, Asset>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Asset> {
         val page = params.key ?: 1
         return try {
-            val results =
-                api
-                    .getMarkets(
-                        limit = params.loadSize,
-                        page = page,
-                        category = category.id,
-                        order = sort.toApiValue()
-                    ).map { it.toDomain() }
+            val results = api
+                .getMarkets(
+                    limit = params.loadSize,
+                    page = page,
+                    category = category.id,
+                    order = sort.toApiValue()
+                ).map { it.toDomain() }
 
             LoadResult.Page(
                 data = results,
@@ -35,15 +30,13 @@ class MarketsPagingSource(
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, Asset>): Int? =
-        state.anchorPosition?.let { anchor ->
-            state.closestPageToPosition(anchor)?.prevKey?.plus(1)
-                ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
-        }
+    override fun getRefreshKey(state: PagingState<Int, Asset>): Int? = state.anchorPosition?.let { anchor ->
+        state.closestPageToPosition(anchor)?.prevKey?.plus(1)
+            ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
+    }
 
-    private fun MarketSort.toApiValue(): String =
-        when (this) {
-            MarketSort.MARKET_CAP -> "market_cap_desc"
-            MarketSort.VOLUME -> "volume_desc"
-        }
+    private fun MarketSort.toApiValue(): String = when (this) {
+        MarketSort.MARKET_CAP -> "market_cap_desc"
+        MarketSort.VOLUME -> "volume_desc"
+    }
 }

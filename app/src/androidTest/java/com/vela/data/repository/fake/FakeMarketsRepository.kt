@@ -8,17 +8,15 @@ import com.vela.domain.model.DataResult
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
 import com.vela.domain.repository.MarketsRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import javax.inject.Inject
 
-class FakeMarketsRepository
-    @Inject
-    constructor() : MarketsRepository {
-        override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> = DataResult.Success(FakeCategoryDataSource.categories)
+class FakeMarketsRepository @Inject constructor() : MarketsRepository {
+    override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> = DataResult.Success(FakeCategoryDataSource.categories)
 
-        override fun getMarkets(
-            category: MarketCategory,
-            sort: MarketSort
-        ): Flow<PagingData<Asset>> = flowOf(PagingData.from(FakeAssetDataSource.assets))
-    }
+    override fun getMarkets(
+        category: MarketCategory,
+        sort: MarketSort
+    ): Flow<PagingData<Asset>> = flowOf(PagingData.from(FakeAssetDataSource.assets))
+}

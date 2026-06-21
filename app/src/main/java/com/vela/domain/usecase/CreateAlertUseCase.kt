@@ -4,10 +4,6 @@ import com.vela.domain.model.Alert
 import com.vela.domain.repository.AlertRepository
 import javax.inject.Inject
 
-class CreateAlertUseCase
-    @Inject
-    constructor(
-        private val repository: AlertRepository
-    ) {
-        suspend operator fun invoke(alert: Alert): Long = repository.createAlert(alert)
-    }
+class CreateAlertUseCase @Inject constructor(private val repository: AlertRepository) {
+    suspend operator fun invoke(alert: Alert): Long = repository.createAlert(alert)
+}

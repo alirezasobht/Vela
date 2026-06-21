@@ -10,6 +10,4 @@ import androidx.compose.ui.tooling.preview.Preview
     heightDp = 411,
     apiLevel = 34
 )
-annotation class LandscapePreview(
-    val showBackground: Boolean = true
-)
+annotation class LandscapePreview(val showBackground: Boolean = true)

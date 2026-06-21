@@ -90,18 +90,17 @@ fun DetailRoute(
         }
     }
 
-    val detailActions =
-        DetailActions(
-            onBack = onBack,
-            onRetry = viewModel::retry,
-            onRangeSelected = viewModel::onRangeSelected,
-            onToggleFullScreen = viewModel::toggleChartFullScreen,
-            onToggleWatchlist = viewModel::toggleWatchlist,
-            onTabSelected = viewModel::onTabSelected,
-            onEditAlert = viewModel::openAlertForm,
-            onDismissAlertForm = viewModel::dismissAlertForm,
-            observePrice = viewModel::observePrice
-        )
+    val detailActions = DetailActions(
+        onBack = onBack,
+        onRetry = viewModel::retry,
+        onRangeSelected = viewModel::onRangeSelected,
+        onToggleFullScreen = viewModel::toggleChartFullScreen,
+        onToggleWatchlist = viewModel::toggleWatchlist,
+        onTabSelected = viewModel::onTabSelected,
+        onEditAlert = viewModel::openAlertForm,
+        onDismissAlertForm = viewModel::dismissAlertForm,
+        observePrice = viewModel::observePrice
+    )
 
     DetailScreen(
         uiState = uiState,
@@ -148,6 +147,7 @@ internal fun DetailScreen(
 
         when (uiState) {
             is DetailUiState.Loading -> FullScreenLoader()
+
             is DetailUiState.Error ->
                 FullScreenError(
                     appError = uiState.appError,
@@ -225,12 +225,11 @@ private fun SuccessState(
                 onRangeSelected = detailActions.onRangeSelected,
                 isFullScreen = true,
                 onToggleFullScreen = detailActions.onToggleFullScreen,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .systemBarsPadding()
-                        .layoutId("chart")
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .systemBarsPadding()
+                    .layoutId("chart")
             )
         } else {
             PullToRefreshBox(
@@ -239,10 +238,9 @@ private fun SuccessState(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
                     NonBlockingErrorBanner(error = uiState.nonBlockingError)
 
@@ -261,12 +259,11 @@ private fun SuccessState(
                         isFullScreen = false,
                         onToggleFullScreen = detailActions.onToggleFullScreen,
                         onRangeSelected = detailActions.onRangeSelected,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(216.dp)
-                                .padding(horizontal = 16.dp)
-                                .layoutId("chart"),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(216.dp)
+                            .padding(horizontal = 16.dp)
+                            .layoutId("chart"),
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -319,18 +316,17 @@ private fun DetailScreenPreview(
             formSessionId = 0,
             editingAlertId = null,
             coinId = "bitcoin",
-            detailActions =
-                DetailActions(
-                    onBack = {},
-                    onRetry = {},
-                    onRangeSelected = {},
-                    onToggleFullScreen = {},
-                    onToggleWatchlist = {},
-                    onTabSelected = {},
-                    onEditAlert = {},
-                    onDismissAlertForm = {},
-                    observePrice = { flowOf(null) }
-                )
+            detailActions = DetailActions(
+                onBack = {},
+                onRetry = {},
+                onRangeSelected = {},
+                onToggleFullScreen = {},
+                onToggleWatchlist = {},
+                onTabSelected = {},
+                onEditAlert = {},
+                onDismissAlertForm = {},
+                observePrice = { flowOf(null) }
+            )
         )
     }
 }
@@ -345,51 +341,43 @@ private fun DetailScreenErrorPreview() = DetailScreenPreview(uiState = DetailUiS
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenSuccessPreview() =
-    DetailScreenPreview(
-        uiState =
-            DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                isChartLoading = false,
-                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
-            )
+private fun DetailScreenSuccessPreview() = DetailScreenPreview(
+    uiState = DetailUiState.Success(
+        detail = FakeDetailDataSource.detail.toUiModel(),
+        isChartLoading = false,
+        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
     )
+)
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenSuccessAlertsTabPreview() =
-    DetailScreenPreview(
-        uiState =
-            DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                isChartLoading = false,
-                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
-                selectedTab = DetailTab.ALERTS
-            )
+private fun DetailScreenSuccessAlertsTabPreview() = DetailScreenPreview(
+    uiState = DetailUiState.Success(
+        detail = FakeDetailDataSource.detail.toUiModel(),
+        isChartLoading = false,
+        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+        selectedTab = DetailTab.ALERTS
     )
+)
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenSuccessWithNoneBlockingErrorPreview() =
-    DetailScreenPreview(
-        uiState =
-            DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                isChartLoading = false,
-                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
-                nonBlockingError = AppError.NoInternet
-            )
+private fun DetailScreenSuccessWithNoneBlockingErrorPreview() = DetailScreenPreview(
+    uiState = DetailUiState.Success(
+        detail = FakeDetailDataSource.detail.toUiModel(),
+        isChartLoading = false,
+        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+        nonBlockingError = AppError.NoInternet
     )
+)
 
 @LandscapePreview(showBackground = true)
 @Composable
-private fun FullScreenChartPreview() =
-    DetailScreenPreview(
-        uiState =
-            DetailUiState.Success(
-                detail = FakeDetailDataSource.detail.toUiModel(),
-                isChartLoading = false,
-                ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
-            ),
-        isChartFullScreen = true
-    )
+private fun FullScreenChartPreview() = DetailScreenPreview(
+    uiState = DetailUiState.Success(
+        detail = FakeDetailDataSource.detail.toUiModel(),
+        isChartLoading = false,
+        ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
+    ),
+    isChartFullScreen = true
+)

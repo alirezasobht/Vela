@@ -24,35 +24,32 @@ class WatchlistControllerImplTest {
 
     @Suppress("UnusedFlow")
     @Test
-    fun `observeIsWatchlisted delegates to use case`() =
-        runTest {
-            every { isWatchlistedUseCase("bitcoin") } returns flowOf(true)
+    fun `observeIsWatchlisted delegates to use case`() = runTest {
+        every { isWatchlistedUseCase("bitcoin") } returns flowOf(true)
 
-            val result = controller.observeIsWatchlisted("bitcoin")
+        val result = controller.observeIsWatchlisted("bitcoin")
 
-            assertEquals(true, result.first())
-            verify { isWatchlistedUseCase("bitcoin") }
-        }
-
-    @Test
-    fun `toggleWatchlist before bind is a no-op`() =
-        runTest {
-            controller.toggleWatchlist("bitcoin")
-
-            coVerify(exactly = 0) { toggleWatchlistUseCase(any()) }
-        }
+        assertEquals(true, result.first())
+        verify { isWatchlistedUseCase("bitcoin") }
+    }
 
     @Test
-    fun `toggleWatchlist after bind launches use case on bound scope`() =
-        runTest {
-            val testDispatcher = StandardTestDispatcher(testScheduler)
-            val scope = TestScope(testDispatcher)
-            coEvery { toggleWatchlistUseCase("bitcoin") } returns Unit
+    fun `toggleWatchlist before bind is a no-op`() = runTest {
+        controller.toggleWatchlist("bitcoin")
 
-            controller.bind(scope)
-            controller.toggleWatchlist("bitcoin")
-            testScheduler.advanceUntilIdle()
+        coVerify(exactly = 0) { toggleWatchlistUseCase(any()) }
+    }
 
-            coVerify { toggleWatchlistUseCase("bitcoin") }
-        }
+    @Test
+    fun `toggleWatchlist after bind launches use case on bound scope`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val scope = TestScope(testDispatcher)
+        coEvery { toggleWatchlistUseCase("bitcoin") } returns Unit
+
+        controller.bind(scope)
+        controller.toggleWatchlist("bitcoin")
+        testScheduler.advanceUntilIdle()
+
+        coVerify { toggleWatchlistUseCase("bitcoin") }
+    }
 }
