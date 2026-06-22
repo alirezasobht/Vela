@@ -25,10 +25,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vela.R
 import com.vela.domain.model.AlertDirection
@@ -51,6 +53,7 @@ internal data class AlertFormActions(
 fun AlertFormRoute(
     coinId: String,
     alertId: Long?,
+    initialLabel: String?,
     formSessionId: Int,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -58,7 +61,7 @@ fun AlertFormRoute(
     val viewModel = hiltViewModel<AlertFormViewModel, AlertFormViewModel.Factory>(
         key = formSessionId.toString()
     ) { factory ->
-        factory.create(coinId = coinId, alertId = alertId)
+        factory.create(coinId = coinId, alertId = alertId, initialLabel = initialLabel)
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +100,18 @@ internal fun AlertFormContent(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(8.dp))
+
+        uiState.alertLabel?.let { label ->
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            )
+        }
 
         TypeSelector(
             selectedType = uiState.type,
@@ -290,23 +305,11 @@ private fun AlertFormContentEnabledPreview() = AlertFormContentPreview(
     uiState = AlertFormUiState(
         type = AlertType.PRICE,
         direction = AlertDirection.ABOVE,
-        value = "70000",
+        value = "80000",
         isSubmitEnabled = true,
         editBtnResId = R.string.action_create_alert,
-        isValueInputEnabled = true
-    )
-)
-
-@Preview(showBackground = true)
-@Composable
-private fun AlertFormContentPercentPreview() = AlertFormContentPreview(
-    uiState = AlertFormUiState(
-        type = AlertType.PERCENT,
-        direction = AlertDirection.ABOVE,
-        value = "5",
-        isSubmitEnabled = true,
-        editBtnResId = R.string.action_create_alert,
-        isValueInputEnabled = true
+        isValueInputEnabled = true,
+        alertLabel = "Price above \$80,000"
     )
 )
 
@@ -316,10 +319,11 @@ private fun AlertFormContentEditModePreview() = AlertFormContentPreview(
     uiState = AlertFormUiState(
         type = AlertType.PRICE,
         direction = AlertDirection.ABOVE,
-        value = "70000",
+        value = "80000",
         isSubmitEnabled = true,
         editBtnResId = R.string.action_edit_alert,
-        isValueInputEnabled = true
+        isValueInputEnabled = true,
+        alertLabel = "Price above \$70,000"
     )
 )
 
@@ -333,6 +337,7 @@ private fun AlertFormContentLoadingPreview() = AlertFormContentPreview(
         isSubmitEnabled = true,
         isLoading = true,
         editBtnResId = R.string.action_create_alert,
-        isValueInputEnabled = true
+        isValueInputEnabled = true,
+        alertLabel = "Price above \$70,000"
     )
 )

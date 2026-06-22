@@ -272,6 +272,7 @@ private fun SuccessState(
                         AlertFormRoute(
                             coinId = coinId,
                             alertId = editingAlertId,
+                            initialLabel = uiState.alerts.find { it.id == editingAlertId }?.label,
                             formSessionId = formSessionId,
                             onDismiss = detailActions.onDismissAlertForm
                         )

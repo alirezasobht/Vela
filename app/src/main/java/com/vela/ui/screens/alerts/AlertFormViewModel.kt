@@ -32,14 +32,17 @@ class AlertFormViewModel @AssistedInject constructor(
     private val editAlert: EditAlertUseCase,
     private val getAlertById: GetAlertByIdUseCase,
     private val validateAlert: ValidateAlertUseCase,
-    @Assisted val coinId: String,
-    @Assisted val alertId: Long?
+    private val alertLabelFormatter: AlertLabelFormatter,
+    @Assisted("coinId") val coinId: String,
+    @Assisted val alertId: Long?,
+    @Assisted("initialLabel") val initialLabel: String?
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
         fun create(
-            coinId: String,
-            alertId: Long?
+            @Assisted("coinId") coinId: String,
+            @Assisted alertId: Long?,
+            @Assisted("initialLabel") initialLabel: String?
         ): AlertFormViewModel
     }
 
@@ -52,7 +55,8 @@ class AlertFormViewModel @AssistedInject constructor(
 
     private val _uiState = MutableStateFlow(
         AlertFormUiState(
-            editBtnResId = if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert
+            editBtnResId = if (isEditMode) R.string.action_edit_alert else R.string.action_create_alert,
+            alertLabel = initialLabel
         )
     )
     val uiState: StateFlow<AlertFormUiState> = _uiState.asStateFlow()
@@ -113,11 +117,10 @@ class AlertFormViewModel @AssistedInject constructor(
             val result = getPricesOnly(listOf(coinId))
             currentPrice = (result as? DataResult.Success)?.data?.get(coinId)?.price
             _uiState.update {
-                it
-                    .copy(
-                        value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
-                        isValueInputEnabled = true
-                    ).withSubmitEnabled()
+                it.copy(
+                    value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
+                    isValueInputEnabled = true
+                ).withSubmitEnabled()
             }
         }
     }
@@ -130,16 +133,12 @@ class AlertFormViewModel @AssistedInject constructor(
                 val priceResult = getPricesOnly(listOf(coinId))
                 currentPrice = (priceResult as? DataResult.Success)?.data?.get(coinId)?.price
                 _uiState.update {
-                    it
-                        .copy(
-                            type = alert.type,
-                            direction = alert.direction,
-                            value = alert.targetValue
-                                .toBigDecimal()
-                                .stripTrailingZeros()
-                                .toPlainString(),
-                            isValueInputEnabled = true
-                        ).withSubmitEnabled()
+                    it.copy(
+                        type = alert.type,
+                        direction = alert.direction,
+                        value = alert.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
+                        isValueInputEnabled = true
+                    ).withSubmitEnabled()
                 }
             } else {
                 _dismissEvent.send(Unit)
@@ -147,13 +146,29 @@ class AlertFormViewModel @AssistedInject constructor(
         }
     }
 
-    private fun AlertFormUiState.withSubmitEnabled() = copy(
-        isSubmitEnabled = validateAlert(
+    private fun AlertFormUiState.withSubmitEnabled(): AlertFormUiState {
+        val isValid = validateAlert(
             type = type,
             direction = direction,
             value = value,
             currentPrice = currentPrice,
             originalAlert = originalAlert
         )
-    )
+        val label = if (type != null && direction != null && value.toDoubleOrNull() != null) {
+            alertLabelFormatter.format(
+                Alert(
+                    id = alertId ?: 0L,
+                    coinId = coinId,
+                    coinName = asset?.name ?: "",
+                    coinSymbol = asset?.symbol ?: "",
+                    type = type,
+                    direction = direction,
+                    targetValue = value.toDouble()
+                )
+            )
+        } else {
+            null
+        }
+        return copy(isSubmitEnabled = isValid, alertLabel = label)
+    }
 }

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.vela.R
 import com.vela.ui.common.util.TestTags
+import com.vela.ui.screens.detail.state.DetailTab
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
@@ -18,7 +19,11 @@ sealed interface Screen {
     data object Dashboard : Screen
 
     @Serializable
-    data class CoinDetail(val coinId: String) : Screen
+    data class CoinDetail(
+        val coinId: String,
+        val initialTab: DetailTab = DetailTab.STATS,
+        val initialAlertId: Long? = null
+    ) : Screen
 }
 
 @Serializable
