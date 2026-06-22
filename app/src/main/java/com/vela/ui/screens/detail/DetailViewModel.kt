@@ -22,6 +22,8 @@ import com.vela.ui.base.pricepolling.PricePolling
 import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.navigation.Screen
+import com.vela.ui.screens.alerts.AlertLabelFormatter
+import com.vela.ui.screens.alerts.AlertRowUiModel
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.DetailUiState
@@ -51,12 +53,16 @@ class DetailViewModel @Inject constructor(
     private val isWatchlistedUseCase: IsWatchlistedUseCase,
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
+    private val alertLabelFormatter: AlertLabelFormatter,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(),
     PricePolling by pricePolling,
     PricePollingDelegate {
     val coinId: String
     val initialHeader: CoinDetailUiModel?
+
+    private val initialTab: DetailTab
+    private val initialAlertId: Long?
 
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -92,11 +98,15 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
-        coinId = try {
-            savedStateHandle.toRoute<Screen.CoinDetail>().coinId
+        val route = try {
+            savedStateHandle.toRoute<Screen.CoinDetail>()
         } catch (_: Exception) {
-            savedStateHandle.get<String>("coinId") ?: ""
+            null
         }
+        coinId = route?.coinId ?: savedStateHandle.get<String>("coinId") ?: ""
+        initialTab = route?.initialTab ?: DetailTab.STATS
+        initialAlertId = route?.initialAlertId
+
         initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
 
         isWatchlisted = isWatchlistedUseCase(coinId)
@@ -149,7 +159,15 @@ class DetailViewModel @Inject constructor(
         observeAlertsByCoinId(coinId)
             .onEach { alerts ->
                 val current = _uiState.value as? DetailUiState.Success ?: return@onEach
-                _uiState.value = current.copy(alerts = alerts)
+                _uiState.value = current.copy(
+                    alerts = alerts.map { alert ->
+                        AlertRowUiModel(
+                            id = alert.id,
+                            label = alertLabelFormatter.format(alert),
+                            isTriggered = alert.isTriggered
+                        )
+                    }
+                )
             }.launchIn(viewModelScope)
     }
 
@@ -165,10 +183,14 @@ class DetailViewModel @Inject constructor(
                 is DataResult.Success -> {
                     _uiState.value = DetailUiState.Success(
                         detail = result.data.toUiModel(),
-                        isChartLoading = true
+                        isChartLoading = true,
+                        selectedTab = initialTab
                     )
                     loadOhlc(selectedRange)
                     observeAlerts()
+                    if (initialAlertId != null) {
+                        openAlertForm(initialAlertId)
+                    }
                 }
 
                 is DataResult.Error -> {

@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vela.data.source.fake.FakeDetailDataSource
-import com.vela.domain.model.Alert
+import com.vela.ui.screens.alerts.AlertRowUiModel
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
 import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.toUiModel
@@ -15,7 +15,7 @@ import com.vela.ui.theme.VelaTheme
 @Composable
 internal fun TabsSection(
     selectedTab: DetailTab,
-    alerts: List<Alert>,
+    alerts: List<AlertRowUiModel>,
     detail: CoinDetailUiModel,
     marketCap: String,
     totalVolume: String,

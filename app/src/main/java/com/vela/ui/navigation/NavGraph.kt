@@ -10,10 +10,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.vela.ui.common.components.PlaceholderScreen
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
+import com.vela.ui.screens.alerts.AlertsRoute
 import com.vela.ui.screens.detail.DetailRoute
+import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.home.HomeRoute
 import com.vela.ui.screens.markets.MarketsRoute
 import com.vela.ui.screens.search.SearchRoute
@@ -96,7 +97,17 @@ fun DashboardNavGraph(
             )
         }
         composable<DashboardTab.Alerts> {
-            PlaceholderScreen(title = "Alerts")
+            AlertsRoute(
+                navigateToDetail = { coinId, alertId ->
+                    rootNavController.navigate(
+                        Screen.CoinDetail(
+                            coinId = coinId,
+                            initialTab = DetailTab.ALERTS,
+                            initialAlertId = alertId
+                        )
+                    )
+                }
+            )
         }
     }
 }

@@ -2,6 +2,7 @@
     <string name="app_name">Vela</string>
     <string name="title_markets">Markets</string>
     <string name="title_watchlist">Watchlist</string>
+    <string name="title_alerts">Alerts</string>
 
     <string name="error_no_internet">No internet connection</string>
     <string name="error_server">Server error, please try again</string>
@@ -47,6 +48,7 @@
     <string name="action_create_alert">Add Alert</string>
     <string name="action_edit_alert">Edit Alert</string>
     <string name="label_alerts_empty_title">No alerts yet</string>
+    <string name="label_alerts_empty_subtitle">Go to a coin\'s detail screen and tap the Alerts tab to add one</string>
     <string name="label_alert_triggered">Triggered</string>
     <string name="label_tab_stats">Stats</string>
     <string name="label_tab_alerts">Alerts</string>
