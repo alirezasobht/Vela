@@ -22,12 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,11 +33,9 @@ import com.vela.data.source.fake.FakeAssetDataSource
 import com.vela.data.source.fake.FakeDetailDataSource
 import com.vela.data.source.fake.FakeOhlcDataSource
 import com.vela.domain.model.AppError
-import com.vela.domain.model.TimeRange
 import com.vela.ui.common.components.FullScreenError
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
-import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.LandscapePreview
 import com.vela.ui.common.util.ScreenVisibilityObserver
@@ -50,27 +43,16 @@ import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.common.util.rememberFullScreenOrientationController
 import com.vela.ui.screens.alerts.AlertFormRoute
 import com.vela.ui.screens.detail.chart.OhlcChartSection
+import com.vela.ui.screens.detail.state.AlertFormState
 import com.vela.ui.screens.detail.state.CoinDetailUiModel
+import com.vela.ui.screens.detail.state.DetailAction
+import com.vela.ui.screens.detail.state.DetailContentState
+import com.vela.ui.screens.detail.state.DetailScreenState
 import com.vela.ui.screens.detail.state.DetailTab
-import com.vela.ui.screens.detail.state.DetailUiState
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import com.vela.ui.theme.sparklineBearColor
 import com.vela.ui.theme.sparklineBullColor
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-
-internal data class DetailActions(
-    val onBack: () -> Unit,
-    val onRetry: () -> Unit,
-    val onRangeSelected: (TimeRange) -> Unit,
-    val onToggleFullScreen: () -> Unit,
-    val onToggleWatchlist: () -> Unit,
-    val onTabSelected: (DetailTab) -> Unit,
-    val onEditAlert: (Long?) -> Unit,
-    val onDismissAlertForm: () -> Unit,
-    val observePrice: (String) -> Flow<SimplePriceUiModel?>
-)
 
 @Composable
 fun DetailRoute(
@@ -79,93 +61,57 @@ fun DetailRoute(
 ) {
     ScreenVisibilityObserver(viewModel::onScreenVisible)
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isWatchlisted by viewModel.isWatchlisted.collectAsStateWithLifecycle()
-
-    var editingAlertId by rememberSaveable { mutableStateOf<Long?>(null) }
-
-    LaunchedEffect(Unit) {
-        viewModel.alertFormEvent.collect { id ->
-            editingAlertId = id
-        }
-    }
-
-    val detailActions = DetailActions(
-        onBack = onBack,
-        onRetry = viewModel::retry,
-        onRangeSelected = viewModel::onRangeSelected,
-        onToggleFullScreen = viewModel::toggleChartFullScreen,
-        onToggleWatchlist = viewModel::toggleWatchlist,
-        onTabSelected = viewModel::onTabSelected,
-        onEditAlert = viewModel::openAlertForm,
-        onDismissAlertForm = viewModel::dismissAlertForm,
-        observePrice = viewModel::observePrice
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     DetailScreen(
-        uiState = uiState,
+        state = state,
         initialAsset = viewModel.initialHeader,
-        selectedRange = viewModel.selectedRange,
-        isChartFullScreen = viewModel.isChartFullScreen,
-        isWatchlisted = isWatchlisted,
-        isAlertFormVisible = viewModel.isAlertFormVisible,
-        formSessionId = viewModel.formSessionId,
-        editingAlertId = editingAlertId,
-        coinId = viewModel.coinId,
-        detailActions = detailActions
+        onAction = { action ->
+            if (action is DetailAction.Back) onBack() else viewModel.onAction(action)
+        }
     )
 }
 
 @Composable
 internal fun DetailScreen(
-    uiState: DetailUiState,
+    state: DetailScreenState,
     initialAsset: CoinDetailUiModel?,
-    selectedRange: TimeRange,
-    isChartFullScreen: Boolean,
-    isWatchlisted: Boolean,
-    isAlertFormVisible: Boolean,
-    formSessionId: Int,
-    editingAlertId: Long?,
-    coinId: String,
-    detailActions: DetailActions,
+    onAction: (DetailAction) -> Unit,
     modifier: Modifier = Modifier,
     orientationController: FullScreenOrientationController = rememberFullScreenOrientationController()
 ) {
-    val headerModel = initialAsset ?: (uiState as? DetailUiState.Success)?.detail
+    val coinDetail = initialAsset ?: (state.content as? DetailContentState.Success)?.detail
 
     Column(modifier = modifier.fillMaxSize()) {
         HeaderSection(
-            name = headerModel?.name ?: "",
-            symbol = headerModel?.symbol ?: "",
-            image = headerModel?.image,
-            marketCapRank = headerModel?.marketCapRank,
-            coinId = headerModel?.id ?: "",
-            isWatchlisted = isWatchlisted,
-            onBack = if (isChartFullScreen) detailActions.onToggleFullScreen else detailActions.onBack,
-            onToggleWatchlist = detailActions.onToggleWatchlist
+            name = coinDetail?.name ?: "",
+            symbol = coinDetail?.symbol ?: "",
+            image = coinDetail?.image,
+            marketCapRank = coinDetail?.marketCapRank,
+            coinId = coinDetail?.id ?: "",
+            isWatchlisted = state.isWatchlisted,
+            onBack = if (state.isChartFullScreen) {
+                { onAction(DetailAction.ToggleFullScreen) }
+            } else {
+                { onAction(DetailAction.Back) }
+            },
+            onToggleWatchlist = { onAction(DetailAction.ToggleWatchlist) }
         )
 
-        when (uiState) {
-            is DetailUiState.Loading -> FullScreenLoader()
+        when (val content = state.content) {
+            is DetailContentState.Loading -> FullScreenLoader()
 
-            is DetailUiState.Error ->
-                FullScreenError(
-                    appError = uiState.appError,
-                    onRetry = detailActions.onRetry
-                )
+            is DetailContentState.Error -> FullScreenError(
+                appError = content.appError,
+                onRetry = { onAction(DetailAction.Retry) }
+            )
 
-            is DetailUiState.Success ->
-                SuccessState(
-                    uiState = uiState,
-                    selectedRange = selectedRange,
-                    isChartFullScreen = isChartFullScreen,
-                    isAlertFormVisible = isAlertFormVisible,
-                    formSessionId = formSessionId,
-                    editingAlertId = editingAlertId,
-                    coinId = coinId,
-                    detailActions = detailActions,
-                    orientationController = orientationController
-                )
+            is DetailContentState.Success -> SuccessState(
+                state = state,
+                content = content,
+                onAction = onAction,
+                orientationController = orientationController
+            )
         }
     }
 }
@@ -173,35 +119,21 @@ internal fun DetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SuccessState(
-    uiState: DetailUiState.Success,
-    selectedRange: TimeRange,
-    isChartFullScreen: Boolean,
-    isAlertFormVisible: Boolean,
-    formSessionId: Int,
-    editingAlertId: Long?,
-    coinId: String,
-    detailActions: DetailActions,
+    state: DetailScreenState,
+    content: DetailContentState.Success,
+    onAction: (DetailAction) -> Unit,
     orientationController: FullScreenOrientationController,
     modifier: Modifier = Modifier
 ) {
-    val detail = uiState.detail
-    val priceFlow = remember(detail.id) { detailActions.observePrice(detail.id) }
-    val simplePrice by priceFlow.collectAsStateWithLifecycle(initialValue = null)
+    val detail = content.detail
+    val priceColor = if (detail.isPositive) sparklineBullColor else sparklineBearColor
 
-    val price = simplePrice?.price ?: detail.currentPrice
-    val priceChangePercent = simplePrice?.priceChange ?: detail.priceChangePercent24h
-    val priceChange24h = simplePrice?.priceChange24h ?: detail.priceChange24h
-    val isPositive = simplePrice?.isPositive ?: detail.isPositive
-    val marketCap = simplePrice?.marketCap ?: detail.marketCap
-    val totalVolume = simplePrice?.totalVolume ?: detail.totalVolume
-    val priceColor = if (isPositive) sparklineBullColor else sparklineBearColor
-
-    BackHandler(enabled = isChartFullScreen) {
-        detailActions.onToggleFullScreen()
+    BackHandler(enabled = state.isChartFullScreen) {
+        onAction(DetailAction.ToggleFullScreen)
     }
 
-    DisposableEffect(isChartFullScreen) {
-        if (isChartFullScreen) {
+    DisposableEffect(state.isChartFullScreen) {
+        if (state.isChartFullScreen) {
             val restoreOrientation = orientationController.lockLandscape()
             onDispose(restoreOrientation)
         } else {
@@ -210,7 +142,7 @@ private fun SuccessState(
     }
 
     AnimatedContent(
-        targetState = isChartFullScreen,
+        targetState = state.isChartFullScreen,
         transitionSpec = {
             fadeIn(tween(300)) togetherWith fadeOut(tween(300)) using SizeTransform(clip = false)
         },
@@ -219,12 +151,12 @@ private fun SuccessState(
     ) { fullScreen ->
         if (fullScreen) {
             OhlcChartSection(
-                ohlcPoints = uiState.ohlcPoints,
-                isChartLoading = uiState.isChartLoading,
-                selectedRange = selectedRange,
-                onRangeSelected = detailActions.onRangeSelected,
+                ohlcPoints = content.ohlcPoints,
+                isChartLoading = content.isChartLoading,
+                selectedRange = state.selectedRange,
+                onRangeSelected = { onAction(DetailAction.RangeSelected(it)) },
                 isFullScreen = true,
-                onToggleFullScreen = detailActions.onToggleFullScreen,
+                onToggleFullScreen = { onAction(DetailAction.ToggleFullScreen) },
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
@@ -233,8 +165,8 @@ private fun SuccessState(
             )
         } else {
             PullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = detailActions.onRetry,
+                isRefreshing = content.isRefreshing,
+                onRefresh = { onAction(DetailAction.Retry) },
                 modifier = Modifier.fillMaxSize()
             ) {
                 Column(
@@ -242,23 +174,23 @@ private fun SuccessState(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                 ) {
-                    NonBlockingErrorBanner(error = uiState.nonBlockingError)
+                    NonBlockingErrorBanner(error = content.nonBlockingError)
 
                     PriceSection(
-                        price = price,
-                        priceChange24h = priceChange24h,
-                        priceChangePercent = priceChangePercent,
+                        price = detail.currentPrice,
+                        priceChange24h = detail.priceChange24h,
+                        priceChangePercent = detail.priceChangePercent24h,
                         priceColor = priceColor,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
 
                     OhlcChartSection(
-                        ohlcPoints = uiState.ohlcPoints,
-                        isChartLoading = uiState.isChartLoading,
-                        selectedRange = selectedRange,
+                        ohlcPoints = content.ohlcPoints,
+                        isChartLoading = content.isChartLoading,
+                        selectedRange = state.selectedRange,
                         isFullScreen = false,
-                        onToggleFullScreen = detailActions.onToggleFullScreen,
-                        onRangeSelected = detailActions.onRangeSelected,
+                        onToggleFullScreen = { onAction(DetailAction.ToggleFullScreen) },
+                        onRangeSelected = { onAction(DetailAction.RangeSelected(it)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(216.dp)
@@ -268,27 +200,27 @@ private fun SuccessState(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (isAlertFormVisible) {
+                    if (state.alertFormState is AlertFormState.Visible) {
                         AlertFormRoute(
-                            coinId = coinId,
-                            alertId = editingAlertId,
-                            initialLabel = uiState.alerts.find { it.id == editingAlertId }?.label,
-                            formSessionId = formSessionId,
-                            onDismiss = detailActions.onDismissAlertForm
+                            coinId = state.coinId,
+                            alertId = state.alertFormState.alertRowUiModel?.id,
+                            initialLabel = state.alertFormState.alertRowUiModel?.label,
+                            formSessionId = state.alertFormState.formSessionId,
+                            onDismiss = { onAction(DetailAction.DismissAlertForm) }
                         )
                     } else {
                         DetailTabRow(
-                            selectedTab = uiState.selectedTab,
-                            onTabSelected = detailActions.onTabSelected
+                            selectedTab = content.selectedTab,
+                            onTabSelected = { onAction(DetailAction.TabSelected(it)) }
                         )
 
                         TabsSection(
-                            selectedTab = uiState.selectedTab,
-                            alerts = uiState.alerts,
+                            selectedTab = content.selectedTab,
+                            alerts = content.alerts,
                             detail = detail,
-                            marketCap = marketCap,
-                            totalVolume = totalVolume,
-                            onEditAlert = detailActions.onEditAlert
+                            marketCap = detail.marketCap,
+                            totalVolume = detail.totalVolume,
+                            onEditAlert = { onAction(DetailAction.EditAlert(it)) }
                         )
                     }
                 }
@@ -301,49 +233,38 @@ private fun SuccessState(
 
 @Composable
 private fun DetailScreenPreview(
-    uiState: DetailUiState,
+    content: DetailContentState,
     isChartFullScreen: Boolean = false,
     isWatchlisted: Boolean = false,
-    isAlertFormVisible: Boolean = false
+    alertFormState: AlertFormState = AlertFormState.Invisible
 ) {
     SharedTransitionWrapper {
         DetailScreen(
-            uiState = uiState,
+            state = DetailScreenState(
+                coinId = "bitcoin",
+                isChartFullScreen = isChartFullScreen,
+                isWatchlisted = isWatchlisted,
+                alertFormState = alertFormState,
+                content = content
+            ),
             initialAsset = FakeAssetDataSource.assets[0].toCoinDetailUiModel(),
-            selectedRange = TimeRange.ONE_DAY,
-            isChartFullScreen = isChartFullScreen,
-            isWatchlisted = isWatchlisted,
-            isAlertFormVisible = isAlertFormVisible,
-            formSessionId = 0,
-            editingAlertId = null,
-            coinId = "bitcoin",
-            detailActions = DetailActions(
-                onBack = {},
-                onRetry = {},
-                onRangeSelected = {},
-                onToggleFullScreen = {},
-                onToggleWatchlist = {},
-                onTabSelected = {},
-                onEditAlert = {},
-                onDismissAlertForm = {},
-                observePrice = { flowOf(null) }
-            )
+            onAction = {}
         )
     }
 }
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenLoadingPreview() = DetailScreenPreview(uiState = DetailUiState.Loading)
+private fun DetailScreenLoadingPreview() = DetailScreenPreview(content = DetailContentState.Loading)
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
-private fun DetailScreenErrorPreview() = DetailScreenPreview(uiState = DetailUiState.Error(AppError.NoInternet))
+private fun DetailScreenErrorPreview() = DetailScreenPreview(content = DetailContentState.Error(AppError.NoInternet))
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessPreview() = DetailScreenPreview(
-    uiState = DetailUiState.Success(
+    content = DetailContentState.Success(
         detail = FakeDetailDataSource.detail.toUiModel(),
         isChartLoading = false,
         ohlcPoints = FakeOhlcDataSource.bitcoinOhlc
@@ -353,7 +274,7 @@ private fun DetailScreenSuccessPreview() = DetailScreenPreview(
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessAlertsTabPreview() = DetailScreenPreview(
-    uiState = DetailUiState.Success(
+    content = DetailContentState.Success(
         detail = FakeDetailDataSource.detail.toUiModel(),
         isChartLoading = false,
         ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
@@ -364,7 +285,7 @@ private fun DetailScreenSuccessAlertsTabPreview() = DetailScreenPreview(
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
 private fun DetailScreenSuccessWithNoneBlockingErrorPreview() = DetailScreenPreview(
-    uiState = DetailUiState.Success(
+    content = DetailContentState.Success(
         detail = FakeDetailDataSource.detail.toUiModel(),
         isChartLoading = false,
         ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,
@@ -375,7 +296,7 @@ private fun DetailScreenSuccessWithNoneBlockingErrorPreview() = DetailScreenPrev
 @LandscapePreview(showBackground = true)
 @Composable
 private fun FullScreenChartPreview() = DetailScreenPreview(
-    uiState = DetailUiState.Success(
+    content = DetailContentState.Success(
         detail = FakeDetailDataSource.detail.toUiModel(),
         isChartLoading = false,
         ohlcPoints = FakeOhlcDataSource.bitcoinOhlc,

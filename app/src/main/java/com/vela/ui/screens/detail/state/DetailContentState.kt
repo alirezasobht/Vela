@@ -6,10 +6,10 @@ import com.vela.ui.screens.alerts.AlertRowUiModel
 
 enum class DetailTab { STATS, ALERTS }
 
-sealed interface DetailUiState {
-    data object Loading : DetailUiState
+sealed interface DetailContentState {
+    data object Loading : DetailContentState
 
-    data class Error(val appError: AppError) : DetailUiState
+    data class Error(val appError: AppError) : DetailContentState
 
     data class Success(
         val detail: CoinDetailUiModel,
@@ -19,5 +19,5 @@ sealed interface DetailUiState {
         val nonBlockingError: AppError? = null,
         val alerts: List<AlertRowUiModel> = emptyList(),
         val selectedTab: DetailTab = DetailTab.STATS
-    ) : DetailUiState
+    ) : DetailContentState
 }
