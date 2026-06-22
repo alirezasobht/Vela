@@ -19,17 +19,19 @@ import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
-import com.vela.ui.screens.detail.state.DetailUiState
+import com.vela.ui.screens.alerts.AlertLabelFormatter
+import com.vela.ui.screens.alerts.AlertRowUiModel
+import com.vela.ui.screens.detail.state.AlertFormState
+import com.vela.ui.screens.detail.state.DetailAction
+import com.vela.ui.screens.detail.state.DetailContentState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -37,8 +39,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
@@ -52,6 +56,7 @@ class DetailViewModelTest {
     private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk()
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase = mockk()
+    private val alertLabelFormatter: AlertLabelFormatter = mockk()
 
     private fun createViewModel(): DetailViewModel {
         val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
@@ -64,6 +69,7 @@ class DetailViewModelTest {
             isWatchlistedUseCase = isWatchlistedUseCase,
             toggleWatchlistUseCase = toggleWatchlistUseCase,
             observeAlertsByCoinId = observeAlertsByCoinId,
+            alertLabelFormatter = alertLabelFormatter,
             savedStateHandle = handle
         )
     }
@@ -94,9 +100,9 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        val state = vm.uiState.value as DetailUiState.Success
-        assertEquals(false, state.isChartLoading)
-        assertNotNull(state.detail)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(false, content.isChartLoading)
+        assertNotNull(content.detail)
     }
 
     @Test
@@ -106,7 +112,7 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(true, vm.uiState.value is DetailUiState.Error)
+        assertTrue(vm.state.value.content is DetailContentState.Error)
     }
 
     // ----- refresh -----
@@ -119,18 +125,18 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        val detailBefore = (vm.uiState.value as DetailUiState.Success).detail
+        val detailBefore = (vm.state.value.content as DetailContentState.Success).detail
 
         coEvery { getCoinDetail(any()) } coAnswers {
             kotlinx.coroutines.delay(1_000.milliseconds)
             DataResult.Success(coinDetail())
         }
-        vm.retry()
+        vm.onAction(DetailAction.Retry)
         dispatcher.scheduler.advanceTimeBy(100)
 
-        val refreshingState = vm.uiState.value as DetailUiState.Success
-        assertEquals(true, refreshingState.isRefreshing)
-        assertEquals(detailBefore, refreshingState.detail)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(true, content.isRefreshing)
+        assertEquals(detailBefore, content.detail)
     }
 
     @Test
@@ -142,12 +148,12 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
-        vm.retry()
+        vm.onAction(DetailAction.Retry)
         dispatcher.scheduler.advanceUntilIdle()
 
-        val state = vm.uiState.value as DetailUiState.Success
-        assertEquals(false, state.isRefreshing)
-        assertEquals(AppError.NoInternet, state.nonBlockingError)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(false, content.isRefreshing)
+        assertEquals(AppError.NoInternet, content.nonBlockingError)
     }
 
     // ----- onRangeSelected -----
@@ -169,13 +175,13 @@ class DetailViewModelTest {
         }
         coEvery { getOhlc(any(), eq(TimeRange.ONE_MONTH)) } returns DataResult.Success(fastPoints)
 
-        vm.onRangeSelected(TimeRange.SEVEN_DAYS)
+        vm.onAction(DetailAction.RangeSelected(TimeRange.SEVEN_DAYS))
         dispatcher.scheduler.advanceTimeBy(100)
-        vm.onRangeSelected(TimeRange.ONE_MONTH)
+        vm.onAction(DetailAction.RangeSelected(TimeRange.ONE_MONTH))
         dispatcher.scheduler.advanceUntilIdle()
 
-        val state = vm.uiState.value as DetailUiState.Success
-        assertEquals(fastPoints, state.ohlcPoints)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(fastPoints, content.ohlcPoints)
     }
 
     // ----- OHLC error -----
@@ -191,12 +197,12 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coEvery { getOhlc(any(), any()) } returns DataResult.Error(AppError.NoInternet)
-        vm.onRangeSelected(TimeRange.SEVEN_DAYS)
+        vm.onAction(DetailAction.RangeSelected(TimeRange.SEVEN_DAYS))
         dispatcher.scheduler.advanceUntilIdle()
 
-        val state = vm.uiState.value as DetailUiState.Success
-        assertEquals(AppError.NoInternet, state.nonBlockingError)
-        assertEquals(existingPoints, state.ohlcPoints)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(AppError.NoInternet, content.nonBlockingError)
+        assertEquals(existingPoints, content.ohlcPoints)
     }
 
     // ----- toggleChartFullScreen -----
@@ -209,11 +215,11 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(false, vm.isChartFullScreen)
-        vm.toggleChartFullScreen()
-        assertEquals(true, vm.isChartFullScreen)
-        vm.toggleChartFullScreen()
-        assertEquals(false, vm.isChartFullScreen)
+        assertEquals(false, vm.state.value.isChartFullScreen)
+        vm.onAction(DetailAction.ToggleFullScreen)
+        assertEquals(true, vm.state.value.isChartFullScreen)
+        vm.onAction(DetailAction.ToggleFullScreen)
+        assertEquals(false, vm.state.value.isChartFullScreen)
     }
 
     // ----- retry -----
@@ -224,14 +230,14 @@ class DetailViewModelTest {
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
-        assertEquals(true, vm.uiState.value is DetailUiState.Error)
+        assertTrue(vm.state.value.content is DetailContentState.Error)
 
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
-        vm.retry()
+        vm.onAction(DetailAction.Retry)
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(true, vm.uiState.value is DetailUiState.Success)
+        assertTrue(vm.state.value.content is DetailContentState.Success)
     }
 
     @Test
@@ -246,10 +252,10 @@ class DetailViewModelTest {
             kotlinx.coroutines.delay(500.milliseconds)
             DataResult.Success(coinDetail())
         }
-        vm.retry()
+        vm.onAction(DetailAction.Retry)
         dispatcher.scheduler.advanceTimeBy(100)
 
-        assertEquals(true, vm.uiState.value is DetailUiState.Success)
+        assertTrue(vm.state.value.content is DetailContentState.Success)
     }
 
     // ----- watchlist -----
@@ -262,7 +268,7 @@ class DetailViewModelTest {
 
         val vm = createViewModel()
 
-        assertEquals(false, vm.isWatchlisted.value)
+        assertEquals(false, vm.state.value.isWatchlisted)
     }
 
     @Test
@@ -272,11 +278,9 @@ class DetailViewModelTest {
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
-        val job = launch { vm.isWatchlisted.collect {} }
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(true, vm.isWatchlisted.value)
-        job.cancel()
+        assertEquals(true, vm.state.value.isWatchlisted)
     }
 
     @Test
@@ -288,7 +292,7 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.toggleWatchlist()
+        vm.onAction(DetailAction.ToggleWatchlist)
         dispatcher.scheduler.advanceUntilIdle()
 
         coVerify { toggleWatchlistUseCase.invoke("bitcoin") }
@@ -328,8 +332,8 @@ class DetailViewModelTest {
 
         vm.onPriceError(AppError.NoInternet)
 
-        val state = vm.uiState.value as DetailUiState.Success
-        assertEquals(AppError.NoInternet, state.nonBlockingError)
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals(AppError.NoInternet, content.nonBlockingError)
     }
 
     @Test
@@ -338,9 +342,9 @@ class DetailViewModelTest {
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
-        vm.onRangeSelected(TimeRange.ONE_YEAR)
+        vm.onAction(DetailAction.RangeSelected(TimeRange.ONE_YEAR))
 
-        assertEquals(TimeRange.ONE_YEAR, vm.selectedRange)
+        assertEquals(TimeRange.ONE_YEAR, vm.state.value.selectedRange)
     }
 
     // ----- alerts -----
@@ -352,74 +356,85 @@ class DetailViewModelTest {
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
-        val before = vm.formSessionId
+        val before = (vm.state.value.alertFormState as? AlertFormState.Visible)?.formSessionId ?: 0
 
-        vm.openAlertForm()
+        vm.onAction(DetailAction.EditAlert(null))
 
-        assertEquals(before + 1, vm.formSessionId)
+        val after = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
+        assertEquals(before + 1, after)
     }
 
     @Test
-    fun `openAlertForm sets isAlertFormVisible to true`() = runTest {
+    fun `openAlertForm sets alertFormState to Visible`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.openAlertForm()
+        vm.onAction(DetailAction.EditAlert(null))
 
-        assertEquals(true, vm.isAlertFormVisible)
+        assertTrue(vm.state.value.alertFormState is AlertFormState.Visible)
     }
 
     @Test
-    fun `openAlertForm emits alertFormEvent with correct id`() = runTest {
+    fun `openAlertForm sets correct alertRowUiModel for existing alert`() = runTest {
+        val alertsFlow = MutableStateFlow(
+            listOf(
+                Alert(
+                    id = 42L,
+                    coinId = "bitcoin",
+                    coinName = "Bitcoin",
+                    coinSymbol = "btc",
+                    type = AlertType.PRICE,
+                    direction = AlertDirection.ABOVE,
+                    targetValue = 80_000.0
+                )
+            )
+        )
+        every { observeAlertsByCoinId.invoke(any()) } returns alertsFlow
+        every { alertLabelFormatter.format(any()) } returns "BTC > $80,000"
+
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        var emittedId: Long? = -99L
-        val job = launch { vm.alertFormEvent.collect { emittedId = it } }
-        dispatcher.scheduler.advanceUntilIdle()
+        vm.onAction(DetailAction.EditAlert(42L))
 
-        vm.openAlertForm(id = 42L)
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(42L, emittedId)
-        job.cancel()
+        val formState = vm.state.value.alertFormState as AlertFormState.Visible
+        assertEquals(42L, formState.alertRowUiModel?.id)
+        assertEquals("BTC > $80,000", formState.alertRowUiModel?.label)
     }
 
     @Test
-    fun `openAlertForm is no-op when isChartFullScreen is true`() = runTest {
+    fun `openAlertForm with unknown id sets null alertRowUiModel`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.toggleChartFullScreen()
-        val sessionBefore = vm.formSessionId
-        vm.openAlertForm()
+        vm.onAction(DetailAction.EditAlert(null))
 
-        assertEquals(false, vm.isAlertFormVisible)
-        assertEquals(sessionBefore, vm.formSessionId)
+        val formState = vm.state.value.alertFormState as AlertFormState.Visible
+        assertEquals(null, formState.alertRowUiModel)
     }
 
     @Test
-    fun `dismissAlertForm sets isAlertFormVisible to false`() = runTest {
+    fun `dismissAlertForm sets alertFormState to Invisible`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.openAlertForm()
-        assertEquals(true, vm.isAlertFormVisible)
+        vm.onAction(DetailAction.EditAlert(null))
+        assertTrue(vm.state.value.alertFormState is AlertFormState.Visible)
 
-        vm.dismissAlertForm()
-        assertEquals(false, vm.isAlertFormVisible)
+        vm.onAction(DetailAction.DismissAlertForm)
+        assertTrue(vm.state.value.alertFormState is AlertFormState.Invisible)
     }
 
     @Test
@@ -433,7 +448,7 @@ class DetailViewModelTest {
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(emptyList<Alert>(), (vm.uiState.value as DetailUiState.Success).alerts)
+        assertEquals(emptyList<AlertRowUiModel>(), (vm.state.value.content as DetailContentState.Success).alerts)
 
         val alert = Alert(
             id = 1L,
@@ -444,10 +459,14 @@ class DetailViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 80_000.0
         )
+        every { alertLabelFormatter.format(any()) } returns "BTC > $80,000"
         alertsFlow.value = listOf(alert)
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(listOf(alert), (vm.uiState.value as DetailUiState.Success).alerts)
+        val alerts = (vm.state.value.content as DetailContentState.Success).alerts
+        assertEquals(1, alerts.size)
+        assertEquals(1L, alerts[0].id)
+        assertEquals("BTC > $80,000", alerts[0].label)
     }
 
     // ----- helpers -----
