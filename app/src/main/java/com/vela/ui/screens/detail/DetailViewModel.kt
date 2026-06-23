@@ -7,6 +7,7 @@ import androidx.navigation.toRoute
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.TimeRange
+import com.vela.domain.usecase.GetAlertsSnapshotUseCase
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
@@ -30,15 +31,17 @@ import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
@@ -50,6 +53,7 @@ class DetailViewModel @Inject constructor(
     private val isWatchlistedUseCase: IsWatchlistedUseCase,
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
+    private val getAlertsSnapshot: GetAlertsSnapshotUseCase,
     private val alertLabelFormatter: AlertLabelFormatter,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(),
@@ -58,6 +62,14 @@ class DetailViewModel @Inject constructor(
 
     val initialHeader: CoinDetailUiModel?
 
+    private val _useNavGraphAlertTransition = MutableStateFlow(false)
+    val useNavGraphAlertTransition: StateFlow<Boolean> = _useNavGraphAlertTransition.asStateFlow()
+
+    private var isBackNavigationPending = false
+    private val _navigateBack = Channel<Unit>(Channel.BUFFERED)
+    val navigateBack = _navigateBack.receiveAsFlow()
+
+    private var currentAlertFormSessionId: Int = 0
     private val initialTab: DetailTab
     private val initialAlertId: Long?
 
@@ -67,6 +79,12 @@ class DetailViewModel @Inject constructor(
     private var ohlcJob: Job? = null
 
     override fun getIds(): List<String> = listOf(_state.value.coinId)
+
+    fun onNavGraphTransitionFinished() {
+        if (!isBackNavigationPending) {
+            _useNavGraphAlertTransition.value = false
+        }
+    }
 
     override fun onPriceError(error: AppError?) {
         updateContent<DetailContentState.Success> { copy(nonBlockingError = error) }
@@ -86,6 +104,7 @@ class DetailViewModel @Inject constructor(
         val coinId = route?.coinId ?: savedStateHandle.get<String>("coinId") ?: ""
         initialTab = route?.initialTab ?: DetailTab.STATS
         initialAlertId = route?.initialAlertId
+        _useNavGraphAlertTransition.value = initialTab == DetailTab.ALERTS
 
         initialHeader = assetPreviewCache.get(coinId)?.toCoinDetailUiModel()
 
@@ -112,7 +131,11 @@ class DetailViewModel @Inject constructor(
 
     fun onAction(action: DetailAction) {
         when (action) {
-            DetailAction.Back -> Unit
+            DetailAction.Back -> {
+                isBackNavigationPending = true
+                _useNavGraphAlertTransition.value = true
+                _navigateBack.trySend(Unit)
+            }
             DetailAction.Retry -> retry()
             DetailAction.ToggleFullScreen -> toggleChartFullScreen()
             DetailAction.ToggleWatchlist -> toggleWatchlist()
@@ -158,13 +181,19 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun openAlertForm(id: Long?) {
-        val alerts = (_state.value.content as? DetailContentState.Success)?.alerts ?: emptyList()
-        val alertRow = alerts.find { it.id == id }
-        val currentSessionId = (_state.value.alertFormState as? AlertFormState.Visible)?.formSessionId ?: 0
+        val alertRow = getAlertsSnapshot(_state.value.coinId)
+            .find { it.id == id }
+            ?.let { alert ->
+                AlertRowUiModel(
+                    id = alert.id,
+                    label = alertLabelFormatter.format(alert),
+                    isTriggered = alert.isTriggered
+                )
+            }
         _state.update {
             it.copy(
                 alertFormState = AlertFormState.Visible(
-                    formSessionId = currentSessionId + 1,
+                    formSessionId = currentAlertFormSessionId++,
                     alertRowUiModel = alertRow
                 )
             )
