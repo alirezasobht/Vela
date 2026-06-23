@@ -1,6 +1,11 @@
 package com.vela.ui.screens.alerts
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +40,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vela.R
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
-import com.vela.ui.theme.VelaTheme
+import com.vela.ui.common.util.LocalAnimatedVisibilityScope
+import com.vela.ui.common.util.LocalSharedTransitionScope
+import com.vela.ui.common.util.SharedTransitionKeys
+import com.vela.ui.common.util.SharedTransitionWrapper
 
 // ----- Actions -----
 
@@ -80,6 +88,7 @@ fun AlertFormRoute(
 
     AlertFormContent(
         uiState = uiState,
+        alertId = alertId,
         actions = actions,
         modifier = modifier
     )
@@ -87,13 +96,17 @@ fun AlertFormRoute(
 
 // ----- Screen -----
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun AlertFormContent(
     uiState: AlertFormUiState,
+    alertId: Long?,
     actions: AlertFormActions,
     modifier: Modifier = Modifier
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -106,10 +119,29 @@ internal fun AlertFormContent(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
+                    .then(
+                        if (
+                            alertId != null &&
+                            sharedTransitionScope != null &&
+                            animatedVisibilityScope != null
+                        ) {
+                            with(sharedTransitionScope) {
+                                Modifier.sharedBounds(
+                                    rememberSharedContentState(key = SharedTransitionKeys.alertLabel(alertId)),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    enter = fadeIn(tween(300)),
+                                    exit = fadeOut(tween(300)),
+                                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    )
             )
         }
 
@@ -278,10 +310,14 @@ private fun ConfirmButton(
 // ----- Previews -----
 
 @Composable
-private fun AlertFormContentPreview(uiState: AlertFormUiState) {
-    VelaTheme {
+private fun AlertFormContentPreview(
+    uiState: AlertFormUiState,
+    alertId: Long? = null
+) {
+    SharedTransitionWrapper {
         AlertFormContent(
             uiState = uiState,
+            alertId = alertId,
             actions = AlertFormActions(
                 onTypeSelected = {},
                 onDirectionSelected = {},
@@ -324,7 +360,8 @@ private fun AlertFormContentEditModePreview() = AlertFormContentPreview(
         editBtnResId = R.string.action_edit_alert,
         isValueInputEnabled = true,
         alertLabel = "Price above \$70,000"
-    )
+    ),
+    alertId = 1L
 )
 
 @Preview(showBackground = true)

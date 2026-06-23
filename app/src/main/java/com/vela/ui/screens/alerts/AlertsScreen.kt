@@ -1,5 +1,6 @@
 package com.vela.ui.screens.alerts
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +38,9 @@ import com.vela.R
 import com.vela.ui.common.components.AlertRowItem
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.ScreenHeader
-import com.vela.ui.theme.VelaTheme
+import com.vela.ui.common.util.LocalAnimatedVisibilityScope
+import com.vela.ui.common.util.LocalSharedTransitionScope
+import com.vela.ui.common.util.SharedTransitionWrapper
 
 @Composable
 fun AlertsRoute(
@@ -149,12 +152,16 @@ private fun AlertGroup(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HeaderRow(
     group: AlertGroupUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -168,14 +175,36 @@ private fun HeaderRow(
             contentDescription = group.coinName,
             modifier = Modifier
                 .size(24.dp)
-                .clip(CircleShape),
+                .clip(CircleShape)
+                .then(
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-image-${group.coinId}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
             placeholder = rememberVectorPainter(Icons.Default.Paid),
             error = rememberVectorPainter(Icons.Default.MonetizationOn)
         )
         Text(
             text = "${group.coinName} \u00b7 ${group.coinSymbol.uppercase()}",
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            modifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    Modifier.sharedElement(
+                        rememberSharedContentState(key = "coin-name-${group.coinId}"),
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
+            } else {
+                Modifier
+            }
         )
     }
 }
@@ -184,7 +213,7 @@ private fun HeaderRow(
 
 @Composable
 private fun AlertsScreenPreview(uiState: AlertsUiState) {
-    VelaTheme {
+    SharedTransitionWrapper {
         AlertsScreen(uiState = uiState, onAlertClick = { _, _ -> })
     }
 }

@@ -2,6 +2,9 @@ package com.vela.ui.screens.detail
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -21,8 +24,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +45,8 @@ import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.NonBlockingErrorBanner
 import com.vela.ui.common.util.FullScreenOrientationController
 import com.vela.ui.common.util.LandscapePreview
+import com.vela.ui.common.util.LocalAnimatedVisibilityScope
+import com.vela.ui.common.util.LocalSharedTransitionScope
 import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
 import com.vela.ui.common.util.rememberFullScreenOrientationController
@@ -53,7 +62,9 @@ import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import com.vela.ui.theme.sparklineBearColor
 import com.vela.ui.theme.sparklineBullColor
+import kotlinx.coroutines.flow.first
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DetailRoute(
     onBack: () -> Unit,
@@ -62,13 +73,30 @@ fun DetailRoute(
     ScreenVisibilityObserver(viewModel::onScreenVisible)
 
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val useNavGraphAlertTransition by viewModel.useNavGraphAlertTransition.collectAsStateWithLifecycle()
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+
+    LaunchedEffect(useNavGraphAlertTransition, sharedTransitionScope) {
+        if (useNavGraphAlertTransition) {
+            withFrameNanos { }
+            snapshotFlow { sharedTransitionScope?.isTransitionActive == true }
+                .first { isTransitionActive -> !isTransitionActive }
+            viewModel.onNavGraphTransitionFinished()
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.navigateBack.collect {
+            withFrameNanos { }
+            onBack()
+        }
+    }
 
     DetailScreen(
         state = state,
         initialAsset = viewModel.initialHeader,
-        onAction = { action ->
-            if (action is DetailAction.Back) onBack() else viewModel.onAction(action)
-        }
+        useNavGraphAlertTransition = useNavGraphAlertTransition,
+        onAction = viewModel::onAction
     )
 }
 
@@ -76,6 +104,7 @@ fun DetailRoute(
 internal fun DetailScreen(
     state: DetailScreenState,
     initialAsset: CoinDetailUiModel?,
+    useNavGraphAlertTransition: Boolean = false,
     onAction: (DetailAction) -> Unit,
     modifier: Modifier = Modifier,
     orientationController: FullScreenOrientationController = rememberFullScreenOrientationController()
@@ -109,6 +138,7 @@ internal fun DetailScreen(
             is DetailContentState.Success -> SuccessState(
                 state = state,
                 content = content,
+                useNavGraphAlertTransition = useNavGraphAlertTransition,
                 onAction = onAction,
                 orientationController = orientationController
             )
@@ -121,6 +151,7 @@ internal fun DetailScreen(
 private fun SuccessState(
     state: DetailScreenState,
     content: DetailContentState.Success,
+    useNavGraphAlertTransition: Boolean,
     onAction: (DetailAction) -> Unit,
     orientationController: FullScreenOrientationController,
     modifier: Modifier = Modifier
@@ -200,31 +231,87 @@ private fun SuccessState(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (state.alertFormState is AlertFormState.Visible) {
-                        AlertFormRoute(
-                            coinId = state.coinId,
-                            alertId = state.alertFormState.alertRowUiModel?.id,
-                            initialLabel = state.alertFormState.alertRowUiModel?.label,
-                            formSessionId = state.alertFormState.formSessionId,
-                            onDismiss = { onAction(DetailAction.DismissAlertForm) }
-                        )
-                    } else {
-                        DetailTabRow(
-                            selectedTab = content.selectedTab,
-                            onTabSelected = { onAction(DetailAction.TabSelected(it)) }
-                        )
-
-                        TabsSection(
-                            selectedTab = content.selectedTab,
-                            alerts = content.alerts,
-                            detail = detail,
-                            marketCap = detail.marketCap,
-                            totalVolume = detail.totalVolume,
-                            onEditAlert = { onAction(DetailAction.EditAlert(it)) }
-                        )
-                    }
+                    AlertSectionAnimatedContent(
+                        state = state,
+                        content = content,
+                        detail = detail,
+                        onAction = onAction,
+                        useNavGraphTransition = useNavGraphAlertTransition
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AlertSectionAnimatedContent(
+    state: DetailScreenState,
+    content: DetailContentState.Success,
+    detail: CoinDetailUiModel,
+    onAction: (DetailAction) -> Unit,
+    useNavGraphTransition: Boolean
+) {
+    val parentAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    AnimatedContent(
+        targetState = state.alertFormState,
+        transitionSpec = {
+            if (useNavGraphTransition) {
+                EnterTransition.None togetherWith ExitTransition.None
+            } else {
+                fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+            }
+        },
+        label = "AlertFormTransition"
+    ) alertFormContent@{ formState ->
+        val animatedVisibilityScope = if (useNavGraphTransition) {
+            parentAnimatedVisibilityScope
+        } else {
+            this@alertFormContent
+        }
+        CompositionLocalProvider(LocalAnimatedVisibilityScope provides animatedVisibilityScope) {
+            AlertSectionContent(
+                formState = formState,
+                coinId = state.coinId,
+                content = content,
+                detail = detail,
+                onAction = onAction
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlertSectionContent(
+    formState: AlertFormState,
+    coinId: String,
+    content: DetailContentState.Success,
+    detail: CoinDetailUiModel,
+    onAction: (DetailAction) -> Unit,
+) {
+    Column {
+        if (formState is AlertFormState.Visible) {
+            AlertFormRoute(
+                coinId = coinId,
+                alertId = formState.alertRowUiModel?.id,
+                initialLabel = formState.alertRowUiModel?.label,
+                formSessionId = formState.formSessionId,
+                onDismiss = { onAction(DetailAction.DismissAlertForm) }
+            )
+        } else {
+            DetailTabRow(
+                selectedTab = content.selectedTab,
+                onTabSelected = { onAction(DetailAction.TabSelected(it)) }
+            )
+            TabsSection(
+                selectedTab = content.selectedTab,
+                alerts = content.alerts,
+                detail = detail,
+                marketCap = detail.marketCap,
+                totalVolume = detail.totalVolume,
+                onEditAlert = { onAction(DetailAction.EditAlert(it)) }
+            )
         }
     }
 }

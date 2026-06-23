@@ -137,7 +137,8 @@ class AlertFormViewModel @AssistedInject constructor(
                         type = alert.type,
                         direction = alert.direction,
                         value = alert.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
-                        isValueInputEnabled = true
+                        isValueInputEnabled = true,
+                        alertLabel = initialLabel ?: alertLabelFormatter.format(alert)
                     ).withSubmitEnabled()
                 }
             } else {
