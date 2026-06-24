@@ -37,6 +37,7 @@ class AlertFormViewModelTest {
     private val editAlert: EditAlertUseCase = mockk(relaxed = true)
     private val getAlertById: GetAlertByIdUseCase = mockk()
     private val validateAlert: ValidateAlertUseCase = ValidateAlertUseCase()
+    private val alertLabelFormatter: AlertLabelFormatter = mockk()
 
     private val asset = Asset(
         id = "bitcoin",
@@ -55,14 +56,17 @@ class AlertFormViewModelTest {
         editAlert = editAlert,
         getAlertById = getAlertById,
         validateAlert = validateAlert,
+        alertLabelFormatter = alertLabelFormatter,
         coinId = "bitcoin",
-        alertId = alertId
+        alertId = alertId,
+        initialLabel = "initialLabel"
     )
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         every { assetPreviewCache.get("bitcoin") } returns asset
+        every { alertLabelFormatter.format(any()) } returns ""
     }
 
     @After

@@ -31,6 +31,7 @@ import com.vela.ui.screens.detail.state.DetailTab
 import com.vela.ui.screens.detail.state.toCoinDetailUiModel
 import com.vela.ui.screens.detail.state.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +42,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
@@ -193,7 +193,7 @@ class DetailViewModel @Inject constructor(
         _state.update {
             it.copy(
                 alertFormState = AlertFormState.Visible(
-                    formSessionId = currentAlertFormSessionId++,
+                    formSessionId = ++currentAlertFormSessionId,
                     alertRowUiModel = alertRow
                 )
             )

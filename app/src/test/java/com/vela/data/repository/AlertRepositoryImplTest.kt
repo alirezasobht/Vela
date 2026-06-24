@@ -1,6 +1,7 @@
 package com.vela.data.repository
 
 import app.cash.turbine.test
+import com.vela.data.cache.AlertsCache
 import com.vela.data.source.local.dao.AlertDao
 import com.vela.data.source.local.model.AlertEntity
 import com.vela.domain.model.Alert
@@ -20,7 +21,8 @@ import org.junit.Test
 
 class AlertRepositoryImplTest {
     private val dao: AlertDao = mockk()
-    private val repository = AlertRepositoryImpl(dao)
+    private val cache: AlertsCache = mockk()
+    private val repository = AlertRepositoryImpl(dao, cache)
 
     private fun entity() = AlertEntity(
         id = 1L,
@@ -44,7 +46,7 @@ class AlertRepositoryImplTest {
 
     @Test
     fun `observeAlertsByCoinId maps entities to domain models`() = runTest {
-        every { dao.observeByCoinId("bitcoin") } returns flowOf(listOf(entity()))
+        every { cache.getAlerts() } returns flowOf(listOf(alert()))
 
         repository.observeAlertsByCoinId("bitcoin").test {
             assertEquals(listOf(alert()), awaitItem())
