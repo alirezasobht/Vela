@@ -3,7 +3,9 @@ package com.vela.ui.screens.detail.state
 import com.vela.domain.model.AppError
 import com.vela.domain.model.OhlcPoint
 import com.vela.ui.screens.alerts.AlertRowUiModel
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class DetailTab { STATS, ALERTS }
 
 sealed interface DetailContentState {
