@@ -10,6 +10,7 @@ import com.vela.domain.model.CoinDetail
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
+import com.vela.domain.usecase.GetAlertsSnapshotUseCase
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
@@ -28,6 +29,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +44,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
@@ -57,6 +58,7 @@ class DetailViewModelTest {
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase = mockk()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
+    private val getAlertsSnapshot: GetAlertsSnapshotUseCase = mockk()
 
     private fun createViewModel(): DetailViewModel {
         val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
@@ -70,6 +72,7 @@ class DetailViewModelTest {
             toggleWatchlistUseCase = toggleWatchlistUseCase,
             observeAlertsByCoinId = observeAlertsByCoinId,
             alertLabelFormatter = alertLabelFormatter,
+            getAlertsSnapshot = getAlertsSnapshot,
             savedStateHandle = handle
         )
     }
@@ -80,6 +83,7 @@ class DetailViewModelTest {
         every { assetPreviewCache.get(any()) } returns null
         every { isWatchlistedUseCase.invoke(any()) } returns flowOf(false)
         every { observeAlertsByCoinId.invoke(any()) } returns flowOf(emptyList())
+        every { getAlertsSnapshot.invoke(any()) } returns emptyList()
     }
 
     @After
@@ -356,11 +360,13 @@ class DetailViewModelTest {
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
-        val before = (vm.state.value.alertFormState as? AlertFormState.Visible)?.formSessionId ?: 0
 
         vm.onAction(DetailAction.EditAlert(null))
+        val before = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
 
+        vm.onAction(DetailAction.EditAlert(null))
         val after = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
+
         assertEquals(before + 1, after)
     }
 
@@ -379,20 +385,16 @@ class DetailViewModelTest {
 
     @Test
     fun `openAlertForm sets correct alertRowUiModel for existing alert`() = runTest {
-        val alertsFlow = MutableStateFlow(
-            listOf(
-                Alert(
-                    id = 42L,
-                    coinId = "bitcoin",
-                    coinName = "Bitcoin",
-                    coinSymbol = "btc",
-                    type = AlertType.PRICE,
-                    direction = AlertDirection.ABOVE,
-                    targetValue = 80_000.0
-                )
-            )
+        val alert = Alert(
+            id = 42L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PRICE,
+            direction = AlertDirection.ABOVE,
+            targetValue = 80_000.0
         )
-        every { observeAlertsByCoinId.invoke(any()) } returns alertsFlow
+        every { getAlertsSnapshot.invoke("bitcoin") } returns listOf(alert)
         every { alertLabelFormatter.format(any()) } returns "BTC > $80,000"
 
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())

@@ -6,9 +6,9 @@ import com.vela.data.source.local.mapper.toDomain
 import com.vela.data.source.local.mapper.toEntity
 import com.vela.domain.model.Alert
 import com.vela.domain.repository.AlertRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 class AlertRepositoryImpl @Inject constructor(
     private val dao: AlertDao,
