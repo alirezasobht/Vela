@@ -1,6 +1,7 @@
 package com.vela.ui.screens.detail
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
 import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
@@ -20,26 +21,32 @@ import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
+import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.alerts.AlertLabelFormatter
 import com.vela.ui.screens.alerts.AlertRowUiModel
 import com.vela.ui.screens.detail.state.AlertFormState
 import com.vela.ui.screens.detail.state.DetailAction
 import com.vela.ui.screens.detail.state.DetailContentState
+import com.vela.ui.screens.detail.state.DetailTab
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,8 +67,14 @@ class DetailViewModelTest {
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
     private val getAlertsSnapshot: GetAlertsSnapshotUseCase = mockk()
 
-    private fun createViewModel(): DetailViewModel {
-        val handle = SavedStateHandle(mapOf("coinId" to "bitcoin"))
+    private fun createViewModel(initialTab: DetailTab = DetailTab.STATS): DetailViewModel {
+        mockkStatic("androidx.navigation.SavedStateHandleKt")
+        val handle = mockk<SavedStateHandle>()
+        every { handle.toRoute<Screen.CoinDetail>() } returns Screen.CoinDetail(
+            coinId = "bitcoin",
+            initialTab = initialTab,
+            initialAlertId = null
+        )
         return DetailViewModel(
             getCoinDetail = getCoinDetail,
             getOhlc = getOhlc,
@@ -89,6 +102,7 @@ class DetailViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkStatic("androidx.navigation.SavedStateHandleKt")
     }
 
     // ----- initial load -----
@@ -354,7 +368,7 @@ class DetailViewModelTest {
     // ----- alerts -----
 
     @Test
-    fun `openAlertForm increments formSessionId`() = runTest {
+    fun `openAlertForm increments formSessionId on subsequent calls`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
@@ -362,12 +376,12 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         vm.onAction(DetailAction.EditAlert(null))
-        val before = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
+        val first = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
 
         vm.onAction(DetailAction.EditAlert(null))
-        val after = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
+        val second = (vm.state.value.alertFormState as AlertFormState.Visible).formSessionId
 
-        assertEquals(before + 1, after)
+        assertEquals(first + 1, second)
     }
 
     @Test
@@ -469,6 +483,64 @@ class DetailViewModelTest {
         assertEquals(1, alerts.size)
         assertEquals(1L, alerts[0].id)
         assertEquals("BTC > $80,000", alerts[0].label)
+    }
+
+    // ----- nav graph alert transition -----
+
+    @Test
+    fun `useNavGraphAlertTransition is false when initialTab is STATS`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel(DetailTab.STATS)
+
+        assertFalse(vm.useNavGraphAlertTransition.value)
+    }
+
+    @Test
+    fun `useNavGraphAlertTransition is true when initialTab is ALERTS`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel(DetailTab.ALERTS)
+
+        assertTrue(vm.useNavGraphAlertTransition.value)
+    }
+
+    @Test
+    fun `onNavGraphTransitionFinished resets useNavGraphAlertTransition to false`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel(DetailTab.ALERTS)
+        assertEquals(true, vm.useNavGraphAlertTransition.value)
+
+        vm.onNavGraphTransitionFinished()
+
+        assertEquals(false, vm.useNavGraphAlertTransition.value)
+    }
+
+    @Test
+    fun `onNavGraphTransitionFinished does not reset transition when back navigation is pending`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel(DetailTab.ALERTS)
+        vm.onAction(DetailAction.Back)
+        vm.onNavGraphTransitionFinished()
+
+        assertTrue(vm.useNavGraphAlertTransition.value)
+    }
+
+    @Test
+    fun `Back action sends navigateBack event`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        val vm = createViewModel()
+        var navigatedBack = false
+        val job = launch { vm.navigateBack.collect { navigatedBack = true } }
+
+        vm.onAction(DetailAction.Back)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(navigatedBack)
+        job.cancel()
     }
 
     // ----- helpers -----

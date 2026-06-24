@@ -65,6 +65,7 @@ class DetailViewModel @Inject constructor(
     private val _useNavGraphAlertTransition = MutableStateFlow(false)
     val useNavGraphAlertTransition: StateFlow<Boolean> = _useNavGraphAlertTransition.asStateFlow()
 
+    private val coinId: String
     private var isBackNavigationPending = false
     private val _navigateBack = Channel<Unit>(Channel.BUFFERED)
     val navigateBack = _navigateBack.receiveAsFlow()
@@ -96,12 +97,8 @@ class DetailViewModel @Inject constructor(
     }
 
     init {
-        val route = try {
-            savedStateHandle.toRoute<Screen.CoinDetail>()
-        } catch (_: Exception) {
-            null
-        }
-        val coinId = route?.coinId ?: savedStateHandle.get<String>("coinId") ?: ""
+        val route = runCatching { savedStateHandle.toRoute<Screen.CoinDetail>() }.getOrNull()
+        coinId = route?.coinId ?: savedStateHandle.get<String>("coinId") ?: ""
         initialTab = route?.initialTab ?: DetailTab.STATS
         initialAlertId = route?.initialAlertId
         _useNavGraphAlertTransition.value = initialTab == DetailTab.ALERTS

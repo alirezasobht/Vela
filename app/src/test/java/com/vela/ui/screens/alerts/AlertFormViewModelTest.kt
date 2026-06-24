@@ -289,4 +289,84 @@ class AlertFormViewModelTest {
         assertEquals(true, dismissed)
         job.cancel()
     }
+
+    // ----- alertLabel -----
+
+    @Test
+    fun `alertLabel starts as initialLabel before async work`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel(alertId = null)
+
+        assertEquals("initialLabel", vm.uiState.value.alertLabel)
+    }
+
+    @Test
+    fun `create mode alertLabel is null when fields are incomplete`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onTypeSelected(AlertType.PRICE)
+
+        assertEquals(null, vm.uiState.value.alertLabel)
+    }
+
+    @Test
+    fun `create mode alertLabel updates when all fields are valid`() = runTest {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        every { alertLabelFormatter.format(any()) } returns "Price above \$80,000"
+
+        val vm = createViewModel(alertId = null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onTypeSelected(AlertType.PRICE)
+        vm.onDirectionSelected(AlertDirection.ABOVE)
+        vm.onValueChanged("80000")
+
+        assertEquals("Price above \$80,000", vm.uiState.value.alertLabel)
+    }
+
+    @Test
+    fun `edit mode alertLabel is formatted from loaded alert after load`() = runTest {
+        coEvery { getAlertById(1L) } returns Alert(
+            id = 1L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PRICE,
+            direction = AlertDirection.ABOVE,
+            targetValue = 70_000.0
+        )
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        every { alertLabelFormatter.format(any()) } returns "Price above \$70,000"
+
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Price above \$70,000", vm.uiState.value.alertLabel)
+    }
+
+    @Test
+    fun `edit mode alertLabel updates when value changes`() = runTest {
+        coEvery { getAlertById(1L) } returns Alert(
+            id = 1L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PRICE,
+            direction = AlertDirection.ABOVE,
+            targetValue = 70_000.0
+        )
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        every { alertLabelFormatter.format(any()) } returns "Price above \$80,000"
+
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onValueChanged("80000")
+
+        assertEquals("Price above \$80,000", vm.uiState.value.alertLabel)
+    }
 }
