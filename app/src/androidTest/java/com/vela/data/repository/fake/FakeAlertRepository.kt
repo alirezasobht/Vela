@@ -11,6 +11,8 @@ class FakeAlertRepository @Inject constructor() : AlertRepository {
 
     override fun observeAllAlerts(): Flow<List<Alert>> = flowOf(emptyList())
 
+    override fun getAlertsSnapshot(coinId: String): List<Alert> = emptyList()
+
     override suspend fun getAlertById(id: Long): Alert? = null
 
     override suspend fun createAlert(alert: Alert): Long = 0L

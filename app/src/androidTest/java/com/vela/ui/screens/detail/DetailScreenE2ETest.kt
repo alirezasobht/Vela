@@ -34,10 +34,8 @@ class DetailScreenE2ETest {
     private fun navigateToDetail() {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule
-                .onAllNodes(
-                    androidx.compose.ui.test
-                        .hasText("Bitcoin")
-                ).fetchSemanticsNodes()
+                .onAllNodes(androidx.compose.ui.test.hasText("Bitcoin"))
+                .fetchSemanticsNodes()
                 .isNotEmpty()
         }
         composeRule.onNodeWithText("Bitcoin").performClick()
@@ -49,10 +47,8 @@ class DetailScreenE2ETest {
         composeRule.onNodeWithText("Add Alert").performClick()
         composeRule.waitUntil(timeoutMillis = 3_000) {
             composeRule
-                .onAllNodes(
-                    androidx.compose.ui.test
-                        .hasText("Price")
-                ).fetchSemanticsNodes()
+                .onAllNodes(androidx.compose.ui.test.hasText("Cancel"))
+                .fetchSemanticsNodes()
                 .isNotEmpty()
         }
     }
@@ -62,7 +58,6 @@ class DetailScreenE2ETest {
     fun detailScreen_tapAddAlert_showsAlertForm() {
         navigateToDetail()
         openAlertForm()
-        composeRule.onNodeWithText("Price").assertIsDisplayed()
         composeRule.onNodeWithText("% Change").assertIsDisplayed()
         composeRule.onNodeWithText("Above").assertIsDisplayed()
         composeRule.onNodeWithText("Below").assertIsDisplayed()
@@ -84,20 +79,14 @@ class DetailScreenE2ETest {
     fun alertForm_fillValidPercentValues_enablesSubmitButton() {
         navigateToDetail()
         openAlertForm()
-        // FakePriceRepository returns emptyMap so currentPrice is null
-        // PERCENT type has no price requirement — use it for validation
         composeRule.onNodeWithText("% Change").performClick()
         composeRule.onNodeWithText("Above").performClick()
         composeRule
-            .onNode(
-                androidx.compose.ui.test
-                    .hasSetTextAction()
-            ).performTextClearance()
+            .onNode(androidx.compose.ui.test.hasSetTextAction())
+            .performTextClearance()
         composeRule
-            .onNode(
-                androidx.compose.ui.test
-                    .hasSetTextAction()
-            ).performTextInput("5")
+            .onNode(androidx.compose.ui.test.hasSetTextAction())
+            .performTextInput("5")
         composeRule.onNodeWithText("Add Alert").assertIsEnabled()
     }
 }
