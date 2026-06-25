@@ -40,7 +40,7 @@
     <string name="label_watchlist_empty_subtitle">Tap the star on any coin to add it here</string>
 
     <string name="label_alert_type_price">Price</string>
-    <string name="label_alert_type_percent">%% Change</string>
+    <string name="label_alert_type_percent">% Change</string>
     <string name="label_alert_direction_above">Above</string>
     <string name="label_alert_direction_below">Below</string>
     <string name="hint_alert_price_value">Target price</string>
