@@ -9,127 +9,206 @@ import org.junit.Test
 class ValidateAlertUseCaseTest {
     private val useCase = ValidateAlertUseCase()
 
-    private fun baseAlert() = Alert(
-        id = 1L,
-        coinId = "bitcoin",
-        coinName = "Bitcoin",
-        coinSymbol = "btc",
-        type = AlertType.PRICE,
-        direction = AlertDirection.ABOVE,
-        targetValue = 70_000.0
-    )
+    // ----- basic validation -----
 
-    private fun assertValid(
-        type: AlertType? = AlertType.PRICE,
-        direction: AlertDirection? = AlertDirection.ABOVE,
-        value: String = "80000",
-        currentPrice: Double? = 70_000.0,
-        originalAlert: Alert? = null,
-        expected: Boolean
-    ) {
+    @Test
+    fun `returns false when type is null`() {
+        assertEquals(false, useCase(type = null, direction = AlertDirection.ABOVE, value = "5"))
+    }
+
+    @Test
+    fun `returns false when direction is null`() {
+        assertEquals(false, useCase(type = AlertType.PERCENT, direction = null, value = "5"))
+    }
+
+    @Test
+    fun `returns false when value is not a number`() {
+        assertEquals(false, useCase(type = AlertType.PERCENT, direction = AlertDirection.ABOVE, value = "abc"))
+    }
+
+    @Test
+    fun `returns false when value is empty`() {
+        assertEquals(false, useCase(type = AlertType.PERCENT, direction = AlertDirection.ABOVE, value = ""))
+    }
+
+    // ----- percent type -----
+
+    @Test
+    fun `percent above valid value returns true`() {
+        assertEquals(true, useCase(type = AlertType.PERCENT, direction = AlertDirection.ABOVE, value = "5"))
+    }
+
+    @Test
+    fun `percent below valid value returns true`() {
+        assertEquals(true, useCase(type = AlertType.PERCENT, direction = AlertDirection.BELOW, value = "10"))
+    }
+
+    @Test
+    fun `percent with decimal value returns true`() {
+        assertEquals(true, useCase(type = AlertType.PERCENT, direction = AlertDirection.ABOVE, value = "2.5"))
+    }
+
+    // ----- price type -----
+
+    @Test
+    fun `price above current price returns true`() {
         assertEquals(
-            expected,
+            true,
             useCase(
-                type = type,
-                direction = direction,
-                value = value,
-                currentPrice = currentPrice,
-                originalAlert = originalAlert
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                value = "80000",
+                currentPrice = 70_000.0
             )
         )
     }
 
-    // ----- base validation -----
-
     @Test
-    fun `type null returns false`() = assertValid(type = null, expected = false)
-
-    @Test
-    fun `direction null returns false`() = assertValid(direction = null, expected = false)
-
-    @Test
-    fun `non-parseable value returns false`() = assertValid(value = "abc", expected = false)
-
-    // ----- PRICE type -----
-
-    @Test
-    fun `PRICE ABOVE value greater than price returns true`() = assertValid(type = AlertType.PRICE, direction = AlertDirection.ABOVE, value = "80000", currentPrice = 70_000.0, expected = true)
-
-    @Test
-    fun `PRICE ABOVE value less than price returns false`() = assertValid(type = AlertType.PRICE, direction = AlertDirection.ABOVE, value = "60000", currentPrice = 70_000.0, expected = false)
-
-    @Test
-    fun `PRICE BELOW value less than price returns true`() = assertValid(type = AlertType.PRICE, direction = AlertDirection.BELOW, value = "60000", currentPrice = 70_000.0, expected = true)
-
-    @Test
-    fun `PRICE BELOW value greater than price returns false`() = assertValid(type = AlertType.PRICE, direction = AlertDirection.BELOW, value = "80000", currentPrice = 70_000.0, expected = false)
-
-    @Test
-    fun `PRICE with null currentPrice returns false`() = assertValid(type = AlertType.PRICE, currentPrice = null, expected = false)
-
-    // ----- PERCENT type -----
-
-    @Test
-    fun `PERCENT ABOVE with valid value returns true regardless of price`() = assertValid(type = AlertType.PERCENT, direction = AlertDirection.ABOVE, value = "5", currentPrice = null, expected = true)
-
-    @Test
-    fun `PERCENT BELOW with valid value returns true regardless of price`() = assertValid(type = AlertType.PERCENT, direction = AlertDirection.BELOW, value = "3", currentPrice = null, expected = true)
-
-    // ----- edit mode change detection -----
-
-    @Test
-    fun `edit mode nothing changed returns false`() = assertValid(
-        type = AlertType.PRICE,
-        direction = AlertDirection.ABOVE,
-        value = "70000",
-        currentPrice = 60_000.0,
-        originalAlert = baseAlert(),
-        expected = false
-    )
-
-    @Test
-    fun `edit mode type changed returns true`() = assertValid(
-        type = AlertType.PERCENT,
-        direction = AlertDirection.ABOVE,
-        value = "5",
-        currentPrice = null,
-        originalAlert = baseAlert(),
-        expected = true
-    )
-
-    @Test
-    fun `edit mode direction changed returns true`() = assertValid(
-        type = AlertType.PRICE,
-        direction = AlertDirection.BELOW,
-        value = "60000",
-        currentPrice = 70_000.0,
-        originalAlert = baseAlert(),
-        expected = true
-    )
-
-    @Test
-    fun `edit mode value changed returns true`() = assertValid(
-        type = AlertType.PRICE,
-        direction = AlertDirection.ABOVE,
-        value = "80000",
-        currentPrice = 60_000.0,
-        originalAlert = baseAlert(),
-        expected = true
-    )
-
-    @Test
-    fun `edit mode all changed back to original returns false`() {
-        val original = baseAlert()
-        assertValid(
-            type = original.type,
-            direction = original.direction,
-            value = original.targetValue
-                .toBigDecimal()
-                .stripTrailingZeros()
-                .toPlainString(),
-            currentPrice = 60_000.0,
-            originalAlert = original,
-            expected = false
+    fun `price below current price returns true`() {
+        assertEquals(
+            true,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.BELOW,
+                value = "60000",
+                currentPrice = 70_000.0
+            )
         )
     }
+
+    @Test
+    fun `price above but value is below current price returns false`() {
+        assertEquals(
+            false,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                value = "50000",
+                currentPrice = 70_000.0
+            )
+        )
+    }
+
+    @Test
+    fun `price below but value is above current price returns false`() {
+        assertEquals(
+            false,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.BELOW,
+                value = "90000",
+                currentPrice = 70_000.0
+            )
+        )
+    }
+
+    @Test
+    fun `price type without currentPrice returns false`() {
+        assertEquals(
+            false,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                value = "80000",
+                currentPrice = null
+            )
+        )
+    }
+
+    @Test
+    fun `price equal to current price above returns false`() {
+        assertEquals(
+            false,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.ABOVE,
+                value = "70000",
+                currentPrice = 70_000.0
+            )
+        )
+    }
+
+    @Test
+    fun `price equal to current price below returns false`() {
+        assertEquals(
+            false,
+            useCase(
+                type = AlertType.PRICE,
+                direction = AlertDirection.BELOW,
+                value = "70000",
+                currentPrice = 70_000.0
+            )
+        )
+    }
+
+    // ----- edit mode -----
+
+    @Test
+    fun `edit mode unchanged values returns false`() {
+        val original = alert()
+        assertEquals(
+            false,
+            useCase(
+                type = original.type,
+                direction = original.direction,
+                value = original.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
+                originalAlert = original
+            )
+        )
+    }
+
+    @Test
+    fun `edit mode changed value returns true`() {
+        val original = alert()
+        assertEquals(
+            true,
+            useCase(
+                type = original.type,
+                direction = original.direction,
+                value = "10",
+                originalAlert = original
+            )
+        )
+    }
+
+    @Test
+    fun `edit mode changed type returns true`() {
+        val original = alert()
+        assertEquals(
+            true,
+            useCase(
+                type = AlertType.PRICE,
+                direction = original.direction,
+                value = original.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
+                currentPrice = 1.0,
+                originalAlert = original
+            )
+        )
+    }
+
+    @Test
+    fun `edit mode changed direction returns true`() {
+        val original = alert()
+        assertEquals(
+            true,
+            useCase(
+                type = original.type,
+                direction = AlertDirection.BELOW,
+                value = original.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
+                originalAlert = original
+            )
+        )
+    }
+
+    // ----- helpers -----
+
+    private fun alert() = Alert(
+        id = 1L,
+        coinId = "bitcoin",
+        coinName = "Bitcoin",
+        coinSymbol = "btc",
+        type = AlertType.PERCENT,
+        direction = AlertDirection.ABOVE,
+        targetValue = 5.0
+    )
 }
