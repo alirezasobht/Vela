@@ -36,11 +36,16 @@ class AlertFormScreenTest {
 
     private fun setContent(
         uiState: AlertFormUiState,
+        alertId: Long? = null,
         actions: AlertFormActions = defaultActions()
     ) {
         composeRule.setContent {
             VelaTheme {
-                AlertFormContent(uiState = uiState, actions = actions)
+                AlertFormContent(
+                    uiState = uiState,
+                    alertId = alertId,
+                    actions = actions
+                )
             }
         }
     }
@@ -153,8 +158,31 @@ class AlertFormScreenTest {
                 editBtnResId = R.string.action_create_alert
             )
         )
-        // Button text hidden during loading
         composeRule.onNodeWithText("Add Alert").assertDoesNotExist()
+    }
+
+    // ----- alert label -----
+
+    @Test
+    fun alertLabel_visibleWhenPresent() {
+        setContent(
+            AlertFormUiState(
+                editBtnResId = R.string.action_create_alert,
+                alertLabel = "Price above \$80,000"
+            )
+        )
+        composeRule.onNodeWithText("Price above \$80,000").assertIsDisplayed()
+    }
+
+    @Test
+    fun alertLabel_notVisibleWhenNull() {
+        setContent(
+            AlertFormUiState(
+                editBtnResId = R.string.action_create_alert,
+                alertLabel = null
+            )
+        )
+        composeRule.onNodeWithText("Price above \$80,000").assertDoesNotExist()
     }
 
     // ----- cancel button -----

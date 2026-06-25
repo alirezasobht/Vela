@@ -49,7 +49,7 @@ class AlertsCacheTest {
     fun getAlerts_emitsMappedAlerts_whenDatabaseHasEntries() = runTest {
         dao.insert(alertEntity())
 
-        val alerts = cache.getAlerts().first()
+        val alerts = cache.getAlerts().first { it.isNotEmpty() }
         assertEquals(1, alerts.size)
         assertEquals("bitcoin", alerts[0].coinId)
         assertEquals(AlertType.PRICE, alerts[0].type)
@@ -62,10 +62,10 @@ class AlertsCacheTest {
         assertEquals(0, cache.getAlerts().first().size)
 
         dao.insert(alertEntity())
-        assertEquals(1, cache.getAlerts().first().size)
+        assertEquals(1, cache.getAlerts().first { it.size == 1 }.size)
 
         dao.insert(alertEntity().copy(coinId = "ethereum", coinName = "Ethereum", coinSymbol = "eth"))
-        assertEquals(2, cache.getAlerts().first().size)
+        assertEquals(2, cache.getAlerts().first { it.size == 2 }.size)
     }
 
     @Test
@@ -76,8 +76,7 @@ class AlertsCacheTest {
     @Test
     fun getSnapshot_returnsCachedAlerts_afterDatabaseEmits() = runTest {
         dao.insert(alertEntity())
-        // allow StateFlow to collect the DB emission
-        cache.getAlerts().first()
+        cache.getAlerts().first { it.isNotEmpty() }
 
         val snapshot = cache.getSnapshot()
         assertEquals(1, snapshot.size)
@@ -87,7 +86,7 @@ class AlertsCacheTest {
     @Test
     fun getSnapshot_reflectsLatestDatabaseState() = runTest {
         dao.insert(alertEntity())
-        cache.getAlerts().first()
+        cache.getAlerts().first { it.size == 1 }
         assertEquals(1, cache.getSnapshot().size)
 
         val id = dao.insert(alertEntity().copy(coinId = "ethereum", coinName = "Ethereum", coinSymbol = "eth"))
