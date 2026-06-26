@@ -5,5 +5,6 @@ data class AlertGroupUiModel(
     val coinName: String,
     val coinSymbol: String,
     val coinImage: String?,
+    val initialPrice: String = "",
     val alerts: List<AlertRowUiModel>
 )

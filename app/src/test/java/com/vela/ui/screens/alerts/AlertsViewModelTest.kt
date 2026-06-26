@@ -4,8 +4,11 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
+import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.ObserveAllAlertsUseCase
 import com.vela.ui.base.AssetPreviewCache
+import com.vela.ui.base.pricepolling.PricePollingConfig
+import com.vela.ui.base.pricepolling.PricePollingController
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -27,12 +30,16 @@ class AlertsViewModelTest {
     private val observeAllAlerts: ObserveAllAlertsUseCase = mockk()
     private val assetPreviewCache: AssetPreviewCache = mockk()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
+    private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
+    private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
     private val alertsFlow = MutableStateFlow<List<Alert>>(emptyList())
 
     private fun createViewModel(): AlertsViewModel = AlertsViewModel(
         observeAllAlerts = observeAllAlerts,
         assetPreviewCache = assetPreviewCache,
-        alertLabelFormatter = alertLabelFormatter
+        alertLabelFormatter = alertLabelFormatter,
+        getPrices = getPrices,
+        pricePolling = PricePollingController(config)
     )
 
     @Before
@@ -101,16 +108,7 @@ class AlertsViewModelTest {
 
     @Test
     fun `group coinImage is taken from AssetPreviewCache`() = runTest {
-        val asset = Asset(
-            id = "bitcoin",
-            symbol = "btc",
-            name = "Bitcoin",
-            image = "https://image.url",
-            currentPrice = 60_000.0,
-            priceChangePercent24h = 1.0,
-            marketCapRank = 1,
-            sparkline = null
-        )
+        val asset = asset(image = "https://image.url")
         every { assetPreviewCache.get("bitcoin") } returns asset
 
         val vm = createViewModel()
@@ -129,6 +127,28 @@ class AlertsViewModelTest {
 
         val group = (vm.uiState.value as AlertsUiState.Success).groups[0]
         assertEquals(null, group.coinImage)
+    }
+
+    @Test
+    fun `group initialPrice is formatted from asset currentPrice`() = runTest {
+        every { assetPreviewCache.get("bitcoin") } returns asset(currentPrice = 67_420.0)
+
+        val vm = createViewModel()
+        alertsFlow.value = listOf(alert())
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val group = (vm.uiState.value as AlertsUiState.Success).groups[0]
+        assertEquals("$67,420", group.initialPrice)
+    }
+
+    @Test
+    fun `group initialPrice is empty when asset not in cache`() = runTest {
+        val vm = createViewModel()
+        alertsFlow.value = listOf(alert())
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val group = (vm.uiState.value as AlertsUiState.Success).groups[0]
+        assertEquals("", group.initialPrice)
     }
 
     @Test
@@ -171,5 +191,19 @@ class AlertsViewModelTest {
         type = AlertType.PRICE,
         direction = AlertDirection.ABOVE,
         targetValue = 80_000.0
+    )
+
+    private fun asset(
+        image: String? = null,
+        currentPrice: Double = 60_000.0
+    ) = Asset(
+        id = "bitcoin",
+        symbol = "btc",
+        name = "Bitcoin",
+        image = image,
+        currentPrice = currentPrice,
+        priceChangePercent24h = 1.0,
+        marketCapRank = 1,
+        sparkline = null
     )
 }
