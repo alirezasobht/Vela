@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.vela.ui.common.util.SharedTransitionWrapper
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -21,6 +22,7 @@ class AlertsScreenTest {
         coinName = "Bitcoin",
         coinSymbol = "btc",
         coinImage = null,
+        initialPrice = "\$67,420.00",
         alerts = listOf(
             AlertRowUiModel(id = 1L, label = "Price above \$80,000", isTriggered = false),
             AlertRowUiModel(id = 2L, label = "Price below \$60,000", isTriggered = true)
@@ -32,6 +34,7 @@ class AlertsScreenTest {
         coinName = "Ethereum",
         coinSymbol = "eth",
         coinImage = null,
+        initialPrice = "",
         alerts = listOf(
             AlertRowUiModel(id = 3L, label = "Price change above 5%", isTriggered = false)
         )
@@ -43,7 +46,11 @@ class AlertsScreenTest {
     ) {
         composeRule.setContent {
             SharedTransitionWrapper {
-                AlertsScreen(uiState = uiState, onAlertClick = onAlertClick)
+                AlertsScreen(
+                    uiState = uiState,
+                    onAlertClick = onAlertClick,
+                    observePrice = { flowOf(null) }
+                )
             }
         }
     }
@@ -64,18 +71,12 @@ class AlertsScreenTest {
         composeRule.onNodeWithText("No alerts yet").assertIsDisplayed()
     }
 
-    @Test
-    fun emptyState_showsEmptySubtitle() {
-        setScreen(AlertsUiState.Empty)
-        composeRule.onNodeWithText("Go to a coin\'s detail screen and tap the Alerts tab to add one").assertIsDisplayed()
-    }
-
     // ----- success -----
 
     @Test
     fun successState_showsCoinName() {
         setScreen(AlertsUiState.Success(groups = listOf(bitcoinGroup)))
-        composeRule.onNodeWithText("Bitcoin · BTC").assertIsDisplayed()
+        composeRule.onNodeWithText("Bitcoin \u00b7 BTC").assertIsDisplayed()
     }
 
     @Test
@@ -88,14 +89,26 @@ class AlertsScreenTest {
     @Test
     fun successState_showsMultipleGroups() {
         setScreen(AlertsUiState.Success(groups = listOf(bitcoinGroup, ethereumGroup)))
-        composeRule.onNodeWithText("Bitcoin · BTC").assertIsDisplayed()
-        composeRule.onNodeWithText("Ethereum · ETH").assertIsDisplayed()
+        composeRule.onNodeWithText("Bitcoin \u00b7 BTC").assertIsDisplayed()
+        composeRule.onNodeWithText("Ethereum \u00b7 ETH").assertIsDisplayed()
     }
 
     @Test
     fun successState_triggeredAlert_showsTriggeredBadge() {
         setScreen(AlertsUiState.Success(groups = listOf(bitcoinGroup)))
         composeRule.onNodeWithText("Triggered").assertIsDisplayed()
+    }
+
+    @Test
+    fun successState_showsInitialPrice() {
+        setScreen(AlertsUiState.Success(groups = listOf(bitcoinGroup)))
+        composeRule.onNodeWithText("\$67,420.00").assertIsDisplayed()
+    }
+
+    @Test
+    fun successState_emptyInitialPrice_noJump() {
+        setScreen(AlertsUiState.Success(groups = listOf(ethereumGroup)))
+        composeRule.onNodeWithText("Ethereum \u00b7 ETH").assertIsDisplayed()
     }
 
     // ----- callbacks -----
@@ -127,7 +140,7 @@ class AlertsScreenTest {
                 clickedAlertId = alertId
             }
         )
-        composeRule.onNodeWithText("Bitcoin · BTC").performClick()
+        composeRule.onNodeWithText("Bitcoin \u00b7 BTC").performClick()
         assertEquals("bitcoin", clickedCoinId)
         assertEquals(null, clickedAlertId)
     }

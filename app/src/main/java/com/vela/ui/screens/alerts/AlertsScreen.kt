@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -23,12 +25,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,9 +42,13 @@ import com.vela.R
 import com.vela.ui.common.components.AlertRowItem
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.ScreenHeader
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
+import com.vela.ui.common.util.ScreenVisibilityObserver
 import com.vela.ui.common.util.SharedTransitionWrapper
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun AlertsRoute(
@@ -48,11 +56,14 @@ fun AlertsRoute(
     modifier: Modifier = Modifier,
     viewModel: AlertsViewModel = hiltViewModel()
 ) {
+    ScreenVisibilityObserver(viewModel::onScreenVisible)
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     AlertsScreen(
         uiState = uiState,
         onAlertClick = { coinId, alertId -> navigateToDetail(coinId, alertId) },
+        observePrice = viewModel::observePrice,
         modifier = modifier
     )
 }
@@ -61,6 +72,7 @@ fun AlertsRoute(
 internal fun AlertsScreen(
     uiState: AlertsUiState,
     onAlertClick: (coinId: String, alertId: Long?) -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -74,7 +86,8 @@ internal fun AlertsScreen(
             is AlertsUiState.Success ->
                 AlertsList(
                     groups = uiState.groups,
-                    onAlertClick = onAlertClick
+                    onAlertClick = onAlertClick,
+                    observePrice = observePrice
                 )
         }
     }
@@ -105,13 +118,15 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 private fun AlertsList(
     groups: List<AlertGroupUiModel>,
     onAlertClick: (coinId: String, alertId: Long?) -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         items(groups, key = { it.coinId }) { group ->
             AlertGroup(
                 group = group,
-                onAlertClick = { alertId -> onAlertClick(group.coinId, alertId) }
+                onAlertClick = { alertId -> onAlertClick(group.coinId, alertId) },
+                observePrice = observePrice
             )
         }
     }
@@ -121,6 +136,7 @@ private fun AlertsList(
 private fun AlertGroup(
     group: AlertGroupUiModel,
     onAlertClick: (alertId: Long?) -> Unit,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -135,7 +151,11 @@ private fun AlertGroup(
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            HeaderRow(group = group, onClick = { onAlertClick(null) })
+            HeaderRow(
+                group = group,
+                observePrice = observePrice,
+                onClick = { onAlertClick(null) }
+            )
         }
 
         HorizontalDivider(
@@ -156,11 +176,16 @@ private fun AlertGroup(
 @Composable
 private fun HeaderRow(
     group: AlertGroupUiModel,
+    observePrice: (String) -> Flow<SimplePriceUiModel?>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    val priceFlow = remember(group.coinId) { observePrice(group.coinId) }
+    val simplePrice by priceFlow.collectAsStateWithLifecycle(initialValue = null)
+    val price = simplePrice?.price ?: group.initialPrice
 
     Row(
         modifier = modifier
@@ -195,16 +220,29 @@ private fun HeaderRow(
             text = "${group.coinName} \u00b7 ${group.coinSymbol.uppercase()}",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            modifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                with(sharedTransitionScope) {
-                    Modifier.sharedElement(
-                        rememberSharedContentState(key = "coin-name-${group.coinId}"),
-                        animatedVisibilityScope = animatedVisibilityScope
-                    )
-                }
-            } else {
-                Modifier
-            }
+            modifier = Modifier
+                .weight(1f)
+                .then(
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "coin-name-${group.coinId}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
+        )
+        Text(
+            text = price,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .width(80.dp)
+                .defaultMinSize(minHeight = 20.dp)
         )
     }
 }
@@ -214,7 +252,11 @@ private fun HeaderRow(
 @Composable
 private fun AlertsScreenPreview(uiState: AlertsUiState) {
     SharedTransitionWrapper {
-        AlertsScreen(uiState = uiState, onAlertClick = { _, _ -> })
+        AlertsScreen(
+            uiState = uiState,
+            onAlertClick = { _, _ -> },
+            observePrice = { flowOf(null) }
+        )
     }
 }
 
@@ -236,6 +278,7 @@ private fun AlertsScreenSuccessPreview() = AlertsScreenPreview(
                 coinName = "Bitcoin",
                 coinSymbol = "btc",
                 coinImage = null,
+                initialPrice = "\$67,420",
                 alerts = listOf(
                     AlertRowUiModel(id = 1L, label = "Price above \$80,000", isTriggered = false),
                     AlertRowUiModel(id = 2L, label = "Price below \$60,000", isTriggered = true)
@@ -246,6 +289,7 @@ private fun AlertsScreenSuccessPreview() = AlertsScreenPreview(
                 coinName = "Ethereum",
                 coinSymbol = "eth",
                 coinImage = null,
+                initialPrice = "",
                 alerts = listOf(
                     AlertRowUiModel(id = 3L, label = "Price change above 5%", isTriggered = false)
                 )
