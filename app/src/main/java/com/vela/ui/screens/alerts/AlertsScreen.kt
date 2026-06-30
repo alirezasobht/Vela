@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,13 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vela.R
 import com.vela.ui.common.components.AlertRowItem
 import com.vela.ui.common.components.FullScreenLoader
 import com.vela.ui.common.components.ScreenHeader
+import com.vela.ui.common.components.SwipeToConfirmDeleteItem
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.common.util.LocalAnimatedVisibilityScope
 import com.vela.ui.common.util.LocalSharedTransitionScope
@@ -63,6 +65,7 @@ fun AlertsRoute(
     AlertsScreen(
         uiState = uiState,
         onAlertClick = { coinId, alertId -> navigateToDetail(coinId, alertId) },
+        onDeleteAlert = viewModel::onDeleteAlert,
         observePrice = viewModel::observePrice,
         modifier = modifier
     )
@@ -72,6 +75,7 @@ fun AlertsRoute(
 internal fun AlertsScreen(
     uiState: AlertsUiState,
     onAlertClick: (coinId: String, alertId: Long?) -> Unit,
+    onDeleteAlert: (Long) -> Unit,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
@@ -87,6 +91,7 @@ internal fun AlertsScreen(
                 AlertsList(
                     groups = uiState.groups,
                     onAlertClick = onAlertClick,
+                    onDeleteAlert = onDeleteAlert,
                     observePrice = observePrice
                 )
         }
@@ -118,6 +123,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 private fun AlertsList(
     groups: List<AlertGroupUiModel>,
     onAlertClick: (coinId: String, alertId: Long?) -> Unit,
+    onDeleteAlert: (Long) -> Unit,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
@@ -126,6 +132,7 @@ private fun AlertsList(
             AlertGroup(
                 group = group,
                 onAlertClick = { alertId -> onAlertClick(group.coinId, alertId) },
+                onDeleteAlert = onDeleteAlert,
                 observePrice = observePrice
             )
         }
@@ -136,6 +143,7 @@ private fun AlertsList(
 private fun AlertGroup(
     group: AlertGroupUiModel,
     onAlertClick: (alertId: Long?) -> Unit,
+    onDeleteAlert: (Long) -> Unit,
     observePrice: (String) -> Flow<SimplePriceUiModel?>,
     modifier: Modifier = Modifier
 ) {
@@ -164,10 +172,17 @@ private fun AlertGroup(
         )
 
         group.alerts.forEach { alert ->
-            AlertRowItem(
-                alert = alert,
-                onClick = { onAlertClick(alert.id) }
-            )
+            key(alert.id) {
+                SwipeToConfirmDeleteItem(
+                    onDelete = { onDeleteAlert(alert.id) }
+                ) {
+                    AlertRowItem(
+                        alert = alert,
+                        onClick = { onAlertClick(alert.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }
@@ -255,6 +270,7 @@ private fun AlertsScreenPreview(uiState: AlertsUiState) {
         AlertsScreen(
             uiState = uiState,
             onAlertClick = { _, _ -> },
+            onDeleteAlert = {},
             observePrice = { flowOf(null) }
         )
     }

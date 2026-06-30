@@ -3,6 +3,7 @@ package com.vela.ui.screens.alerts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vela.domain.model.AppError
+import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.ObserveAllAlertsUseCase
 import com.vela.ui.base.AssetPreviewCache
@@ -17,12 +18,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AlertsViewModel @Inject constructor(
     private val observeAllAlerts: ObserveAllAlertsUseCase,
     private val assetPreviewCache: AssetPreviewCache,
     private val alertLabelFormatter: AlertLabelFormatter,
+    private val deleteAlert: DeleteAlertUseCase,
     private val getPrices: GetPricesAndMarketDataUseCase,
     private val pricePolling: PricePollingController
 ) : ViewModel(),
@@ -84,5 +87,9 @@ class AlertsViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    fun onDeleteAlert(id: Long) {
+        viewModelScope.launch { deleteAlert(id) }
     }
 }

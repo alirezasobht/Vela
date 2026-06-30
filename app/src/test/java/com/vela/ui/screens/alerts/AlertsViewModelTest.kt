@@ -4,11 +4,13 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
+import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.ObserveAllAlertsUseCase
 import com.vela.ui.base.AssetPreviewCache
 import com.vela.ui.base.pricepolling.PricePollingConfig
 import com.vela.ui.base.pricepolling.PricePollingController
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +32,7 @@ class AlertsViewModelTest {
     private val observeAllAlerts: ObserveAllAlertsUseCase = mockk()
     private val assetPreviewCache: AssetPreviewCache = mockk()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
+    private val deleteAlert: DeleteAlertUseCase = mockk(relaxed = true)
     private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
     private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
     private val alertsFlow = MutableStateFlow<List<Alert>>(emptyList())
@@ -38,6 +41,7 @@ class AlertsViewModelTest {
         observeAllAlerts = observeAllAlerts,
         assetPreviewCache = assetPreviewCache,
         alertLabelFormatter = alertLabelFormatter,
+        deleteAlert = deleteAlert,
         getPrices = getPrices,
         pricePolling = PricePollingController(config)
     )
@@ -176,6 +180,19 @@ class AlertsViewModelTest {
         alertsFlow.value = emptyList()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(AlertsUiState.Empty, vm.uiState.value)
+    }
+
+    // ----- delete -----
+
+    @Test
+    fun `onDeleteAlert calls DeleteAlertUseCase with correct id`() = runTest {
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onDeleteAlert(42L)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { deleteAlert(42L) }
     }
 
     // ----- helpers -----

@@ -8,11 +8,13 @@ import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.domain.usecase.ValidateAlertUseCase
 import com.vela.ui.base.AssetPreviewCache
+import com.vela.ui.screens.alerts.AlertLabelFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -30,6 +32,7 @@ class AlertFormViewModel @AssistedInject constructor(
     assetPreviewCache: AssetPreviewCache,
     private val getPricesOnly: GetPricesOnlyUseCase,
     private val editAlert: EditAlertUseCase,
+    private val deleteAlert: DeleteAlertUseCase,
     private val getAlertById: GetAlertByIdUseCase,
     private val validateAlert: ValidateAlertUseCase,
     private val alertLabelFormatter: AlertLabelFormatter,
@@ -108,6 +111,14 @@ class AlertFormViewModel @AssistedInject constructor(
                 )
             )
             _uiState.update { it.copy(isLoading = false) }
+            _dismissEvent.send(Unit)
+        }
+    }
+
+    fun onDelete() {
+        val id = alertId ?: return
+        viewModelScope.launch {
+            deleteAlert(id)
             _dismissEvent.send(Unit)
         }
     }

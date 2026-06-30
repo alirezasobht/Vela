@@ -7,6 +7,7 @@ import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.SimplePrice
+import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
@@ -35,6 +36,7 @@ class AlertFormViewModelTest {
     private val assetPreviewCache: AssetPreviewCache = mockk()
     private val getPricesOnly: GetPricesOnlyUseCase = mockk()
     private val editAlert: EditAlertUseCase = mockk(relaxed = true)
+    private val deleteAlert: DeleteAlertUseCase = mockk(relaxed = true)
     private val getAlertById: GetAlertByIdUseCase = mockk()
     private val validateAlert: ValidateAlertUseCase = ValidateAlertUseCase()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
@@ -54,6 +56,7 @@ class AlertFormViewModelTest {
         assetPreviewCache = assetPreviewCache,
         getPricesOnly = getPricesOnly,
         editAlert = editAlert,
+        deleteAlert = deleteAlert,
         getAlertById = getAlertById,
         validateAlert = validateAlert,
         alertLabelFormatter = alertLabelFormatter,
@@ -284,6 +287,56 @@ class AlertFormViewModelTest {
         val job = launch { vm.dismissEvent.collect { dismissed = true } }
 
         vm.onConfirm()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, dismissed)
+        job.cancel()
+    }
+
+    // ----- onDelete -----
+
+    @Test
+    fun `onDelete calls DeleteAlertUseCase with alertId`() = runTest {
+        coEvery { getAlertById(1L) } returns Alert(
+            id = 1L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PRICE,
+            direction = AlertDirection.ABOVE,
+            targetValue = 70_000.0
+        )
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onDelete()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { deleteAlert(1L) }
+    }
+
+    @Test
+    fun `onDelete sends dismiss event`() = runTest {
+        coEvery { getAlertById(1L) } returns Alert(
+            id = 1L,
+            coinId = "bitcoin",
+            coinName = "Bitcoin",
+            coinSymbol = "btc",
+            type = AlertType.PRICE,
+            direction = AlertDirection.ABOVE,
+            targetValue = 70_000.0
+        )
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+
+        val vm = createViewModel(alertId = 1L)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        var dismissed = false
+        val job = launch { vm.dismissEvent.collect { dismissed = true } }
+
+        vm.onDelete()
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(true, dismissed)

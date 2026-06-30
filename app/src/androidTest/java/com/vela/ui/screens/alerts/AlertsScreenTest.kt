@@ -42,13 +42,15 @@ class AlertsScreenTest {
 
     private fun setScreen(
         uiState: AlertsUiState,
-        onAlertClick: (String, Long?) -> Unit = { _, _ -> }
+        onAlertClick: (String, Long?) -> Unit = { _, _ -> },
+        onDeleteAlert: (Long) -> Unit = {}
     ) {
         composeRule.setContent {
             SharedTransitionWrapper {
                 AlertsScreen(
                     uiState = uiState,
                     onAlertClick = onAlertClick,
+                    onDeleteAlert = onDeleteAlert,
                     observePrice = { flowOf(null) }
                 )
             }

@@ -18,7 +18,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     private const val BASE_URL = "https://api.coingecko.com/api/v3/"
-    private const val API_KEY = "CG-eU4VnP3eypq4QueGjMdCbvnv"
+
+    //    private const val API_KEY = "CG-eU4VnP3eypq4QueGjMdCbvnv"
+    private const val API_KEY = "CG-R5m54ACBAYRdcpfNJuoB1s2z"
 
     @Provides
     @Singleton

@@ -52,4 +52,5 @@
     <string name="label_alert_triggered">Triggered</string>
     <string name="label_tab_stats">Stats</string>
     <string name="label_tab_alerts">Alerts</string>
+    <string name="action_delete_alert">Delete Alert</string>
 </resources>
