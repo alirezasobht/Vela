@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,7 +53,8 @@ internal data class AlertFormActions(
     val onDirectionSelected: (AlertDirection) -> Unit,
     val onValueChanged: (String) -> Unit,
     val onConfirm: () -> Unit,
-    val onCancel: () -> Unit
+    val onCancel: () -> Unit,
+    val onDelete: () -> Unit = {}
 )
 
 // ----- Route -----
@@ -78,18 +80,17 @@ fun AlertFormRoute(
         viewModel.dismissEvent.collect { onDismiss() }
     }
 
-    val actions = AlertFormActions(
-        onTypeSelected = viewModel::onTypeSelected,
-        onDirectionSelected = viewModel::onDirectionSelected,
-        onValueChanged = viewModel::onValueChanged,
-        onConfirm = viewModel::onConfirm,
-        onCancel = onDismiss
-    )
-
     AlertFormContent(
         uiState = uiState,
         alertId = alertId,
-        actions = actions,
+        actions = AlertFormActions(
+            onTypeSelected = viewModel::onTypeSelected,
+            onDirectionSelected = viewModel::onDirectionSelected,
+            onValueChanged = viewModel::onValueChanged,
+            onConfirm = viewModel::onConfirm,
+            onCancel = onDismiss,
+            onDelete = viewModel::onDelete
+        ),
         modifier = modifier
     )
 }
@@ -182,6 +183,20 @@ internal fun AlertFormContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = stringResource(R.string.action_cancel))
+        }
+
+        if (alertId != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            TextButton(
+                onClick = actions.onDelete,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.action_delete_alert),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

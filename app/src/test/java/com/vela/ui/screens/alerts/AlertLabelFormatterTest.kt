@@ -13,7 +13,7 @@ class AlertLabelFormatterTest {
     @Test
     fun `price above whole number`() {
         assertEquals(
-            "Price above \$70000",
+            "Price above \$70,000",
             formatter.format(AlertDirection.ABOVE, 70_000.0, AlertType.PRICE)
         )
     }
@@ -21,7 +21,7 @@ class AlertLabelFormatterTest {
     @Test
     fun `price below whole number`() {
         assertEquals(
-            "Price below \$50000",
+            "Price below \$50,000",
             formatter.format(AlertDirection.BELOW, 50_000.0, AlertType.PRICE)
         )
     }
@@ -29,7 +29,7 @@ class AlertLabelFormatterTest {
     @Test
     fun `price above decimal strips trailing zeros`() {
         assertEquals(
-            "Price above \$70000.5",
+            "Price above \$70,000.5",
             formatter.format(AlertDirection.ABOVE, 70_000.5, AlertType.PRICE)
         )
     }
@@ -39,6 +39,14 @@ class AlertLabelFormatterTest {
         assertEquals(
             "Price below \$0.001",
             formatter.format(AlertDirection.BELOW, 0.001, AlertType.PRICE)
+        )
+    }
+
+    @Test
+    fun `price above large number uses comma separators`() {
+        assertEquals(
+            "Price above \$999,001",
+            formatter.format(AlertDirection.ABOVE, 999_001.0, AlertType.PRICE)
         )
     }
 

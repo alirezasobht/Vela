@@ -11,6 +11,7 @@ import com.vela.R
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.ui.theme.VelaTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,13 +26,15 @@ class AlertFormScreenTest {
         onDirectionSelected: (AlertDirection) -> Unit = {},
         onValueChanged: (String) -> Unit = {},
         onConfirm: () -> Unit = {},
-        onCancel: () -> Unit = {}
+        onCancel: () -> Unit = {},
+        onDelete: () -> Unit = {}
     ) = AlertFormActions(
         onTypeSelected = onTypeSelected,
         onDirectionSelected = onDirectionSelected,
         onValueChanged = onValueChanged,
         onConfirm = onConfirm,
-        onCancel = onCancel
+        onCancel = onCancel,
+        onDelete = onDelete
     )
 
     private fun setContent(
@@ -74,7 +77,7 @@ class AlertFormScreenTest {
             actions = defaultActions(onTypeSelected = { selected = it })
         )
         composeRule.onNodeWithText("Price").performClick()
-        assert(selected == AlertType.PRICE)
+        assertEquals(AlertType.PRICE, selected)
     }
 
     @Test
@@ -85,7 +88,7 @@ class AlertFormScreenTest {
             actions = defaultActions(onDirectionSelected = { selected = it })
         )
         composeRule.onNodeWithText("Above").performClick()
-        assert(selected == AlertDirection.ABOVE)
+        assertEquals(AlertDirection.ABOVE, selected)
     }
 
     // ----- value input -----
@@ -195,6 +198,38 @@ class AlertFormScreenTest {
             actions = defaultActions(onCancel = { cancelled = true })
         )
         composeRule.onNodeWithText("Cancel").performClick()
-        assert(cancelled)
+        assertEquals(true, cancelled)
+    }
+
+    // ----- delete button -----
+
+    @Test
+    fun deleteButton_visibleInEditMode() {
+        setContent(
+            uiState = AlertFormUiState(editBtnResId = R.string.action_edit_alert),
+            alertId = 1L
+        )
+        composeRule.onNodeWithText("Delete Alert").assertIsDisplayed()
+    }
+
+    @Test
+    fun deleteButton_notVisibleInCreateMode() {
+        setContent(
+            uiState = AlertFormUiState(editBtnResId = R.string.action_create_alert),
+            alertId = null
+        )
+        composeRule.onNodeWithText("Delete Alert").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteButton_invokesOnDelete() {
+        var deleted = false
+        setContent(
+            uiState = AlertFormUiState(editBtnResId = R.string.action_edit_alert),
+            alertId = 1L,
+            actions = defaultActions(onDelete = { deleted = true })
+        )
+        composeRule.onNodeWithText("Delete Alert").performClick()
+        assertEquals(true, deleted)
     }
 }
