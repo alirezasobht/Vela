@@ -10,8 +10,8 @@ import com.vela.domain.model.SimplePrice
 import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
+import com.vela.domain.usecase.GetAlertValidationMessageUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
-import com.vela.domain.usecase.ValidateAlertUseCase
 import com.vela.ui.base.AssetPreviewCache
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,32 +38,8 @@ class AlertFormViewModelTest {
     private val editAlert: EditAlertUseCase = mockk(relaxed = true)
     private val deleteAlert: DeleteAlertUseCase = mockk(relaxed = true)
     private val getAlertById: GetAlertByIdUseCase = mockk()
-    private val validateAlert: ValidateAlertUseCase = ValidateAlertUseCase()
+    private val getAlertValidationMessage: GetAlertValidationMessageUseCase = GetAlertValidationMessageUseCase()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
-
-    private val asset = Asset(
-        id = "bitcoin",
-        symbol = "btc",
-        name = "Bitcoin",
-        image = null,
-        currentPrice = 60_000.0,
-        priceChangePercent24h = 1.0,
-        marketCapRank = 1,
-        sparkline = null
-    )
-
-    private fun createViewModel(alertId: Long? = null): AlertFormViewModel = AlertFormViewModel(
-        assetPreviewCache = assetPreviewCache,
-        getPricesOnly = getPricesOnly,
-        editAlert = editAlert,
-        deleteAlert = deleteAlert,
-        getAlertById = getAlertById,
-        validateAlert = validateAlert,
-        alertLabelFormatter = alertLabelFormatter,
-        coinId = "bitcoin",
-        alertId = alertId,
-        initialLabel = "initialLabel"
-    )
 
     @Before
     fun setUp() {
@@ -96,8 +72,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `create mode fetchInitialPrice pre-populates value and enables input`() = runTest {
-        coEvery { getPricesOnly(any()) } returns
-            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 67_420.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+        mockPrices(price = 67_420.0)
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -109,7 +84,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `create mode null price leaves value empty and input still enabled`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -121,7 +96,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `create mode editBtnResId is action_create_alert`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -143,7 +118,7 @@ class AlertFormViewModelTest {
             targetValue = 5.0
         )
         coEvery { getAlertById(1L) } returns alert
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
@@ -158,7 +133,7 @@ class AlertFormViewModelTest {
     @Test
     fun `edit mode loadAlert returns null emits dismiss`() = runTest {
         coEvery { getAlertById(99L) } returns null
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = 99L)
         var dismissed = false
@@ -181,7 +156,7 @@ class AlertFormViewModelTest {
                 direction = AlertDirection.ABOVE,
                 targetValue = 70_000.0
             )
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
@@ -193,7 +168,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `onTypeSelected updates type and revalidates`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
@@ -205,7 +180,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `onDirectionSelected updates direction and revalidates`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
@@ -217,7 +192,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `onValueChanged updates value and revalidates`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
@@ -227,12 +202,47 @@ class AlertFormViewModelTest {
         assertEquals("5", vm.uiState.value.value)
     }
 
+    // ----- formHint -----
+
+    @Test
+    fun `formHint shows select type when type is null`() = runTest {
+        mockEmptyPrices()
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Select a type", vm.uiState.value.formHint)
+    }
+
+    @Test
+    fun `formHint shows select direction when type selected but no direction`() = runTest {
+        mockEmptyPrices()
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.onTypeSelected(AlertType.PERCENT)
+
+        assertEquals("Select a direction", vm.uiState.value.formHint)
+    }
+
+    @Test
+    fun `formHint is null when form is valid`() = runTest {
+        mockEmptyPrices()
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.onTypeSelected(AlertType.PERCENT)
+        vm.onDirectionSelected(AlertDirection.ABOVE)
+        vm.onValueChanged("5")
+
+        assertEquals(null, vm.uiState.value.formHint)
+    }
+
     // ----- onConfirm -----
 
     @Test
     fun `onConfirm in create mode calls EditAlertUseCase with id 0`() = runTest {
-        coEvery { getPricesOnly(any()) } returns
-            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+        mockPrices(price = 60_000.0)
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -258,8 +268,7 @@ class AlertFormViewModelTest {
                 direction = AlertDirection.ABOVE,
                 targetValue = 70_000.0
             )
-        coEvery { getPricesOnly(any()) } returns
-            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+        mockPrices(price = 60_000.0)
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
@@ -273,8 +282,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `onConfirm sends dismiss event after success`() = runTest {
-        coEvery { getPricesOnly(any()) } returns
-            DataResult.Success(mapOf("bitcoin" to SimplePrice(price = 60_000.0, priceChange = 1.0, marketCap = 100_000_000.0, totalVolume = 100_000.0, priceChange24hAbsolute = 1.0)))
+        mockPrices(price = 60_000.0)
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -306,7 +314,7 @@ class AlertFormViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 70_000.0
         )
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
@@ -328,7 +336,7 @@ class AlertFormViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 70_000.0
         )
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
@@ -347,7 +355,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `alertLabel starts as initialLabel before async work`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = null)
 
@@ -356,7 +364,7 @@ class AlertFormViewModelTest {
 
     @Test
     fun `create mode alertLabel is null when fields are incomplete`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -368,8 +376,9 @@ class AlertFormViewModelTest {
 
     @Test
     fun `create mode alertLabel updates when all fields are valid`() = runTest {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockEmptyPrices()
         every { alertLabelFormatter.format(any()) } returns "Price above \$80,000"
+        mockPrices(price = 60_000.0)
 
         val vm = createViewModel(alertId = null)
         dispatcher.scheduler.advanceUntilIdle()
@@ -392,13 +401,13 @@ class AlertFormViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 70_000.0
         )
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockPrices(price = 60_000.0)
         every { alertLabelFormatter.format(any()) } returns "Price above \$70,000"
 
         val vm = createViewModel(alertId = 1L)
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals("Price above \$70,000", vm.uiState.value.alertLabel)
+        assertEquals("initialLabel", vm.uiState.value.alertLabel)
     }
 
     @Test
@@ -412,7 +421,7 @@ class AlertFormViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 70_000.0
         )
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        mockPrices(price = 60_000.0)
         every { alertLabelFormatter.format(any()) } returns "Price above \$80,000"
 
         val vm = createViewModel(alertId = 1L)
@@ -421,5 +430,49 @@ class AlertFormViewModelTest {
         vm.onValueChanged("80000")
 
         assertEquals("Price above \$80,000", vm.uiState.value.alertLabel)
+    }
+
+    // ----- Helpers -----
+
+    private val asset = Asset(
+        id = "bitcoin",
+        symbol = "btc",
+        name = "Bitcoin",
+        image = null,
+        currentPrice = 60_000.0,
+        priceChangePercent24h = 1.0,
+        marketCapRank = 1,
+        sparkline = null
+    )
+
+    private fun createViewModel(alertId: Long? = null): AlertFormViewModel = AlertFormViewModel(
+        assetPreviewCache = assetPreviewCache,
+        getPricesOnly = getPricesOnly,
+        editAlert = editAlert,
+        deleteAlert = deleteAlert,
+        getAlertById = getAlertById,
+        getAlertValidationMessage = getAlertValidationMessage,
+        alertLabelFormatter = alertLabelFormatter,
+        coinId = "bitcoin",
+        alertId = alertId,
+        initialLabel = "initialLabel"
+    )
+
+    private fun mockPrices(price: Double = 60_000.0) {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(
+            mapOf(
+                "bitcoin" to SimplePrice(
+                    price = price,
+                    priceChange = 1.0,
+                    marketCap = 100_000_000.0,
+                    totalVolume = 100_000.0,
+                    priceChange24hAbsolute = 1.0
+                )
+            )
+        )
+    }
+
+    private fun mockEmptyPrices() {
+        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
     }
 }

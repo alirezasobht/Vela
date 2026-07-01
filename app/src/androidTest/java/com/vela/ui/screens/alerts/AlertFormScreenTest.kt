@@ -188,6 +188,33 @@ class AlertFormScreenTest {
         composeRule.onNodeWithText("Price above \$80,000").assertDoesNotExist()
     }
 
+    // ----- form hint -----
+
+    @Test
+    fun formHint_visibleWhenAlertLabelIsNull() {
+        setContent(
+            AlertFormUiState(
+                editBtnResId = R.string.action_create_alert,
+                alertLabel = null,
+                formHint = "Select a type"
+            )
+        )
+        composeRule.onNodeWithText("Select a type").assertIsDisplayed()
+    }
+
+    @Test
+    fun formHint_notVisibleWhenAlertLabelPresent() {
+        setContent(
+            AlertFormUiState(
+                editBtnResId = R.string.action_create_alert,
+                alertLabel = "Price above \$80,000",
+                formHint = "Select a type"
+            )
+        )
+        composeRule.onNodeWithText("Select a type").assertDoesNotExist()
+        composeRule.onNodeWithText("Price above \$80,000").assertIsDisplayed()
+    }
+
     // ----- cancel button -----
 
     @Test

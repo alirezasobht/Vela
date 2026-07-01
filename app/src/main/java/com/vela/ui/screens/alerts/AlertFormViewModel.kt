@@ -8,13 +8,13 @@ import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
+import com.vela.domain.usecase.AlertValidationResult
 import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
+import com.vela.domain.usecase.GetAlertValidationMessageUseCase
 import com.vela.domain.usecase.GetPricesOnlyUseCase
-import com.vela.domain.usecase.ValidateAlertUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.screens.alerts.AlertLabelFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -34,7 +34,7 @@ class AlertFormViewModel @AssistedInject constructor(
     private val editAlert: EditAlertUseCase,
     private val deleteAlert: DeleteAlertUseCase,
     private val getAlertById: GetAlertByIdUseCase,
-    private val validateAlert: ValidateAlertUseCase,
+    private val getAlertValidationMessage: GetAlertValidationMessageUseCase,
     private val alertLabelFormatter: AlertLabelFormatter,
     @Assisted("coinId") val coinId: String,
     @Assisted val alertId: Long?,
@@ -50,9 +50,7 @@ class AlertFormViewModel @AssistedInject constructor(
     }
 
     private val isEditMode: Boolean = alertId != null
-
     private val asset: Asset? = assetPreviewCache.get(coinId)
-
     private var currentPrice: Double? = null
     private var originalAlert: Alert? = null
 
@@ -78,15 +76,15 @@ class AlertFormViewModel @AssistedInject constructor(
     }
 
     fun onTypeSelected(type: AlertType) {
-        _uiState.update { it.copy(type = type).withSubmitEnabled() }
+        _uiState.update { it.copy(type = type).withValidation() }
     }
 
     fun onDirectionSelected(direction: AlertDirection) {
-        _uiState.update { it.copy(direction = direction).withSubmitEnabled() }
+        _uiState.update { it.copy(direction = direction).withValidation() }
     }
 
     fun onValueChanged(value: String) {
-        _uiState.update { it.copy(value = value).withSubmitEnabled() }
+        _uiState.update { it.copy(value = value).withValidation() }
     }
 
     fun onConfirm() {
@@ -97,7 +95,6 @@ class AlertFormViewModel @AssistedInject constructor(
         val cachedAsset = asset ?: return
 
         _uiState.update { it.copy(isLoading = true) }
-
         viewModelScope.launch {
             editAlert(
                 Alert(
@@ -131,7 +128,7 @@ class AlertFormViewModel @AssistedInject constructor(
                 it.copy(
                     value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
                     isValueInputEnabled = true
-                ).withSubmitEnabled()
+                ).withValidation()
             }
         }
     }
@@ -150,7 +147,7 @@ class AlertFormViewModel @AssistedInject constructor(
                         value = alert.targetValue.toBigDecimal().stripTrailingZeros().toPlainString(),
                         isValueInputEnabled = true,
                         alertLabel = initialLabel ?: alertLabelFormatter.format(alert)
-                    ).withSubmitEnabled()
+                    ).withValidation()
                 }
             } else {
                 _dismissEvent.send(Unit)
@@ -158,29 +155,36 @@ class AlertFormViewModel @AssistedInject constructor(
         }
     }
 
-    private fun AlertFormUiState.withSubmitEnabled(): AlertFormUiState {
-        val isValid = validateAlert(
+    private fun AlertFormUiState.withValidation(): AlertFormUiState = when (
+        val result = getAlertValidationMessage(
             type = type,
             direction = direction,
             value = value,
             currentPrice = currentPrice,
             originalAlert = originalAlert
         )
-        val label = if (type != null && direction != null && value.toDoubleOrNull() != null) {
-            alertLabelFormatter.format(
-                Alert(
-                    id = alertId ?: 0L,
-                    coinId = coinId,
-                    coinName = asset?.name ?: "",
-                    coinSymbol = asset?.symbol ?: "",
-                    type = type,
-                    direction = direction,
-                    targetValue = value.toDouble()
+    ) {
+        is AlertValidationResult.Valid -> {
+            val label = if (type != null && direction != null && value.toDoubleOrNull() != null) {
+                alertLabelFormatter.format(
+                    Alert(
+                        id = alertId ?: 0L,
+                        coinId = coinId,
+                        coinName = asset?.name ?: "",
+                        coinSymbol = asset?.symbol ?: "",
+                        type = type,
+                        direction = direction,
+                        targetValue = value.toDouble()
+                    )
                 )
-            )
-        } else {
-            null
+            } else {
+                null
+            }
+            copy(isSubmitEnabled = true, alertLabel = label, formHint = null)
         }
-        return copy(isSubmitEnabled = isValid, alertLabel = label)
+        is AlertValidationResult.Unchanged ->
+            copy(isSubmitEnabled = false, formHint = null)
+        is AlertValidationResult.Invalid ->
+            copy(isSubmitEnabled = false, alertLabel = null, formHint = result.message)
     }
 }
