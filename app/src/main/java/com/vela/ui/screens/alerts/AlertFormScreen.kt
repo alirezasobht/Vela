@@ -115,9 +115,9 @@ internal fun AlertFormContent(
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        uiState.alertLabel?.let { label ->
-            Text(
-                text = label,
+        when {
+            uiState.alertLabel != null -> Text(
+                text = uiState.alertLabel,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Start,
@@ -125,11 +125,7 @@ internal fun AlertFormContent(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
                     .then(
-                        if (
-                            alertId != null &&
-                            sharedTransitionScope != null &&
-                            animatedVisibilityScope != null
-                        ) {
+                        if (alertId != null && sharedTransitionScope != null && animatedVisibilityScope != null) {
                             with(sharedTransitionScope) {
                                 Modifier.sharedBounds(
                                     rememberSharedContentState(key = SharedTransitionKeys.alertLabel(alertId)),
@@ -143,6 +139,16 @@ internal fun AlertFormContent(
                             Modifier
                         }
                     )
+            )
+            uiState.formHint != null -> Text(
+                text = uiState.formHint,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Start,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
             )
         }
 
@@ -347,7 +353,10 @@ private fun AlertFormContentPreview(
 @Preview(showBackground = true)
 @Composable
 private fun AlertFormContentEmptyPreview() = AlertFormContentPreview(
-    uiState = AlertFormUiState(editBtnResId = R.string.action_create_alert)
+    uiState = AlertFormUiState(
+        editBtnResId = R.string.action_create_alert,
+        formHint = "Select a type"
+    )
 )
 
 @Preview(showBackground = true)
@@ -391,5 +400,19 @@ private fun AlertFormContentLoadingPreview() = AlertFormContentPreview(
         editBtnResId = R.string.action_create_alert,
         isValueInputEnabled = true,
         alertLabel = "Price above \$70,000"
+    )
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun AlertFormContentHintPreview() = AlertFormContentPreview(
+    uiState = AlertFormUiState(
+        type = AlertType.PRICE,
+        direction = AlertDirection.ABOVE,
+        value = "50000",
+        isSubmitEnabled = false,
+        editBtnResId = R.string.action_create_alert,
+        isValueInputEnabled = true,
+        formHint = "Target must be above current price"
     )
 )

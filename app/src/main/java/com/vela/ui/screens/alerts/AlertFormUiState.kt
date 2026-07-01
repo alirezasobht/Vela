@@ -12,5 +12,6 @@ data class AlertFormUiState(
     val isLoading: Boolean = false,
     val isValueInputEnabled: Boolean = false,
     @param:StringRes val editBtnResId: Int,
-    val alertLabel: String? = null
+    val alertLabel: String? = null,
+    val formHint: String? = null
 )
