@@ -8,5 +8,7 @@ data class Alert(
     val type: AlertType,
     val direction: AlertDirection,
     val targetValue: Double,
-    val isTriggered: Boolean = false
+    val isTriggered: Boolean = false,
+    val lastOhlcCheckTimestamp: Long = 0L,
+    val ohlcAnchorTimestamp: Long = 0L
 )

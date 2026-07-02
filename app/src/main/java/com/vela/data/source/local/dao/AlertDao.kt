@@ -27,4 +27,13 @@ interface AlertDao {
 
     @Query("DELETE FROM alerts WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("UPDATE alerts SET isTriggered = 1 WHERE id = :id")
+    suspend fun markTriggered(id: Long)
+
+    @Query("UPDATE alerts SET lastOhlcCheckTimestamp = :timestamp WHERE id = :id")
+    suspend fun updateOhlcCheckTimestamp(
+        id: Long,
+        timestamp: Long
+    )
 }

@@ -20,6 +20,8 @@ class FakeAlertRepository @Inject constructor() : AlertRepository {
 
     override fun getAlertsSnapshot(coinId: String): List<Alert> = alerts.value.filter { it.coinId == coinId }
 
+    override fun getActiveAlertsSnapshot(): List<Alert> = alerts.value.filter { !it.isTriggered }
+
     override suspend fun getAlertById(id: Long): Alert? = alerts.value.find { it.id == id }
 
     override suspend fun createAlert(alert: Alert): Long {
@@ -34,5 +36,16 @@ class FakeAlertRepository @Inject constructor() : AlertRepository {
 
     override suspend fun deleteAlert(id: Long) {
         alerts.update { list -> list.filter { it.id != id } }
+    }
+
+    override suspend fun markTriggered(id: Long) {
+        alerts.update { list -> list.map { if (it.id == id) it.copy(isTriggered = true) else it } }
+    }
+
+    override suspend fun updateOhlcCheckTimestamp(
+        id: Long,
+        timestamp: Long
+    ) {
+        alerts.update { list -> list.map { if (it.id == id) it.copy(lastOhlcCheckTimestamp = timestamp) else it } }
     }
 }
