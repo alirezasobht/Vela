@@ -100,6 +100,19 @@ class AlertRepositoryImplTest {
         assertEquals(emptyList<Alert>(), result)
     }
 
+    @Test
+    fun `getActiveAlertsSnapshot returns only non-triggered alerts`() {
+        every { cache.getSnapshot() } returns listOf(
+            alert().copy(id = 1L, isTriggered = false),
+            alert().copy(id = 2L, isTriggered = true)
+        )
+
+        val result = repository.getActiveAlertsSnapshot()
+
+        assertEquals(1, result.size)
+        assertEquals(1L, result[0].id)
+    }
+
     // ----- write ops -----
 
     @Test
@@ -141,5 +154,23 @@ class AlertRepositoryImplTest {
         repository.deleteAlert(1L)
 
         coVerify { dao.delete(1L) }
+    }
+
+    @Test
+    fun `markTriggered delegates to dao`() = runTest {
+        coEvery { dao.markTriggered(1L) } just runs
+
+        repository.markTriggered(1L)
+
+        coVerify { dao.markTriggered(1L) }
+    }
+
+    @Test
+    fun `updateOhlcCheckTimestamp delegates to dao`() = runTest {
+        coEvery { dao.updateOhlcCheckTimestamp(1L, 9999L) } just runs
+
+        repository.updateOhlcCheckTimestamp(1L, 9999L)
+
+        coVerify { dao.updateOhlcCheckTimestamp(1L, 9999L) }
     }
 }

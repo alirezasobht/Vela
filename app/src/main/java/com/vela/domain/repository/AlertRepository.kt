@@ -10,6 +10,8 @@ interface AlertRepository {
 
     fun getAlertsSnapshot(coinId: String): List<Alert>
 
+    fun getActiveAlertsSnapshot(): List<Alert>
+
     suspend fun getAlertById(id: Long): Alert?
 
     suspend fun createAlert(alert: Alert): Long
@@ -17,4 +19,11 @@ interface AlertRepository {
     suspend fun updateAlert(alert: Alert)
 
     suspend fun deleteAlert(id: Long)
+
+    suspend fun markTriggered(id: Long)
+
+    suspend fun updateOhlcCheckTimestamp(
+        id: Long,
+        timestamp: Long
+    )
 }

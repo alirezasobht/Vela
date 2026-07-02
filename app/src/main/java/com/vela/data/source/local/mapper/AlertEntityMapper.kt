@@ -13,7 +13,9 @@ fun AlertEntity.toDomain(): Alert = Alert(
     type = AlertType.valueOf(type),
     direction = AlertDirection.valueOf(direction),
     targetValue = targetValue,
-    isTriggered = isTriggered
+    isTriggered = isTriggered,
+    lastOhlcCheckTimestamp = lastOhlcCheckTimestamp,
+    ohlcAnchorTimestamp = ohlcAnchorTimestamp
 )
 
 fun Alert.toEntity(): AlertEntity = AlertEntity(
@@ -24,5 +26,7 @@ fun Alert.toEntity(): AlertEntity = AlertEntity(
     type = type.name,
     direction = direction.name,
     targetValue = targetValue,
-    isTriggered = isTriggered
+    isTriggered = isTriggered,
+    lastOhlcCheckTimestamp = lastOhlcCheckTimestamp,
+    ohlcAnchorTimestamp = ohlcAnchorTimestamp
 )

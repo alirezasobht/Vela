@@ -13,7 +13,9 @@ class AlertEntityMapperTest {
         type: String = "PRICE",
         direction: String = "ABOVE",
         targetValue: Double = 70_000.0,
-        isTriggered: Boolean = false
+        isTriggered: Boolean = false,
+        lastOhlcCheckTimestamp: Long = 0L,
+        ohlcAnchorTimestamp: Long = 0L
     ) = AlertEntity(
         id = id,
         coinId = "bitcoin",
@@ -22,7 +24,9 @@ class AlertEntityMapperTest {
         type = type,
         direction = direction,
         targetValue = targetValue,
-        isTriggered = isTriggered
+        isTriggered = isTriggered,
+        lastOhlcCheckTimestamp = lastOhlcCheckTimestamp,
+        ohlcAnchorTimestamp = ohlcAnchorTimestamp
     )
 
     private fun alert(
@@ -30,7 +34,9 @@ class AlertEntityMapperTest {
         type: AlertType = AlertType.PRICE,
         direction: AlertDirection = AlertDirection.ABOVE,
         targetValue: Double = 70_000.0,
-        isTriggered: Boolean = false
+        isTriggered: Boolean = false,
+        lastOhlcCheckTimestamp: Long = 0L,
+        ohlcAnchorTimestamp: Long = 0L
     ) = Alert(
         id = id,
         coinId = "bitcoin",
@@ -39,7 +45,9 @@ class AlertEntityMapperTest {
         type = type,
         direction = direction,
         targetValue = targetValue,
-        isTriggered = isTriggered
+        isTriggered = isTriggered,
+        lastOhlcCheckTimestamp = lastOhlcCheckTimestamp,
+        ohlcAnchorTimestamp = ohlcAnchorTimestamp
     )
 
     @Test
@@ -58,6 +66,13 @@ class AlertEntityMapperTest {
     @Test
     fun `toDomain toEntity roundtrip preserves all values`() {
         val original = entity(id = 5L, type = "PERCENT", direction = "BELOW", targetValue = 3.5, isTriggered = true)
+        val roundtrip = original.toDomain().toEntity()
+        assertEquals(original, roundtrip)
+    }
+
+    @Test
+    fun `toDomain toEntity roundtrip preserves timestamp fields`() {
+        val original = entity(lastOhlcCheckTimestamp = 1234L, ohlcAnchorTimestamp = 5678L)
         val roundtrip = original.toDomain().toEntity()
         assertEquals(original, roundtrip)
     }
