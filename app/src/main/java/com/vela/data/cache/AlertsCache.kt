@@ -9,25 +9,37 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transform
 
 @Singleton
-class AlertsCache @Inject constructor(dao: AlertDao) {
+class AlertsCache @Inject constructor(private val dao: AlertDao) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val _alerts: StateFlow<List<Alert>> = dao.observeAll()
-        .map { list -> list.map { it.toDomain() } }
-        .stateIn(
-            scope = scope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyList()
-        )
+    private val cachedAlerts = MutableStateFlow<List<Alert>?>(null)
 
-    fun getAlerts(): Flow<List<Alert>> = _alerts
+    init {
+        dao.observeAll()
+            .map { list -> list.map { it.toDomain() } }
+            .onEach { cachedAlerts.value = it }
+            .launchIn(scope)
+    }
 
-    fun getSnapshot(): List<Alert> = _alerts.value
+    fun getAlerts(): Flow<List<Alert>> = cachedAlerts
+        .transform { cachedAlerts ->
+            if (cachedAlerts == null) {
+                emit(loadAlertsFromDatabase())
+            } else {
+                emit(cachedAlerts)
+            }
+        }
+        .distinctUntilChanged()
+
+    private suspend fun loadAlertsFromDatabase(): List<Alert> = dao.getAll()
+        .map { it.toDomain() }
 }

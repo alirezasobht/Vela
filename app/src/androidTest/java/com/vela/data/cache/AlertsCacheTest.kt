@@ -69,33 +69,13 @@ class AlertsCacheTest {
     }
 
     @Test
-    fun getSnapshot_returnsEmptyList_whenDatabaseIsEmpty() = runTest {
-        assertEquals(emptyList<Any>(), cache.getSnapshot())
-    }
-
-    @Test
-    fun getSnapshot_returnsCachedAlerts_afterDatabaseEmits() = runTest {
-        dao.insert(alertEntity())
-        cache.getAlerts().first { it.isNotEmpty() }
-
-        val snapshot = cache.getSnapshot()
-        assertEquals(1, snapshot.size)
-        assertEquals("bitcoin", snapshot[0].coinId)
-    }
-
-    @Test
-    fun getSnapshot_reflectsLatestDatabaseState() = runTest {
-        dao.insert(alertEntity())
+    fun getAlerts_emitsReducedList_whenAlertIsDeleted() = runTest {
+        val id = dao.insert(alertEntity())
         cache.getAlerts().first { it.size == 1 }
-        assertEquals(1, cache.getSnapshot().size)
-
-        val id = dao.insert(alertEntity().copy(coinId = "ethereum", coinName = "Ethereum", coinSymbol = "eth"))
-        cache.getAlerts().first { it.size == 2 }
-        assertEquals(2, cache.getSnapshot().size)
 
         dao.delete(id)
-        cache.getAlerts().first { it.size == 1 }
-        assertEquals(1, cache.getSnapshot().size)
+        val alerts = cache.getAlerts().first { it.isEmpty() }
+        assertEquals(emptyList<Any>(), alerts)
     }
 
     // ----- helpers -----

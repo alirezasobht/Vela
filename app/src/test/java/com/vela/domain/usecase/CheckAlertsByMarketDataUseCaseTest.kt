@@ -121,7 +121,7 @@ class CheckAlertsByMarketDataUseCaseTest {
 
     @Test
     fun `returns empty when no active alerts`() = runTest {
-        coEvery { alertRepository.getActiveAlertsSnapshot() } returns emptyList()
+        coEvery { alertRepository.getActiveAlerts() } returns emptyList()
 
         assertTrue(useCase().isEmpty())
         coVerify(exactly = 0) { priceRepository.getPrices(any(), any()) }
@@ -144,7 +144,7 @@ class CheckAlertsByMarketDataUseCaseTest {
     // ----- helpers -----
 
     private fun stubAlerts(vararg alerts: Alert) {
-        coEvery { alertRepository.getActiveAlertsSnapshot() } returns alerts.toList()
+        coEvery { alertRepository.getActiveAlerts() } returns alerts.toList()
     }
 
     private fun stubPrices(vararg pairs: Pair<String, SimplePrice>) {

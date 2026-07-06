@@ -18,9 +18,7 @@ class FakeAlertRepository @Inject constructor() : AlertRepository {
 
     override fun observeAlertsByCoinId(coinId: String): Flow<List<Alert>> = alerts.map { list -> list.filter { it.coinId == coinId } }
 
-    override fun getAlertsSnapshot(coinId: String): List<Alert> = alerts.value.filter { it.coinId == coinId }
-
-    override fun getActiveAlertsSnapshot(): List<Alert> = alerts.value.filter { !it.isTriggered }
+    override suspend fun getActiveAlerts(): List<Alert> = alerts.value.filter { !it.isTriggered }
 
     override suspend fun getAlertById(id: Long): Alert? = alerts.value.find { it.id == id }
 

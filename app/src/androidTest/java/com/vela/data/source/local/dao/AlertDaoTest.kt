@@ -55,6 +55,13 @@ class AlertDaoTest {
     }
 
     @Test
+    fun getAll_returnsAllEntities() = runTest {
+        dao.insert(entity())
+        dao.insert(entity().copy(coinId = "ethereum", coinName = "Ethereum", coinSymbol = "eth"))
+        assertEquals(2, dao.getAll().size)
+    }
+
+    @Test
     fun observeByCoinId_filtersCorrectly() = runTest {
         dao.insert(entity())
         dao.insert(entity().copy(coinId = "ethereum", coinName = "Ethereum", coinSymbol = "eth"))

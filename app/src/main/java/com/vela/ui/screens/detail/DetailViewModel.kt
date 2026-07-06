@@ -7,7 +7,6 @@ import androidx.navigation.toRoute
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.TimeRange
-import com.vela.domain.usecase.GetAlertsSnapshotUseCase
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
@@ -53,7 +52,6 @@ class DetailViewModel @Inject constructor(
     private val isWatchlistedUseCase: IsWatchlistedUseCase,
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
-    private val getAlertsSnapshot: GetAlertsSnapshotUseCase,
     private val alertLabelFormatter: AlertLabelFormatter,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(),
@@ -178,15 +176,9 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun openAlertForm(id: Long?) {
-        val alertRow = getAlertsSnapshot(_state.value.coinId)
-            .find { it.id == id }
-            ?.let { alert ->
-                AlertRowUiModel(
-                    id = alert.id,
-                    label = alertLabelFormatter.format(alert),
-                    isTriggered = alert.isTriggered
-                )
-            }
+        val alertRow = (_state.value.content as? DetailContentState.Success)
+            ?.alerts
+            ?.find { it.id == id }
         _state.update {
             it.copy(
                 alertFormState = AlertFormState.Visible(
