@@ -16,6 +16,9 @@ interface AlertDao {
     @Query("SELECT * FROM alerts")
     fun observeAll(): Flow<List<AlertEntity>>
 
+    @Query("SELECT * FROM alerts")
+    suspend fun getAll(): List<AlertEntity>
+
     @Query("SELECT * FROM alerts WHERE id = :id")
     suspend fun getById(id: Long): AlertEntity?
 

@@ -148,17 +148,30 @@ class CheckAlertsByOhlcUseCaseTest {
 
     @Test
     fun `returns empty list when no active alerts`() = runTest {
-        coEvery { alertRepository.getActiveAlertsSnapshot() } returns emptyList()
+        coEvery { alertRepository.getActiveAlerts() } returns emptyList()
 
         val result = useCase()
 
         assertTrue(result.isEmpty())
     }
 
+    @Test
+    fun `calls OHLC API once per coin when multiple alerts share the same coinId`() = runTest {
+        stubAlerts(
+            alert(id = 1L, coinId = "bitcoin", targetValue = 100.0),
+            alert(id = 2L, coinId = "bitcoin", targetValue = 200.0)
+        )
+        stubOhlc("bitcoin", candles(high = 50.0))
+
+        useCase()
+
+        coVerify(exactly = 1) { detailRepository.getOhlc("bitcoin", any()) }
+    }
+
     // ----- helpers -----
 
     private fun stubAlerts(vararg alerts: Alert) {
-        coEvery { alertRepository.getActiveAlertsSnapshot() } returns alerts.toList()
+        coEvery { alertRepository.getActiveAlerts() } returns alerts.toList()
     }
 
     private fun stubOhlc(

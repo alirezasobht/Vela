@@ -13,34 +13,37 @@ class CheckAlertsByOhlcUseCase @Inject constructor(
     private val detailRepository: DetailRepository
 ) {
     suspend operator fun invoke(): List<Alert> {
-        val activeAlerts = alertRepository.getActiveAlertsSnapshot()
+        val activeAlerts = alertRepository.getActiveAlerts()
             .filter { it.type == AlertType.PRICE }
+
+        if (activeAlerts.isEmpty()) return emptyList()
 
         val triggered = mutableListOf<Alert>()
 
-        for (alert in activeAlerts) {
-            val lowerBound = maxOf(alert.ohlcAnchorTimestamp, alert.lastOhlcCheckTimestamp)
-
-            val candles = when (val result = detailRepository.getOhlc(alert.coinId, days = 1)) {
+        for ((coinId, alerts) in activeAlerts.groupBy { it.coinId }) {
+            val candles = when (val result = detailRepository.getOhlc(coinId, days = 1)) {
                 is DataResult.Success -> result.data
                 is DataResult.Error -> continue
             }
 
-            val newCandles = candles.filter { it.timestamp > lowerBound }
-            if (newCandles.isEmpty()) continue
+            for (alert in alerts) {
+                val lowerBound = maxOf(alert.ohlcAnchorTimestamp, alert.lastOhlcCheckTimestamp)
+                val newCandles = candles.filter { it.timestamp > lowerBound }
+                if (newCandles.isEmpty()) continue
 
-            val isTriggered = newCandles.any { candle ->
-                when (alert.direction) {
-                    AlertDirection.ABOVE -> candle.high >= alert.targetValue
-                    AlertDirection.BELOW -> candle.low <= alert.targetValue
+                val isTriggered = newCandles.any { candle ->
+                    when (alert.direction) {
+                        AlertDirection.ABOVE -> candle.high >= alert.targetValue
+                        AlertDirection.BELOW -> candle.low <= alert.targetValue
+                    }
                 }
-            }
 
-            if (isTriggered) {
-                alertRepository.markTriggered(alert.id)
-                triggered += alert
-            } else {
-                alertRepository.updateOhlcCheckTimestamp(alert.id, newCandles.last().timestamp)
+                if (isTriggered) {
+                    alertRepository.markTriggered(alert.id)
+                    triggered += alert
+                } else {
+                    alertRepository.updateOhlcCheckTimestamp(alert.id, newCandles.last().timestamp)
+                }
             }
         }
 

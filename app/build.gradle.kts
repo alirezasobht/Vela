@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.retrofit)
     implementation(libs.retrofit.moshi)
     implementation(libs.okhttp.logging)
@@ -82,6 +83,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.vico.compose.m3)
     implementation(libs.kotlinDateTime)
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.androidx.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

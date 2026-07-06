@@ -13,7 +13,7 @@ class CheckAlertsByMarketDataUseCase @Inject constructor(
     private val priceRepository: PriceRepository
 ) {
     suspend operator fun invoke(): List<Alert> {
-        val activeAlerts = alertRepository.getActiveAlertsSnapshot()
+        val activeAlerts = alertRepository.getActiveAlerts()
         if (activeAlerts.isEmpty()) return emptyList()
 
         val coinIds = activeAlerts.map { it.coinId }.distinct()

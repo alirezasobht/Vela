@@ -2,12 +2,12 @@ package com.vela.data.repository
 
 import com.vela.data.cache.AlertsCache
 import com.vela.data.source.local.dao.AlertDao
-import com.vela.data.source.local.mapper.toDomain
 import com.vela.data.source.local.mapper.toEntity
 import com.vela.domain.model.Alert
 import com.vela.domain.repository.AlertRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class AlertRepositoryImpl @Inject constructor(
@@ -18,11 +18,9 @@ class AlertRepositoryImpl @Inject constructor(
 
     override fun observeAllAlerts(): Flow<List<Alert>> = cache.getAlerts()
 
-    override fun getAlertsSnapshot(coinId: String): List<Alert> = cache.getSnapshot().filter { it.coinId == coinId }
+    override suspend fun getActiveAlerts(): List<Alert> = cache.getAlerts().first().filter { !it.isTriggered }
 
-    override fun getActiveAlertsSnapshot(): List<Alert> = cache.getSnapshot().filter { !it.isTriggered }
-
-    override suspend fun getAlertById(id: Long): Alert? = dao.getById(id)?.toDomain()
+    override suspend fun getAlertById(id: Long): Alert? = cache.getAlerts().first().firstOrNull { it.id == id }
 
     override suspend fun createAlert(alert: Alert): Long = dao.insert(alert.toEntity())
 

@@ -8,9 +8,7 @@ interface AlertRepository {
 
     fun observeAllAlerts(): Flow<List<Alert>>
 
-    fun getAlertsSnapshot(coinId: String): List<Alert>
-
-    fun getActiveAlertsSnapshot(): List<Alert>
+    suspend fun getActiveAlerts(): List<Alert>
 
     suspend fun getAlertById(id: Long): Alert?
 

@@ -11,7 +11,6 @@ import com.vela.domain.model.CoinDetail
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
-import com.vela.domain.usecase.GetAlertsSnapshotUseCase
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
 import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
@@ -65,8 +64,6 @@ class DetailViewModelTest {
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase = mockk()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
-    private val getAlertsSnapshot: GetAlertsSnapshotUseCase = mockk()
-
     private fun createViewModel(initialTab: DetailTab = DetailTab.STATS): DetailViewModel {
         mockkStatic("androidx.navigation.SavedStateHandleKt")
         val handle = mockk<SavedStateHandle>()
@@ -85,7 +82,6 @@ class DetailViewModelTest {
             toggleWatchlistUseCase = toggleWatchlistUseCase,
             observeAlertsByCoinId = observeAlertsByCoinId,
             alertLabelFormatter = alertLabelFormatter,
-            getAlertsSnapshot = getAlertsSnapshot,
             savedStateHandle = handle
         )
     }
@@ -96,7 +92,6 @@ class DetailViewModelTest {
         every { assetPreviewCache.get(any()) } returns null
         every { isWatchlistedUseCase.invoke(any()) } returns flowOf(false)
         every { observeAlertsByCoinId.invoke(any()) } returns flowOf(emptyList())
-        every { getAlertsSnapshot.invoke(any()) } returns emptyList()
     }
 
     @After
@@ -408,7 +403,7 @@ class DetailViewModelTest {
             direction = AlertDirection.ABOVE,
             targetValue = 80_000.0
         )
-        every { getAlertsSnapshot.invoke("bitcoin") } returns listOf(alert)
+        every { observeAlertsByCoinId.invoke(any()) } returns flowOf(listOf(alert))
         every { alertLabelFormatter.format(any()) } returns "BTC > $80,000"
 
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())

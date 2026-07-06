@@ -3,6 +3,7 @@ package com.vela.data.repository
 import app.cash.turbine.test
 import com.vela.data.cache.AlertsCache
 import com.vela.data.source.local.dao.AlertDao
+import com.vela.data.source.local.mapper.toDomain
 import com.vela.data.source.local.model.AlertEntity
 import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
@@ -82,32 +83,15 @@ class AlertRepositoryImplTest {
     // ----- snapshot -----
 
     @Test
-    fun `getAlertsSnapshot returns filtered alerts for coinId`() {
-        every { cache.getSnapshot() } returns listOf(alert("bitcoin"), alert("ethereum").copy(id = 2L))
-
-        val result = repository.getAlertsSnapshot("bitcoin")
-
-        assertEquals(1, result.size)
-        assertEquals("bitcoin", result[0].coinId)
-    }
-
-    @Test
-    fun `getAlertsSnapshot returns empty list when no alerts match coinId`() {
-        every { cache.getSnapshot() } returns listOf(alert("ethereum"))
-
-        val result = repository.getAlertsSnapshot("bitcoin")
-
-        assertEquals(emptyList<Alert>(), result)
-    }
-
-    @Test
-    fun `getActiveAlertsSnapshot returns only non-triggered alerts`() {
-        every { cache.getSnapshot() } returns listOf(
-            alert().copy(id = 1L, isTriggered = false),
-            alert().copy(id = 2L, isTriggered = true)
+    fun `getActiveAlerts returns only non-triggered alerts`() = runTest {
+        every { cache.getAlerts() } returns flowOf(
+            listOf(
+                entity().copy(id = 1L, isTriggered = false).toDomain(),
+                entity().copy(id = 2L, isTriggered = true).toDomain()
+            )
         )
 
-        val result = repository.getActiveAlertsSnapshot()
+        val result = repository.getActiveAlerts()
 
         assertEquals(1, result.size)
         assertEquals(1L, result[0].id)
@@ -117,14 +101,14 @@ class AlertRepositoryImplTest {
 
     @Test
     fun `getAlertById returns null when not found`() = runTest {
-        coEvery { dao.getById(99L) } returns null
+        every { cache.getAlerts() } returns flowOf(emptyList())
 
         assertEquals(null, repository.getAlertById(99L))
     }
 
     @Test
     fun `getAlertById returns mapped alert when found`() = runTest {
-        coEvery { dao.getById(1L) } returns entity()
+        every { cache.getAlerts() } returns flowOf(listOf(entity().toDomain()))
 
         assertEquals(alert(), repository.getAlertById(1L))
     }
