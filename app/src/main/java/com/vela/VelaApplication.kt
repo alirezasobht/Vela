@@ -8,9 +8,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
-import com.vela.data.platform.AlertNotificationSender
 import com.vela.data.worker.InProcessAlertCheckScheduler
 import com.vela.data.worker.WorkManagerAlertCheckScheduler
+import com.vela.domain.notification.AlertNotifier
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -44,7 +44,7 @@ class VelaApplication :
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            AlertNotificationSender.CHANNEL_ID,
+            AlertNotifier.CHANNEL_ID,
             "Price Alerts",
             NotificationManager.IMPORTANCE_HIGH
         )

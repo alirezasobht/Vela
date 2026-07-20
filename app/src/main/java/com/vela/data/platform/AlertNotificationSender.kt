@@ -11,13 +11,15 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.notification.AlertNotifier
+import com.vela.ui.navigation.deeplink.DeepLink
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.NumberFormat
 import java.util.Locale
 import javax.inject.Inject
 
 class AlertNotificationSender @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val deepLinkIntentFactory: DeepLinkIntentFactory
 ) : AlertNotifier {
 
     private val priceFormat = NumberFormat.getNumberInstance(Locale.US).apply {
@@ -33,14 +35,22 @@ class AlertNotificationSender @Inject constructor(
     override fun notify(alert: Alert) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
-        ) return
+        ) {
+            return
+        }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val pendingIntent = deepLinkIntentFactory.buildPendingIntent(
+            deepLink = DeepLink.CoinDetail(coinId = alert.coinId, alertId = alert.id),
+            requestCode = alert.id.toInt()
+        )
+
+        val notification = NotificationCompat.Builder(context, AlertNotifier.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("${alert.coinName} (${alert.coinSymbol.uppercase()})")
             .setContentText(formatBody(alert))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         NotificationManagerCompat.from(context).notify(alert.id.toInt(), notification)
@@ -52,12 +62,8 @@ class AlertNotificationSender @Inject constructor(
             AlertDirection.BELOW -> "below"
         }
         return when (alert.type) {
-            AlertType.PRICE -> $$"Price $$direction $$${priceFormat.format(alert.targetValue)}"
+            AlertType.PRICE -> "Price $direction \$${priceFormat.format(alert.targetValue)}"
             AlertType.PERCENT -> "Price change $direction ${percentFormat.format(alert.targetValue)}%"
         }
-    }
-
-    companion object {
-        const val CHANNEL_ID = "vela_alerts"
     }
 }
