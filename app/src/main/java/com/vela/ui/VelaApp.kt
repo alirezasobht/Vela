@@ -16,7 +16,9 @@ import com.vela.ui.theme.VelaTheme
 fun VelaApp(deepLinkHandler: DeepLinkHandler) {
     val rootNavController = rememberNavController()
     LaunchedEffect(Unit) {
-        deepLinkHandler.flow.collect { rootNavController.navigate(deepLink = it) }
+        deepLinkHandler.flow.collect {
+            navigate(navController = rootNavController, deepLink = it)
+        }
     }
     VelaTheme {
         Surface {
