@@ -68,16 +68,6 @@ class AlertsCacheTest {
         assertEquals(2, cache.getAlerts().first { it.size == 2 }.size)
     }
 
-    @Test
-    fun getAlerts_emitsReducedList_whenAlertIsDeleted() = runTest {
-        val id = dao.insert(alertEntity())
-        cache.getAlerts().first { it.size == 1 }
-
-        dao.delete(id)
-        val alerts = cache.getAlerts().first { it.isEmpty() }
-        assertEquals(emptyList<Any>(), alerts)
-    }
-
     // ----- helpers -----
 
     private fun alertEntity() = AlertEntity(

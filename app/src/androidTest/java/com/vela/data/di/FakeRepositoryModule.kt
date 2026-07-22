@@ -1,6 +1,6 @@
 package com.vela.data.di
 
-import com.vela.data.repository.AlertRepositoryImpl
+import com.vela.data.repository.fake.FakeAlertRepository
 import com.vela.data.repository.fake.FakeAssetRepository
 import com.vela.data.repository.fake.FakeDetailRepository
 import com.vela.data.repository.fake.FakeMarketsRepository
@@ -52,5 +52,5 @@ abstract class FakeRepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindAlertRepository(impl: AlertRepositoryImpl): AlertRepository
+    abstract fun bindAlertRepository(fake: FakeAlertRepository): AlertRepository
 }

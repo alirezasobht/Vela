@@ -194,6 +194,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun observeAlerts() {
+        var pendingAlertId = initialAlertId
         observeAlertsByCoinId(_state.value.coinId)
             .onEach { alerts ->
                 val rows = alerts.map { alert ->
@@ -204,6 +205,10 @@ class DetailViewModel @Inject constructor(
                     )
                 }
                 updateContent<DetailContentState.Success> { copy(alerts = rows) }
+                if (pendingAlertId != null) {
+                    openAlertForm(pendingAlertId)
+                    pendingAlertId = null
+                }
             }.launchIn(viewModelScope)
     }
 
@@ -227,7 +232,6 @@ class DetailViewModel @Inject constructor(
                     }
                     loadOhlc(_state.value.selectedRange)
                     observeAlerts()
-                    if (initialAlertId != null) openAlertForm(initialAlertId)
                 }
 
                 is DataResult.Error -> {
