@@ -6,10 +6,12 @@ import app.cash.turbine.test
 import com.vela.data.source.local.dao.HomeAssetDao
 import com.vela.data.source.local.model.AssetEntity
 import com.vela.data.source.remote.api.CoinGeckoApi
+import com.vela.data.source.remote.mapper.toSimplePrice
 import com.vela.data.source.remote.model.CoinDto
 import com.vela.data.source.remote.model.SparklineDto
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
+import com.vela.domain.pricestore.SimplePriceStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,7 +31,8 @@ import org.junit.Test
 class AssetRepositoryImplTest {
     private val api: CoinGeckoApi = mockk()
     private val dao: HomeAssetDao = mockk()
-    private val repository = AssetRepositoryImpl(api, dao)
+    private val priceStore: SimplePriceStore = mockk(relaxed = true)
+    private val repository = AssetRepositoryImpl(api, dao, priceStore)
 
     private fun aCoinDto(id: String = "bitcoin") = CoinDto(
         id = id,
@@ -259,5 +262,28 @@ class AssetRepositoryImplTest {
         assertEquals(dto.currentPrice, entity.currentPrice)
         assertEquals(dto.priceChangePercent24h, entity.priceChangePercent24h)
         assertEquals(dto.marketCapRank, entity.marketCapRank)
+    }
+
+    // ---- priceStore upsert ----
+
+    @Test
+    fun `fetchTopAssets upserts price into store`() = runTest {
+        val dto = aCoinDto()
+        coEvery { api.getMarkets(limit = any()) } returns listOf(dto)
+        coEvery { dao.refresh(any()) } just runs
+
+        repository.fetchTopAssets()
+
+        coVerify { priceStore.upsert(mapOf(dto.id to dto.toSimplePrice())) }
+    }
+
+    @Test
+    fun `getAssetsByIds upserts price into store`() = runTest {
+        val dto = aCoinDto()
+        coEvery { api.getMarketsByIds(ids = any()) } returns listOf(dto)
+
+        repository.getAssetsByIds(listOf(dto.id))
+
+        coVerify { priceStore.upsert(mapOf(dto.id to dto.toSimplePrice())) }
     }
 }
