@@ -34,6 +34,13 @@ fun CoinDto.toEntity(): AssetEntity = AssetEntity(
     sparkline = sparkline?.price?.takeLast(14)?.joinToString(",")
 )
 
+fun CoinDto.toSimplePrice(): SimplePrice = SimplePrice(
+    price = currentPrice,
+    priceChange = priceChangePercent24h,
+    marketCap = null,
+    totalVolume = null
+)
+
 fun SearchCoinDto.toDomain(): Asset = Asset(
     id = id,
     symbol = symbol,
@@ -71,6 +78,14 @@ fun CoinDetailDto.toDomain(): CoinDetail = CoinDetail(
     ath = ath,
     atl = atl,
     marketCapRank = marketCapRank
+)
+
+fun CoinDetailDto.toSimplePrice(): SimplePrice = SimplePrice(
+    price = currentPrice,
+    priceChange = priceChangePercent24h,
+    marketCap = marketCap,
+    totalVolume = totalVolume,
+    priceChange24hAbsolute = priceChange24h
 )
 
 fun List<Double>.toOhlcPoint(): OhlcPoint = OhlcPoint(

@@ -11,11 +11,15 @@ import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.repository.MarketsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
-class MarketsRepositoryImpl @Inject constructor(private val api: CoinGeckoApi) : MarketsRepository {
+class MarketsRepositoryImpl @Inject constructor(
+    private val api: CoinGeckoApi,
+    private val priceStore: SimplePriceStore
+) : MarketsRepository {
     override suspend fun getCategories(limit: Int): DataResult<List<MarketCategory>> = safeApiCall {
         val categories = api.getCategories().take(limit).map { it.toDomain() }
         listOf(MarketCategory.ALL) + categories
@@ -31,6 +35,6 @@ class MarketsRepositoryImpl @Inject constructor(private val api: CoinGeckoApi) :
             prefetchDistance = 3,
             enablePlaceholders = false
         ),
-        pagingSourceFactory = { MarketsPagingSource(api, category, sort) }
+        pagingSourceFactory = { MarketsPagingSource(api, category, sort, priceStore) }
     ).flow
 }

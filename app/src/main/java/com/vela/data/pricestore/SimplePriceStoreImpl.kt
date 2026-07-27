@@ -2,13 +2,13 @@ package com.vela.data.pricestore
 
 import com.vela.domain.model.SimplePrice
 import com.vela.domain.pricestore.SimplePriceStore
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class SimplePriceStoreImpl @Inject constructor() : SimplePriceStore {

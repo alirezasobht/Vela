@@ -4,25 +4,31 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.vela.data.source.remote.api.CoinGeckoApi
 import com.vela.data.source.remote.mapper.toDomain
+import com.vela.data.source.remote.mapper.toSimplePrice
 import com.vela.domain.model.Asset
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
+import com.vela.domain.pricestore.SimplePriceStore
 
 class MarketsPagingSource(
     private val api: CoinGeckoApi,
     private val category: MarketCategory,
-    private val sort: MarketSort
+    private val sort: MarketSort,
+    private val priceStore: SimplePriceStore
 ) : PagingSource<Int, Asset>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Asset> {
         val page = params.key ?: 1
         return try {
-            val results = api
+            val coins = api
                 .getMarkets(
                     limit = params.loadSize,
                     page = page,
                     category = category.id,
                     order = sort.toApiValue()
-                ).map { it.toDomain() }
+                )
+            priceStore.upsert(coins.associate { it.id to it.toSimplePrice() })
+
+            val results = coins.map { it.toDomain() }
 
             LoadResult.Page(
                 data = results,
