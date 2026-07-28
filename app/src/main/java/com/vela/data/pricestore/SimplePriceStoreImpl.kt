@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.update
 class SimplePriceStoreImpl @Inject constructor() : SimplePriceStore {
     private val prices = MutableStateFlow<Map<String, SimplePrice>>(emptyMap())
 
+    override fun getPrices(): Map<String, SimplePrice> = prices.value
+
     override fun observePrice(id: String): Flow<SimplePrice?> = prices
         .map { it[id] }
         .distinctUntilChanged()
@@ -24,7 +26,6 @@ class SimplePriceStoreImpl @Inject constructor() : SimplePriceStore {
         }
     }
 
-    // Field-by-field merge for partial update
     private fun SimplePrice.mergedWith(incoming: SimplePrice): SimplePrice = SimplePrice(
         price = incoming.price ?: price,
         priceChange = incoming.priceChange ?: priceChange,

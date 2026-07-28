@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
  * a successful fetch; screens only ever read from it via [observePrice].
  */
 interface SimplePriceStore {
+    fun getPrices(): Map<String, SimplePrice>
+
     fun observePrice(id: String): Flow<SimplePrice?>
 
     suspend fun upsert(prices: Map<String, SimplePrice>)

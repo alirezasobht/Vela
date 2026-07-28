@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,5 +67,22 @@ class SimplePriceStoreImplTest {
 
         assertEquals(60000.0, result.last()?.price)
         job.cancel()
+    }
+
+    @Test
+    fun `getPrices returns current snapshot of all prices`() = runTest {
+        store.upsert(mapOf("bitcoin" to SimplePrice(price = 60000.0, priceChange = 1.0, marketCap = null, totalVolume = null)))
+        store.upsert(mapOf("ethereum" to SimplePrice(price = 3000.0, priceChange = 0.5, marketCap = null, totalVolume = null)))
+
+        val snapshot = store.getPrices()
+
+        assertEquals(2, snapshot.size)
+        assertEquals(60000.0, snapshot["bitcoin"]?.price)
+        assertEquals(3000.0, snapshot["ethereum"]?.price)
+    }
+
+    @Test
+    fun `getPrices returns empty map when nothing upserted yet`() {
+        assertTrue(store.getPrices().isEmpty())
     }
 }
