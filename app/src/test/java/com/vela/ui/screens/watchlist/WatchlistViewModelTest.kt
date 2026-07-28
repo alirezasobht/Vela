@@ -3,13 +3,12 @@ package com.vela.ui.screens.watchlist
 import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetWatchlistAssetsUseCase
 import com.vela.domain.usecase.IsWatchlistedUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePollingConfig
-import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,9 +31,10 @@ class WatchlistViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private val getWatchlistAssets: GetWatchlistAssetsUseCase = mockk()
-    private val getPrices: GetPricesOnlyUseCase = mockk(relaxed = true)
     private val assetPreviewCache: AssetPreviewCache = mockk(relaxed = true)
-    private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
+    private val priceStore: SimplePriceStore = mockk()
+    private val pricePolling: PricePolling = mockk(relaxed = true)
+    private val errorFlow = MutableSharedFlow<AppError?>(replay = 1)
     private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk(relaxed = true)
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk(relaxed = true)
 
@@ -51,15 +51,16 @@ class WatchlistViewModelTest {
 
     private fun createViewModel() = WatchlistViewModel(
         getWatchlistAssets = getWatchlistAssets,
-        getPrices = getPrices,
         assetPreviewCache = assetPreviewCache,
-        pricePolling = PricePollingController(config),
+        priceStore = priceStore,
+        pricePolling = pricePolling,
         watchlistController = WatchlistControllerImpl(isWatchlistedUseCase, toggleWatchlistUseCase)
     )
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        every { pricePolling.observeError() } returns errorFlow
     }
 
     @After
@@ -123,48 +124,50 @@ class WatchlistViewModelTest {
     }
 
     @Test
-    fun `getIds returns ids from Success state, empty otherwise`() = runTest {
+    fun `non-empty watchlist registers ids for polling`() = runTest {
         val assets = listOf(asset("bitcoin"), asset("ethereum"))
         every { getWatchlistAssets() } returns flowOf(DataResult.Success(assets))
 
-        val vm = createViewModel()
+        createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(listOf("bitcoin", "ethereum"), vm.getIds())
+        coVerify { pricePolling.register(setOf("bitcoin", "ethereum")) }
     }
 
     @Test
-    fun `getIds returns empty list when state is Empty`() = runTest {
+    fun `empty watchlist does not register anything`() = runTest {
         every { getWatchlistAssets() } returns flowOf(DataResult.Success(emptyList()))
 
-        val vm = createViewModel()
+        createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(emptyList<String>(), vm.getIds())
+        coVerify(exactly = 0) { pricePolling.register(any()) }
     }
 
     @Test
-    fun `onPriceError sets nonBlockingError only when state is Success`() = runTest {
+    fun `price polling error sets nonBlockingError only when state is Success`() = runTest {
         val assets = listOf(asset("bitcoin"))
         every { getWatchlistAssets() } returns flowOf(DataResult.Success(assets))
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.onPriceError(AppError.NoInternet)
+        errorFlow.tryEmit(AppError.NoInternet)
+        dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value as WatchlistUiState.Success
         assertEquals(AppError.NoInternet, state.nonBlockingError)
     }
 
     @Test
-    fun `onPriceError is no-op when state is Empty`() = runTest {
+    fun `price polling error is no-op when state is Empty`() = runTest {
         every { getWatchlistAssets() } returns flowOf(DataResult.Success(emptyList()))
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.onPriceError(AppError.NoInternet)
+        errorFlow.tryEmit(AppError.NoInternet)
+        dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(true, vm.uiState.value is WatchlistUiState.Empty)
     }

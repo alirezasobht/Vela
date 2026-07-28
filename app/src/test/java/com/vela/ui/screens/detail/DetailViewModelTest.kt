@@ -11,15 +11,14 @@ import com.vela.domain.model.CoinDetail
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.OhlcPoint
 import com.vela.domain.model.TimeRange
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
-import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.IsWatchlistedUseCase
 import com.vela.domain.usecase.ObserveAlertsByCoinIdUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePollingConfig
-import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.alerts.AlertLabelFormatter
 import com.vela.ui.screens.alerts.AlertRowUiModel
@@ -36,6 +35,7 @@ import io.mockk.unmockkStatic
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -57,9 +57,10 @@ class DetailViewModelTest {
 
     private val getCoinDetail: GetCoinDetailUseCase = mockk()
     private val getOhlc: GetOhlcUseCase = mockk()
-    private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
     private val assetPreviewCache: AssetPreviewCache = mockk()
-    private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
+    private val priceStore: SimplePriceStore = mockk()
+    private val pricePolling: PricePolling = mockk(relaxed = true)
+    private val errorFlow = MutableSharedFlow<AppError?>(replay = 1)
     private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk()
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase = mockk()
@@ -76,8 +77,8 @@ class DetailViewModelTest {
             getCoinDetail = getCoinDetail,
             getOhlc = getOhlc,
             assetPreviewCache = assetPreviewCache,
-            getPrices = getPrices,
-            pricePolling = PricePollingController(config),
+            priceStore = priceStore,
+            pricePolling = pricePolling,
             isWatchlistedUseCase = isWatchlistedUseCase,
             toggleWatchlistUseCase = toggleWatchlistUseCase,
             observeAlertsByCoinId = observeAlertsByCoinId,
@@ -92,6 +93,8 @@ class DetailViewModelTest {
         every { assetPreviewCache.get(any()) } returns null
         every { isWatchlistedUseCase.invoke(any()) } returns flowOf(false)
         every { observeAlertsByCoinId.invoke(any()) } returns flowOf(emptyList())
+        every { priceStore.observePrice(any()) } returns flowOf(null)
+        every { pricePolling.observeError() } returns errorFlow
     }
 
     @After
@@ -336,14 +339,26 @@ class DetailViewModelTest {
     }
 
     @Test
-    fun `onPriceError updates nonBlockingError in Success state`() = runTest {
+    fun `register is called with the coin id`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { pricePolling.register(setOf("bitcoin")) }
+    }
+
+    @Test
+    fun `price polling error updates nonBlockingError in Success state`() = runTest {
         coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
         coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
 
         val vm = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        vm.onPriceError(AppError.NoInternet)
+        errorFlow.tryEmit(AppError.NoInternet)
+        dispatcher.scheduler.advanceUntilIdle()
 
         val content = vm.state.value.content as DetailContentState.Success
         assertEquals(AppError.NoInternet, content.nonBlockingError)

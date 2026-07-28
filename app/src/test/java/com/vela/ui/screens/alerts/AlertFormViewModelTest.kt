@@ -5,13 +5,12 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
-import com.vela.domain.model.DataResult
 import com.vela.domain.model.SimplePrice
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetAlertValidationMessageUseCase
-import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.AssetPreviewCache
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -19,6 +18,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -34,7 +34,7 @@ class AlertFormViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private val assetPreviewCache: AssetPreviewCache = mockk()
-    private val getPricesOnly: GetPricesOnlyUseCase = mockk()
+    private val priceStore: SimplePriceStore = mockk()
     private val editAlert: EditAlertUseCase = mockk(relaxed = true)
     private val deleteAlert: DeleteAlertUseCase = mockk(relaxed = true)
     private val getAlertById: GetAlertByIdUseCase = mockk()
@@ -447,7 +447,7 @@ class AlertFormViewModelTest {
 
     private fun createViewModel(alertId: Long? = null): AlertFormViewModel = AlertFormViewModel(
         assetPreviewCache = assetPreviewCache,
-        getPricesOnly = getPricesOnly,
+        priceStore = priceStore,
         editAlert = editAlert,
         deleteAlert = deleteAlert,
         getAlertById = getAlertById,
@@ -459,20 +459,18 @@ class AlertFormViewModelTest {
     )
 
     private fun mockPrices(price: Double = 60_000.0) {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(
-            mapOf(
-                "bitcoin" to SimplePrice(
-                    price = price,
-                    priceChange = 1.0,
-                    marketCap = 100_000_000.0,
-                    totalVolume = 100_000.0,
-                    priceChange24hAbsolute = 1.0
-                )
+        every { priceStore.observePrice("bitcoin") } returns flowOf(
+            SimplePrice(
+                price = price,
+                priceChange = 1.0,
+                marketCap = 100_000_000.0,
+                totalVolume = 100_000.0,
+                priceChange24hAbsolute = 1.0
             )
         )
     }
 
     private fun mockEmptyPrices() {
-        coEvery { getPricesOnly(any()) } returns DataResult.Success(emptyMap())
+        every { priceStore.observePrice("bitcoin") } returns flowOf(null)
     }
 }

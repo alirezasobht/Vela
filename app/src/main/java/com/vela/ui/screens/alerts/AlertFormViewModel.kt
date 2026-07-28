@@ -7,13 +7,12 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
-import com.vela.domain.model.DataResult
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.AlertValidationResult
 import com.vela.domain.usecase.DeleteAlertUseCase
 import com.vela.domain.usecase.EditAlertUseCase
 import com.vela.domain.usecase.GetAlertByIdUseCase
 import com.vela.domain.usecase.GetAlertValidationMessageUseCase
-import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.AssetPreviewCache
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -23,6 +22,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel(assistedFactory = AlertFormViewModel.Factory::class)
 class AlertFormViewModel @AssistedInject constructor(
     assetPreviewCache: AssetPreviewCache,
-    private val getPricesOnly: GetPricesOnlyUseCase,
+    private val priceStore: SimplePriceStore,
     private val editAlert: EditAlertUseCase,
     private val deleteAlert: DeleteAlertUseCase,
     private val getAlertById: GetAlertByIdUseCase,
@@ -122,8 +122,7 @@ class AlertFormViewModel @AssistedInject constructor(
 
     private fun fetchInitialPrice() {
         viewModelScope.launch {
-            val result = getPricesOnly(listOf(coinId))
-            currentPrice = (result as? DataResult.Success)?.data?.get(coinId)?.price
+            currentPrice = priceStore.observePrice(coinId).first()?.price
             _uiState.update {
                 it.copy(
                     value = currentPrice?.toBigDecimal()?.stripTrailingZeros()?.toPlainString() ?: "",
@@ -138,8 +137,7 @@ class AlertFormViewModel @AssistedInject constructor(
             val alert = alertId?.let { getAlertById(it) }
             if (alert != null) {
                 originalAlert = alert
-                val priceResult = getPricesOnly(listOf(coinId))
-                currentPrice = (priceResult as? DataResult.Success)?.data?.get(coinId)?.price
+                currentPrice = priceStore.observePrice(coinId).first()?.price
                 _uiState.update {
                     it.copy(
                         type = alert.type,

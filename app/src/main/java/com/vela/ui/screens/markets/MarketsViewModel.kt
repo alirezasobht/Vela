@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
+@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 
 package com.vela.ui.screens.markets
 
@@ -14,30 +14,31 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.vela.data.source.remote.util.toAppError
-import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.MarketCategory
 import com.vela.domain.model.MarketSort
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetMarketCategoriesUseCase
 import com.vela.domain.usecase.GetMarketsUseCase
-import com.vela.domain.usecase.GetPricesOnlyUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePolling
-import com.vela.ui.base.pricepolling.PricePollingController
-import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.base.watchlist.WatchlistController
 import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetListItemActions
 import com.vela.ui.common.components.model.AssetUiModel
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -48,12 +49,10 @@ class MarketsViewModel @Inject constructor(
     private val getMarkets: GetMarketsUseCase,
     private val getCategories: GetMarketCategoriesUseCase,
     private val assetPreviewCache: AssetPreviewCache,
-    private val getPrices: GetPricesOnlyUseCase,
-    private val pricePolling: PricePollingController,
+    private val priceStore: SimplePriceStore,
+    private val pricePolling: PricePolling,
     private val watchlistController: WatchlistControllerImpl
 ) : ViewModel(),
-    PricePolling by pricePolling,
-    PricePollingDelegate,
     WatchlistController by watchlistController {
     private val _uiState = MutableStateFlow<MarketsUiState>(MarketsUiState.Loading)
     val uiState: StateFlow<MarketsUiState> = _uiState.asStateFlow()
@@ -63,7 +62,7 @@ class MarketsViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<MarketCategory>>(listOf(MarketCategory.ALL))
     val categories: StateFlow<List<MarketCategory>> = _categories.asStateFlow()
 
-    private val loadedIds = MutableStateFlow<List<String>>(emptyList())
+    private val pendingRegisterIds = MutableStateFlow<Set<String>>(emptySet())
 
     var selectedCategory by mutableStateOf(MarketCategory.ALL)
         private set
@@ -71,39 +70,44 @@ class MarketsViewModel @Inject constructor(
     var selectedSort by mutableStateOf(MarketSort.MARKET_CAP)
         private set
 
-    override fun getIds(): List<String> = loadedIds.value
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value as? MarketsUiState.Success ?: return
-        _uiState.value = current.copy(nonBlockingError = error)
-    }
-
-    override fun onCleared() {
-        pricePolling.cancel()
-        super.onCleared()
-    }
-
     val pagingFlow: Flow<PagingData<AssetUiModel>> = snapshotFlow {
         Pair(selectedCategory, selectedSort)
     }.flatMapLatest { (category, sort) ->
         getMarkets(category, sort).map { pagingData ->
             pagingData.map { asset ->
-                loadedIds.update { current -> (current + asset.id).distinct() }
                 assetPreviewCache.put(asset)
+                pendingRegisterIds.update { it + asset.id }
                 asset.toUiModel()
             }
         }
     }.cachedIn(viewModelScope)
 
     init {
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
         watchlistController.bind(viewModelScope)
         fetchCategories()
+        viewModelScope.launch {
+            pricePolling.observeError().collect { error ->
+                val current = _uiState.value as? MarketsUiState.Success ?: return@collect
+                _uiState.value = current.copy(nonBlockingError = error)
+            }
+        }
+        viewModelScope.launch {
+            pendingRegisterIds
+                .debounce(200.milliseconds)
+                .collect { ids ->
+                    if (ids.isNotEmpty()) {
+                        pricePolling.register(ids)
+                        pendingRegisterIds.value = emptySet()
+                    }
+                }
+        }
     }
+
+    fun onScreenVisible(visible: Boolean) {
+        pricePolling.onScreenVisible(visible)
+    }
+
+    fun observePrice(id: String): Flow<SimplePriceUiModel?> = priceStore.observePrice(id).map { it?.toUiModel() }
 
     fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions = AssetListItemActions(
         observePrice = ::observePrice,
@@ -120,13 +124,11 @@ class MarketsViewModel @Inject constructor(
     fun onCategorySelected(category: MarketCategory) {
         if (selectedCategory == category) return
         selectedCategory = category
-        loadedIds.value = emptyList()
     }
 
     fun onSortSelected(sort: MarketSort) {
         if (selectedSort == sort) return
         selectedSort = sort
-        loadedIds.value = emptyList()
     }
 
     fun onLoadStateChanged(loadState: CombinedLoadStates) {
@@ -153,7 +155,7 @@ class MarketsViewModel @Inject constructor(
             when (val result = getCategories()) {
                 is DataResult.Success -> loadCategories(result.data)
 
-                is DataResult.Error -> { // silent — keep [ALL]
+                is DataResult.Error -> {
                 }
             }
         }

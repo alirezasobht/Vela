@@ -4,12 +4,11 @@ import com.vela.domain.model.Alert
 import com.vela.domain.model.AlertDirection
 import com.vela.domain.model.AlertType
 import com.vela.domain.model.Asset
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.DeleteAlertUseCase
-import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.ObserveAllAlertsUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePollingConfig
-import com.vela.ui.base.pricepolling.PricePollingController
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -33,8 +32,8 @@ class AlertsViewModelTest {
     private val assetPreviewCache: AssetPreviewCache = mockk()
     private val alertLabelFormatter: AlertLabelFormatter = mockk()
     private val deleteAlert: DeleteAlertUseCase = mockk(relaxed = true)
-    private val getPrices: GetPricesAndMarketDataUseCase = mockk(relaxed = true)
-    private val config: PricePollingConfig = mockk { every { refreshDelaySeconds } returns 60L }
+    private val priceStore: SimplePriceStore = mockk()
+    private val pricePolling: PricePolling = mockk(relaxed = true)
     private val alertsFlow = MutableStateFlow<List<Alert>>(emptyList())
 
     private fun createViewModel(): AlertsViewModel = AlertsViewModel(
@@ -42,8 +41,8 @@ class AlertsViewModelTest {
         assetPreviewCache = assetPreviewCache,
         alertLabelFormatter = alertLabelFormatter,
         deleteAlert = deleteAlert,
-        getPrices = getPrices,
-        pricePolling = PricePollingController(config)
+        priceStore = priceStore,
+        pricePolling = pricePolling
     )
 
     @Before
@@ -180,6 +179,26 @@ class AlertsViewModelTest {
         alertsFlow.value = emptyList()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(AlertsUiState.Empty, vm.uiState.value)
+    }
+
+    @Test
+    fun `non-empty alerts registers coin ids with price polling`() = runTest {
+        val vm = createViewModel()
+        alertsFlow.value = listOf(
+            alert(id = 1L, coinId = "bitcoin"),
+            alert(id = 2L, coinId = "ethereum")
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { pricePolling.register(setOf("bitcoin", "ethereum")) }
+    }
+
+    @Test
+    fun `empty alerts does not register anything`() = runTest {
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { pricePolling.register(any()) }
     }
 
     // ----- delete -----
