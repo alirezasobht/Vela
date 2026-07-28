@@ -2,10 +2,12 @@ package com.vela.data.pricepolling
 
 import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
+import com.vela.domain.notification.AlertNotifier
 import com.vela.domain.pricepolling.PricePolling
 import com.vela.domain.pricepolling.PricePollingConfig
 import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.repository.PriceRepository
+import com.vela.domain.usecase.CheckAlertsAgainstPricesUseCase
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
@@ -24,6 +26,8 @@ class PricePollingImpl @Inject constructor(
     private val priceRepository: PriceRepository,
     private val priceStore: SimplePriceStore,
     private val config: PricePollingConfig,
+    private val checkAlertsAgainstPrices: CheckAlertsAgainstPricesUseCase,
+    private val alertNotifier: AlertNotifier,
     @PricePollingScope private val scope: CoroutineScope
 ) : PricePolling {
 
@@ -64,6 +68,7 @@ class PricePollingImpl @Inject constructor(
             is DataResult.Success -> {
                 priceStore.upsert(result.data)
                 error.emit(null)
+                checkAlertsAgainstPrices().forEach { alertNotifier.notify(it) }
             }
 
             is DataResult.Error -> error.emit(result.appError)

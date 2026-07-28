@@ -1,25 +1,21 @@
 package com.vela.domain.usecase
 
 import com.vela.domain.model.Alert
-import com.vela.domain.model.DataResult
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.repository.AlertRepository
-import com.vela.domain.repository.PriceRepository
 import javax.inject.Inject
 
-class CheckAlertsByMarketDataUseCase @Inject constructor(
+class CheckAlertsAgainstPricesUseCase @Inject constructor(
     private val alertRepository: AlertRepository,
-    private val priceRepository: PriceRepository,
+    private val priceStore: SimplePriceStore,
     private val alertTriggerEvaluator: AlertTriggerEvaluator
 ) {
     suspend operator fun invoke(): List<Alert> {
+        val prices = priceStore.getPrices()
+        if (prices.isEmpty()) return emptyList()
+
         val activeAlerts = alertRepository.getActiveAlerts()
         if (activeAlerts.isEmpty()) return emptyList()
-
-        val coinIds = activeAlerts.map { it.coinId }.distinct()
-        val prices = when (val result = priceRepository.getPrices(coinIds, includeMarketData = true)) {
-            is DataResult.Success -> result.data
-            is DataResult.Error -> return emptyList()
-        }
 
         val triggered = alertTriggerEvaluator.evaluate(activeAlerts, prices)
         triggered.forEach { alertRepository.markTriggered(it.id) }

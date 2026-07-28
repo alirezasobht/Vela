@@ -8,6 +8,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
+import com.vela.data.worker.AlertCoinRegistrar
 import com.vela.data.worker.InProcessAlertCheckScheduler
 import com.vela.data.worker.WorkManagerAlertCheckScheduler
 import com.vela.domain.notification.AlertNotifier
@@ -26,6 +27,9 @@ class VelaApplication :
     lateinit var inProcessScheduler: InProcessAlertCheckScheduler
 
     @Inject
+    lateinit var alertCoinRegistrar: AlertCoinRegistrar
+
+    @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
     override val workManagerConfiguration: Configuration
@@ -35,6 +39,7 @@ class VelaApplication :
         super.onCreate()
         createNotificationChannel()
         workManagerScheduler.schedule()
+        alertCoinRegistrar.start()
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 inProcessScheduler.schedule()

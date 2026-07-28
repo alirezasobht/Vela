@@ -40,6 +40,6 @@ class InProcessAlertCheckScheduler @Inject constructor(
     }
 
     companion object {
-        const val INTERVAL_SEC = 15L
+        const val INTERVAL_SEC = 5 * 60L
     }
 }
