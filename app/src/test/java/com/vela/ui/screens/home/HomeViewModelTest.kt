@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModelStore
 import com.vela.domain.model.AppError
 import com.vela.domain.model.Asset
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePollingController
 import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -20,6 +20,7 @@ import io.mockk.verify
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -38,8 +39,9 @@ class HomeViewModelTest {
     private val refreshAssets: RefreshAssetsUseCase = mockk()
     private val getToday: GetTodayUseCase = mockk()
     private val assetPreviewCache: AssetPreviewCache = mockk(relaxed = true)
-    private val getPrices: GetPricesOnlyUseCase = mockk(relaxed = true)
-    private val pricePolling: PricePollingController = mockk(relaxed = true)
+    private val priceStore: SimplePriceStore = mockk()
+    private val pricePolling: PricePolling = mockk(relaxed = true)
+    private val errorFlow = MutableSharedFlow<AppError?>(replay = 1)
     private val watchlistController: WatchlistControllerImpl = mockk(relaxed = true)
 
     private fun anAsset(id: String = "bitcoin") = Asset(
@@ -58,7 +60,7 @@ class HomeViewModelTest {
         refreshAssets = refreshAssets,
         getToday = getToday,
         assetPreviewCache = assetPreviewCache,
-        getPrices = getPrices,
+        priceStore = priceStore,
         pricePolling = pricePolling,
         watchlistController = watchlistController
     )
@@ -68,7 +70,7 @@ class HomeViewModelTest {
         every { getToday() } returns LocalDate.of(2000, 1, 1)
         every { getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
         coEvery { refreshAssets(any()) } returns DataResult.Success(Unit)
-        coEvery { getPrices(any()) } returns DataResult.Success(emptyMap())
+        every { pricePolling.observeError() } returns errorFlow
         Dispatchers.setMain(testDispatcher)
     }
 
@@ -350,7 +352,7 @@ class HomeViewModelTest {
 
     @Test
     fun `observeAssets reactive update with preserved error`() = runTest {
-        val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
+        val assetsFlow = MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
         every { getTopAssets(any()) } returns assetsFlow
         assetsFlow.emit(DataResult.Success(listOf(anAsset())))
 
@@ -387,7 +389,7 @@ class HomeViewModelTest {
 
     @Test
     fun `observeAssets error suppression in Success state`() = runTest {
-        val assetsFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
+        val assetsFlow = MutableSharedFlow<DataResult<List<Asset>>>(replay = 1)
         every { getTopAssets(any()) } returns assetsFlow
         assetsFlow.emit(DataResult.Success(listOf(anAsset())))
 
@@ -492,6 +494,40 @@ class HomeViewModelTest {
         val state = vm.uiState.value as HomeUiState.Success
         assertEquals("Tuesday, 26 May", state.formattedDate)
         verify(atLeast = 1) { getToday() }
+    }
+
+    @Test
+    fun `observeAssets registers ids with price polling`() = runTest {
+        val assets = listOf(anAsset("bitcoin"), anAsset("ethereum"))
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(assets))
+
+        createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { pricePolling.register(setOf("bitcoin", "ethereum")) }
+    }
+
+    @Test
+    fun `empty assets does not register anything`() = runTest {
+        every { getTopAssets(any()) } returns flowOf(DataResult.Success(emptyList()))
+
+        createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { pricePolling.register(any()) }
+    }
+
+    @Test
+    fun `price polling error updates nonBlockingError in Success state`() = runTest {
+        val vm = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, vm.uiState.value is HomeUiState.Success)
+
+        errorFlow.tryEmit(AppError.NoInternet)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value as HomeUiState.Success
+        assertEquals(AppError.NoInternet, state.nonBlockingError)
     }
 
     // ----- assetListItemActions -----

@@ -4,19 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.TimeRange
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetCoinDetailUseCase
 import com.vela.domain.usecase.GetOhlcUseCase
-import com.vela.domain.usecase.GetPricesAndMarketDataUseCase
 import com.vela.domain.usecase.IsWatchlistedUseCase
 import com.vela.domain.usecase.ObserveAlertsByCoinIdUseCase
 import com.vela.domain.usecase.ToggleWatchlistUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePolling
-import com.vela.ui.base.pricepolling.PricePollingController
-import com.vela.ui.base.pricepolling.PricePollingDelegate
+import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.SimplePriceUiModel
 import com.vela.ui.navigation.Screen
 import com.vela.ui.screens.alerts.AlertLabelFormatter
@@ -47,16 +45,14 @@ class DetailViewModel @Inject constructor(
     private val getCoinDetail: GetCoinDetailUseCase,
     private val getOhlc: GetOhlcUseCase,
     private val assetPreviewCache: AssetPreviewCache,
-    private val getPrices: GetPricesAndMarketDataUseCase,
-    private val pricePolling: PricePollingController,
+    private val priceStore: SimplePriceStore,
+    private val pricePolling: PricePolling,
     private val isWatchlistedUseCase: IsWatchlistedUseCase,
     private val toggleWatchlistUseCase: ToggleWatchlistUseCase,
     private val observeAlertsByCoinId: ObserveAlertsByCoinIdUseCase,
     private val alertLabelFormatter: AlertLabelFormatter,
     savedStateHandle: SavedStateHandle
-) : ViewModel(),
-    PricePolling by pricePolling,
-    PricePollingDelegate {
+) : ViewModel() {
 
     val initialHeader: CoinDetailUiModel?
 
@@ -77,21 +73,14 @@ class DetailViewModel @Inject constructor(
 
     private var ohlcJob: Job? = null
 
-    override fun getIds(): List<String> = listOf(_state.value.coinId)
-
     fun onNavGraphTransitionFinished() {
         if (!isBackNavigationPending) {
             _useNavGraphAlertTransition.value = false
         }
     }
 
-    override fun onPriceError(error: AppError?) {
-        updateContent<DetailContentState.Success> { copy(nonBlockingError = error) }
-    }
-
-    override fun onCleared() {
-        pricePolling.cancel()
-        super.onCleared()
+    fun onScreenVisible(visible: Boolean) {
+        pricePolling.onScreenVisible(visible)
     }
 
     init {
@@ -109,15 +98,17 @@ class DetailViewModel @Inject constructor(
             .onEach { isWatchlisted -> _state.update { it.copy(isWatchlisted = isWatchlisted) } }
             .launchIn(viewModelScope)
 
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
+        pricePolling.register(setOf(coinId))
 
         viewModelScope.launch {
-            observePrice(coinId).collect { livePrice ->
-                if (livePrice != null) applyLivePrice(livePrice)
+            priceStore.observePrice(coinId).collect { simplePrice ->
+                if (simplePrice != null) applyLivePrice(simplePrice.toUiModel())
+            }
+        }
+
+        viewModelScope.launch {
+            pricePolling.observeError().collect { error ->
+                updateContent<DetailContentState.Success> { copy(nonBlockingError = error) }
             }
         }
 

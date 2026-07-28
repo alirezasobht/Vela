@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package com.vela.ui.screens.home
 
 import androidx.compose.runtime.getValue
@@ -7,29 +5,31 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetTodayUseCase
 import com.vela.domain.usecase.GetTopAssetsUseCase
 import com.vela.domain.usecase.RefreshAssetsUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePolling
-import com.vela.ui.base.pricepolling.PricePollingController
-import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.base.watchlist.WatchlistController
 import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetListItemActions
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -40,16 +40,15 @@ class HomeViewModel @Inject constructor(
     private val refreshAssets: RefreshAssetsUseCase,
     private val getToday: GetTodayUseCase,
     private val assetPreviewCache: AssetPreviewCache,
-    private val getPrices: GetPricesOnlyUseCase,
-    private val pricePolling: PricePollingController,
+    private val priceStore: SimplePriceStore,
+    private val pricePolling: PricePolling,
     private val watchlistController: WatchlistControllerImpl
 ) : ViewModel(),
-    PricePolling by pricePolling,
-    PricePollingDelegate,
     WatchlistController by watchlistController {
     private val _pullRefreshing = MutableStateFlow(false)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     private val refreshMutex = Mutex()
+    private val errorScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     val pullRefreshing: StateFlow<Boolean> = _pullRefreshing.asStateFlow()
@@ -57,25 +56,25 @@ class HomeViewModel @Inject constructor(
     var selectedLimit: Int by mutableIntStateOf(50)
         private set
 
-    override fun getIds(): List<String> = (_uiState.value as? HomeUiState.Success)?.assets?.map { it.id } ?: emptyList()
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value as? HomeUiState.Success ?: return
-        _uiState.value = current.copy(nonBlockingError = error)
+    fun onScreenVisible(visible: Boolean) {
+        pricePolling.onScreenVisible(visible)
     }
 
+    fun observePrice(id: String): Flow<SimplePriceUiModel?> = priceStore.observePrice(id).map { it?.toUiModel() }
+
     override fun onCleared() {
-        pricePolling.cancel()
+        errorScope.cancel()
         super.onCleared()
     }
 
     init {
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
         watchlistController.bind(viewModelScope)
+        errorScope.launch {
+            pricePolling.observeError().collect { error ->
+                val current = _uiState.value as? HomeUiState.Success ?: return@collect
+                _uiState.value = current.copy(nonBlockingError = error)
+            }
+        }
         startFresh(selectedLimit)
     }
 
@@ -103,9 +102,7 @@ class HomeViewModel @Inject constructor(
         _pullRefreshing.value = false
         _uiState.value = HomeUiState.Loading
         viewModelScope.launch {
-            // wait for first refresh
             val success = doRefresh(limit)
-            // if success start observing and refresh loop
             if (success) {
                 launch { observeAssets(limit) }
             }
@@ -151,6 +148,9 @@ class HomeViewModel @Inject constructor(
             when (result) {
                 is DataResult.Success -> {
                     assetPreviewCache.put(result.data)
+                    if (result.data.isNotEmpty()) {
+                        pricePolling.register(result.data.map { it.id }.toSet())
+                    }
                     val current = _uiState.value
                     _uiState.value = HomeUiState.Success(
                         assets = result.data.map { it.toUiModel() },

@@ -2,63 +2,55 @@ package com.vela.ui.screens.watchlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vela.domain.model.AppError
 import com.vela.domain.model.DataResult
-import com.vela.domain.usecase.GetPricesOnlyUseCase
+import com.vela.domain.pricepolling.PricePolling
+import com.vela.domain.pricestore.SimplePriceStore
 import com.vela.domain.usecase.GetWatchlistAssetsUseCase
 import com.vela.ui.base.AssetPreviewCache
-import com.vela.ui.base.pricepolling.PricePolling
-import com.vela.ui.base.pricepolling.PricePollingController
-import com.vela.ui.base.pricepolling.PricePollingDelegate
 import com.vela.ui.base.watchlist.WatchlistController
 import com.vela.ui.base.watchlist.WatchlistControllerImpl
 import com.vela.ui.common.components.mapper.toUiModel
 import com.vela.ui.common.components.model.AssetListItemActions
+import com.vela.ui.common.components.model.SimplePriceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class WatchlistViewModel @Inject constructor(
     private val getWatchlistAssets: GetWatchlistAssetsUseCase,
-    private val getPrices: GetPricesOnlyUseCase,
     private val assetPreviewCache: AssetPreviewCache,
-    private val pricePolling: PricePollingController,
+    private val priceStore: SimplePriceStore,
+    private val pricePolling: PricePolling,
     private val watchlistController: WatchlistControllerImpl
 ) : ViewModel(),
-    PricePolling by pricePolling,
-    PricePollingDelegate,
     WatchlistController by watchlistController {
     private val _uiState = MutableStateFlow<WatchlistUiState>(WatchlistUiState.Loading)
     val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
 
-    override fun getIds(): List<String> = (_uiState.value as? WatchlistUiState.Success)?.assets?.map { it.id } ?: emptyList()
-
-    override fun onPriceError(error: AppError?) {
-        val current = _uiState.value
-        if (current is WatchlistUiState.Success) {
-            _uiState.value = current.copy(nonBlockingError = error)
+    init {
+        watchlistController.bind(viewModelScope)
+        observeWatchlist()
+        viewModelScope.launch {
+            pricePolling.observeError().collect { error ->
+                val current = _uiState.value as? WatchlistUiState.Success ?: return@collect
+                _uiState.value = current.copy(nonBlockingError = error)
+            }
         }
     }
 
-    override fun onCleared() {
-        pricePolling.cancel()
-        super.onCleared()
+    fun onScreenVisible(visible: Boolean) {
+        pricePolling.onScreenVisible(visible)
     }
 
-    init {
-        pricePolling.bind(
-            scope = viewModelScope,
-            getPrices = getPrices,
-            delegate = this
-        )
-        watchlistController.bind(viewModelScope)
-        observeWatchlist()
-    }
+    fun observePrice(id: String): Flow<SimplePriceUiModel?> = priceStore.observePrice(id).map { it?.toUiModel() }
 
     fun assetListItemActions(onClick: (String) -> Unit): AssetListItemActions = AssetListItemActions(
         observePrice = ::observePrice,
@@ -77,6 +69,7 @@ class WatchlistViewModel @Inject constructor(
                         if (assets.isEmpty()) {
                             WatchlistUiState.Empty
                         } else {
+                            pricePolling.register(assets.map { it.id }.toSet())
                             WatchlistUiState.Success(assets.map { it.toUiModel() })
                         }
                     }
