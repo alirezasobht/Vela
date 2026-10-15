@@ -10,6 +10,7 @@ import com.vela.domain.model.Asset
 import com.vela.domain.model.CoinDetail
 import com.vela.domain.model.DataResult
 import com.vela.domain.model.OhlcPoint
+import com.vela.domain.model.SimplePrice
 import com.vela.domain.model.TimeRange
 import com.vela.domain.pricepolling.PricePolling
 import com.vela.domain.pricestore.SimplePriceStore
@@ -347,6 +348,109 @@ class DetailViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         coVerify { pricePolling.register(setOf("bitcoin")) }
+    }
+
+    @Test
+    fun `register is not called when initial load fails`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+
+        createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { pricePolling.register(any()) }
+    }
+
+    @Test
+    fun `register is called exactly once even after a retry`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onAction(DetailAction.Retry)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { pricePolling.register(setOf("bitcoin")) }
+    }
+
+    @Test
+    fun `retry after initial error starts live updates once`() = runTest {
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 0) { pricePolling.register(any()) }
+
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        vm.onAction(DetailAction.Retry)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onAction(DetailAction.Retry)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { pricePolling.register(setOf("bitcoin")) }
+    }
+
+    @Test
+    fun `live price update after retry from error updates the displayed price`() = runTest {
+        val liveFlow = MutableSharedFlow<SimplePrice?>(replay = 1)
+        liveFlow.tryEmit(null)
+        every { priceStore.observePrice("bitcoin") } returns liveFlow
+
+        coEvery { getCoinDetail(any()) } returns DataResult.Error(AppError.NoInternet)
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        vm.onAction(DetailAction.Retry)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        liveFlow.tryEmit(SimplePrice(price = 31_500.0, priceChange = 3.0, marketCap = null, totalVolume = null))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals("$31,500", content.detail.currentPrice)
+    }
+
+    @Test
+    fun `register happens after content is already Success, not racing the detail fetch`() = runTest {
+        coEvery { getCoinDetail(any()) } coAnswers {
+            kotlinx.coroutines.delay(500.milliseconds)
+            DataResult.Success(coinDetail())
+        }
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceTimeBy(100)
+        coVerify(exactly = 0) { pricePolling.register(any()) }
+        assertTrue(vm.state.value.content is DetailContentState.Loading)
+
+        dispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 1) { pricePolling.register(setOf("bitcoin")) }
+    }
+
+    @Test
+    fun `live price update after initial load updates the displayed price`() = runTest {
+        val liveFlow = MutableSharedFlow<SimplePrice?>(replay = 1)
+        liveFlow.tryEmit(null)
+        every { priceStore.observePrice("bitcoin") } returns liveFlow
+
+        coEvery { getCoinDetail(any()) } returns DataResult.Success(coinDetail())
+        coEvery { getOhlc(any(), any()) } returns DataResult.Success(emptyList())
+
+        val vm = createViewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals("$30,000", (vm.state.value.content as DetailContentState.Success).detail.currentPrice)
+
+        liveFlow.tryEmit(SimplePrice(price = 31_500.0, priceChange = 3.0, marketCap = null, totalVolume = null))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val content = vm.state.value.content as DetailContentState.Success
+        assertEquals("$31,500", content.detail.currentPrice)
     }
 
     @Test

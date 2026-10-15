@@ -98,21 +98,13 @@ class DetailViewModel @Inject constructor(
             .onEach { isWatchlisted -> _state.update { it.copy(isWatchlisted = isWatchlisted) } }
             .launchIn(viewModelScope)
 
-        pricePolling.register(setOf(coinId))
-
-        viewModelScope.launch {
-            priceStore.observePrice(coinId).collect { simplePrice ->
-                if (simplePrice != null) applyLivePrice(simplePrice.toUiModel())
-            }
-        }
-
         viewModelScope.launch {
             pricePolling.observeError().collect { error ->
                 updateContent<DetailContentState.Success> { copy(nonBlockingError = error) }
             }
         }
 
-        loadDetail()
+        loadDetail(onFirstSuccess = ::startLiveUpdates)
     }
 
     fun onAction(action: DetailAction) {
@@ -129,6 +121,15 @@ class DetailViewModel @Inject constructor(
             is DetailAction.RangeSelected -> onRangeSelected(action.range)
             is DetailAction.TabSelected -> onTabSelected(action.tab)
             is DetailAction.EditAlert -> openAlertForm(action.id)
+        }
+    }
+
+    private fun startLiveUpdates() {
+        pricePolling.register(setOf(coinId))
+        viewModelScope.launch {
+            priceStore.observePrice(coinId).collect { simplePrice ->
+                if (simplePrice != null) applyLivePrice(simplePrice.toUiModel())
+            }
         }
     }
 
@@ -151,7 +152,13 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch { toggleWatchlistUseCase(_state.value.coinId) }
     }
 
-    private fun retry() = loadDetail(isRefresh = _state.value.content is DetailContentState.Success)
+    private fun retry() {
+        if (_state.value.content is DetailContentState.Success) {
+            loadDetail(isRefresh = true)
+        } else {
+            loadDetail(onFirstSuccess = ::startLiveUpdates)
+        }
+    }
 
     private fun onRangeSelected(range: TimeRange) {
         _state.update { it.copy(selectedRange = range) }
@@ -203,7 +210,10 @@ class DetailViewModel @Inject constructor(
             }.launchIn(viewModelScope)
     }
 
-    private fun loadDetail(isRefresh: Boolean = false) {
+    private fun loadDetail(
+        isRefresh: Boolean = false,
+        onFirstSuccess: (() -> Unit)? = null
+    ) {
         if (isRefresh) {
             updateContent<DetailContentState.Success> { copy(isRefreshing = true, nonBlockingError = null) }
         } else {
@@ -221,6 +231,7 @@ class DetailViewModel @Inject constructor(
                             )
                         )
                     }
+                    onFirstSuccess?.invoke()
                     loadOhlc(_state.value.selectedRange)
                     observeAlerts()
                 }

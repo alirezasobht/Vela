@@ -43,8 +43,11 @@ class PricePollingImpl @Inject constructor(
 
     override fun register(ids: Set<String>) {
         if (ids.isEmpty()) return
+        val newIds = ids - registeredIds.value
         registeredIds.update { it + ids }
-        scope.launch { fetchPrices() }
+        if (newIds.isNotEmpty()) {
+            scope.launch { fetchPrices() }
+        }
         schedulePoll()
     }
 
