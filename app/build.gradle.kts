@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -7,6 +9,11 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.ktlint)
 }
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+val coinGeckoApiKey = localProperties.getProperty("COINGECKO_API_KEY").orEmpty()
 
 android {
     namespace = "com.vela"
@@ -22,6 +29,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "com.vela.HiltTestRunner"
+        buildConfigField("String", "COINGECKO_API_KEY", "\"$coinGeckoApiKey\"")
     }
 
     buildTypes {
@@ -38,6 +46,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
