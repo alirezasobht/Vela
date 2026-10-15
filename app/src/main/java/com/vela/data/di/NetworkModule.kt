@@ -2,6 +2,7 @@ package com.vela.data.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.vela.BuildConfig
 import com.vela.data.source.remote.api.CoinGeckoApi
 import dagger.Module
 import dagger.Provides
@@ -19,9 +20,6 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 object NetworkModule {
     private const val BASE_URL = "https://api.coingecko.com/api/v3/"
 
-    //    private const val API_KEY = "CG-eU4VnP3eypq4QueGjMdCbvnv"
-    private const val API_KEY = "CG-R5m54ACBAYRdcpfNJuoB1s2z"
-
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient = OkHttpClient
@@ -31,13 +29,18 @@ object NetworkModule {
         .writeTimeout(10, TimeUnit.SECONDS)
         .addInterceptor(
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                redactHeader("x-cg-demo-api-key")
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BODY
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
             }
         ).addInterceptor { chain ->
             val request = chain
                 .request()
                 .newBuilder()
-                .addHeader("x-cg-demo-api-key", API_KEY)
+                .addHeader("x-cg-demo-api-key", BuildConfig.COINGECKO_API_KEY)
                 .build()
             chain.proceed(request)
         }.build()
