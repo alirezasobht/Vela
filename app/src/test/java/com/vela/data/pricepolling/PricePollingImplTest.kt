@@ -182,6 +182,36 @@ class PricePollingImplTest {
     }
 
     @Test
+    fun `re-registering the same id does not trigger another immediate fetch`() = runTest {
+        coEvery { priceRepository.getPrices(any(), any()) } returns DataResult.Success(emptyMap())
+
+        val polling = createPolling()
+        polling.register(setOf("bitcoin"))
+        runCurrent()
+        coVerify(exactly = 1) { priceRepository.getPrices(any(), any()) }
+
+        polling.register(setOf("bitcoin"))
+        runCurrent()
+
+        coVerify(exactly = 1) { priceRepository.getPrices(any(), any()) }
+    }
+
+    @Test
+    fun `registering a mix of new and already-known ids still triggers a fetch`() = runTest {
+        coEvery { priceRepository.getPrices(any(), any()) } returns DataResult.Success(emptyMap())
+
+        val polling = createPolling()
+        polling.register(setOf("bitcoin"))
+        runCurrent()
+        coVerify(exactly = 1) { priceRepository.getPrices(any(), any()) }
+
+        polling.register(setOf("bitcoin", "ethereum"))
+        runCurrent()
+
+        coVerify(exactly = 2) { priceRepository.getPrices(any(), any()) }
+    }
+
+    @Test
     fun `on success upserts into store`() = runTest {
         val price = SimplePrice(price = 60000.0, priceChange = 1.0, marketCap = null, totalVolume = null)
         coEvery { priceRepository.getPrices(any(), any()) } returns DataResult.Success(mapOf("bitcoin" to price))
